@@ -43,8 +43,8 @@ function agent(input) {
       <div className="border border-gray-700 rounded-md overflow-hidden bg-[#1e1e1e]">
         <Editor
           value={code}
-          onValueChange={code => setCode(code)}
-          highlight={code => highlight(code, languages.js)}
+          onValueChange={(code: string) => setCode(code)}
+          highlight={(code: string) => highlight(code, languages.js)}
           padding={16}
           style={{
             fontFamily: '"Fira code", "Fira Mono", monospace',
