@@ -23,7 +23,7 @@ export async function middleware(request: NextRequest) {
   // Only limit /api routes
   if (request.nextUrl.pathname.startsWith('/api')) {
     if (ratelimit) {
-      const ip = request.ip ?? '127.0.0.1'
+      const ip = request.ip || request.headers.get('x-forwarded-for') || '127.0.0.1'
       const { success } = await ratelimit.limit(ip)
       
       if (!success) {
