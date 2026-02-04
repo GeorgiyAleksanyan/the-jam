@@ -40,3 +40,4 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 packages/thejam-mcp/node_modules/
+!.env.example
