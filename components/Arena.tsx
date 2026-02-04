@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Editor from '@monaco-editor/react'
 
 type Challenge = {
@@ -39,15 +39,18 @@ function agent(input) {
   }
 ]
 
+type RunStatus = 'idle' | 'submitting' | 'success' | 'error'
+
 export default function Arena() {
   const [activeChallenge, setActiveChallenge] = useState<Challenge>(CHALLENGES[0])
   const [code, setCode] = useState(activeChallenge.defaultCode)
   const [inputData, setInputData] = useState(activeChallenge.defaultInput)
   
-  const [status, setStatus] = useState('idle')
+  const [status, setStatus] = useState<RunStatus>('idle')
   const [result, setResult] = useState('')
+  const [runId, setRunId] = useState<number | null>(null)
+  const [executionTime, setExecutionTime] = useState<number | null>(null)
 
-  // Reset editor when challenge changes
   const handleChallengeChange = (challengeId: string) => {
     const challenge = CHALLENGES.find(c => c.id === challengeId) || CHALLENGES[0]
     setActiveChallenge(challenge)
@@ -55,40 +58,82 @@ export default function Arena() {
     setInputData(challenge.defaultInput)
     setResult('')
     setStatus('idle')
+    setRunId(null)
+    setExecutionTime(null)
   }
 
   const handleSubmit = async () => {
     setStatus('submitting')
-    try {
-      let parsedInput = {}
-      try {
-        parsedInput = JSON.parse(inputData)
-      } catch (e) {
-        setStatus('error')
-        setResult('Invalid Input JSON')
-        return
-      }
+    setResult('')
+    setRunId(null)
+    setExecutionTime(null)
 
+    // Validate input JSON first
+    let parsedInput = {}
+    try {
+      parsedInput = JSON.parse(inputData)
+    } catch (e) {
+      setStatus('error')
+      setResult('Invalid Input JSON: ' + (e as Error).message)
+      return
+    }
+
+    try {
       const response = await fetch('/api/agent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           code,
-          input: { data: parsedInput } 
+          input: { data: parsedInput },
+          challengeId: activeChallenge.id
         }),
       })
+
       const data = await response.json()
-      if (response.ok) {
+
+      if (!response.ok) {
+        setStatus('error')
+        setResult(data.error || `HTTP ${response.status}`)
+        return
+      }
+
+      setRunId(data.runId)
+      setExecutionTime(data.run?.execution_time_ms)
+
+      if (data.success) {
         setStatus('success')
-        setResult(JSON.stringify(data, null, 2))
+        // Format output nicely
+        const output = data.result?.output
+        if (typeof output === 'object') {
+          setResult(JSON.stringify(output, null, 2))
+        } else {
+          setResult(String(output))
+        }
+        
+        // Append logs if any
+        if (data.result?.logs?.length > 0) {
+          setResult(prev => prev + '\n\n--- Console ---\n' + data.result.logs.join('\n'))
+        }
       } else {
         setStatus('error')
-        setResult(data.error || 'Unknown error')
+        setResult(data.result?.error || 'Execution failed')
+        if (data.result?.logs?.length > 0) {
+          setResult(prev => prev + '\n\n--- Console ---\n' + data.result.logs.join('\n'))
+        }
       }
-    } catch (error) {
+    } catch (error: any) {
       setStatus('error')
-      setResult('Failed to submit code')
+      setResult('Network error: ' + (error.message || 'Failed to connect'))
     }
+  }
+
+  const handleReset = () => {
+    setCode(activeChallenge.defaultCode)
+    setInputData(activeChallenge.defaultInput)
+    setResult('')
+    setStatus('idle')
+    setRunId(null)
+    setExecutionTime(null)
   }
 
   return (
@@ -116,20 +161,37 @@ export default function Arena() {
           </span>
         </div>
 
-        <button
-          onClick={handleSubmit}
-          disabled={status === 'submitting'}
-          className="flex items-center gap-2 bg-green-700 hover:bg-green-600 text-white text-xs px-4 py-2 rounded transition-colors disabled:opacity-50 font-bold uppercase tracking-wide"
-        >
-          {status === 'submitting' ? 'Running...' : '▶ Run Agent'}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleReset}
+            className="text-gray-400 hover:text-white text-xs px-3 py-2 rounded transition-colors"
+            title="Reset to default"
+          >
+            ↺ Reset
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={status === 'submitting'}
+            className="flex items-center gap-2 bg-green-700 hover:bg-green-600 text-white text-xs px-4 py-2 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-bold uppercase tracking-wide"
+          >
+            {status === 'submitting' ? (
+              <>
+                <span className="animate-spin">⟳</span>
+                Running...
+              </>
+            ) : (
+              '▶ Run Agent'
+            )}
+          </button>
+        </div>
       </div>
 
       <div className="flex flex-1 overflow-hidden">
         {/* Code Editor (Main) */}
         <div className="w-2/3 h-full border-r border-black relative flex flex-col">
-           <div className="px-4 py-1 bg-[#1e1e1e] text-[10px] text-blue-400 font-mono border-b border-gray-800">
-             AGENT.JS
+           <div className="px-4 py-1 bg-[#1e1e1e] text-[10px] text-blue-400 font-mono border-b border-gray-800 flex justify-between">
+             <span>AGENT.JS</span>
+             <span className="text-gray-600">{code.length} chars</span>
            </div>
            <Editor
              height="100%"
@@ -179,14 +241,34 @@ export default function Arena() {
           <div className="flex-1 flex flex-col min-h-0 bg-[#1e1e1e]">
              <div className="px-3 py-1 bg-[#252526] text-[10px] font-bold text-gray-400 uppercase tracking-wider flex justify-between items-center">
                 <span>Terminal Output</span>
-                {status !== 'idle' && (
-                  <span className={`text-[10px] ${status === 'error' ? 'text-red-500' : 'text-green-500'}`}>
-                    ● {status.toUpperCase()}
-                  </span>
-                )}
+                <div className="flex items-center gap-2">
+                  {runId && (
+                    <span className="text-gray-600">#{runId}</span>
+                  )}
+                  {executionTime && (
+                    <span className="text-gray-600">{executionTime}ms</span>
+                  )}
+                  {status !== 'idle' && (
+                    <span className={`text-[10px] ${
+                      status === 'error' ? 'text-red-500' : 
+                      status === 'success' ? 'text-green-500' : 
+                      'text-yellow-500'
+                    }`}>
+                      {status === 'submitting' ? '● RUNNING' : `● ${status.toUpperCase()}`}
+                    </span>
+                  )}
+                </div>
              </div>
-             <div className="flex-1 p-3 font-mono text-xs overflow-auto text-gray-300 custom-scrollbar bg-[#181818]">
-                {result ? result : <span className="text-gray-600 italic opacity-50">Waiting for execution...</span>}
+             <div className={`flex-1 p-3 font-mono text-xs overflow-auto custom-scrollbar bg-[#181818] ${
+               status === 'error' ? 'text-red-400' : 'text-gray-300'
+             }`}>
+                {status === 'submitting' ? (
+                  <span className="text-yellow-500 animate-pulse">Executing agent...</span>
+                ) : result ? (
+                  <pre className="whitespace-pre-wrap">{result}</pre>
+                ) : (
+                  <span className="text-gray-600 italic opacity-50">Waiting for execution...</span>
+                )}
              </div>
           </div>
         </div>
@@ -197,6 +279,7 @@ export default function Arena() {
         <div className="flex gap-4">
           <span>The Jam Arena</span>
           <span>Target: Node.js (Sandbox)</span>
+          <span>Challenge: {activeChallenge.id}</span>
         </div>
         <span>Ln {code.split('\n').length}, Col 1</span>
       </div>

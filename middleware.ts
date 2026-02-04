@@ -23,6 +23,7 @@ export async function middleware(request: NextRequest) {
   // Only limit /api routes
   if (request.nextUrl.pathname.startsWith('/api')) {
     if (ratelimit) {
+      // @ts-ignore - Vercel NextRequest has ip, but types might be outdated in build env
       const ip = request.ip || request.headers.get('x-forwarded-for') || '127.0.0.1'
       const { success } = await ratelimit.limit(ip)
       
