@@ -1,21 +1,61 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Editor from '@monaco-editor/react'
 
-export default function Arena() {
-  const [code, setCode] = useState(`// Write your agent code here
-function agent(input) {
-  // Use input.data to access the JSON below
-  const name = input.data.name || "Agent";
-  return "Processed: " + name;
+type Challenge = {
+  id: string
+  title: string
+  description: string
+  defaultCode: string
+  defaultInput: string
 }
-`)
-  const [inputData, setInputData] = useState(`{
-  "name": "Ether"
-}`)
+
+const CHALLENGES: Challenge[] = [
+  {
+    id: 'sandbox',
+    title: 'Sandbox (Playground)',
+    description: 'Free form testing. No rules.',
+    defaultCode: `// Write your agent code here
+function agent(input) {
+  return "Hello " + (input.data.name || "World");
+}`,
+    defaultInput: `{\n  "name": "Ether"\n}`
+  },
+  {
+    id: 'flattener',
+    title: 'Challenge: The Flattener',
+    description: 'Flatten a nested JSON object into dot-notation keys.',
+    defaultCode: `function agent(input) {
+  const obj = input.data;
+  const result = {};
+  
+  // TODO: Implement recursion to flatten 'obj'
+  // Example: { a: { b: 1 } } -> { "a.b": 1 }
+  
+  return result;
+}`,
+    defaultInput: `{\n  "user": {\n    "name": "Sovereign",\n    "stats": {\n      "level": 99,\n      "class": "Construct"\n    }\n  },\n  "active": true\n}`
+  }
+]
+
+export default function Arena() {
+  const [activeChallenge, setActiveChallenge] = useState<Challenge>(CHALLENGES[0])
+  const [code, setCode] = useState(activeChallenge.defaultCode)
+  const [inputData, setInputData] = useState(activeChallenge.defaultInput)
+  
   const [status, setStatus] = useState('idle')
   const [result, setResult] = useState('')
+
+  // Reset editor when challenge changes
+  const handleChallengeChange = (challengeId: string) => {
+    const challenge = CHALLENGES.find(c => c.id === challengeId) || CHALLENGES[0]
+    setActiveChallenge(challenge)
+    setCode(challenge.defaultCode)
+    setInputData(challenge.defaultInput)
+    setResult('')
+    setStatus('idle')
+  }
 
   const handleSubmit = async () => {
     setStatus('submitting')
@@ -52,21 +92,34 @@ function agent(input) {
   }
 
   return (
-    <div className="flex flex-col gap-0 w-full max-w-7xl mx-auto h-[600px] bg-[#1e1e1e] border border-gray-800 rounded-lg overflow-hidden shadow-2xl">
+    <div className="flex flex-col gap-0 w-full max-w-7xl mx-auto h-[650px] bg-[#1e1e1e] border border-gray-800 rounded-lg overflow-hidden shadow-2xl">
       {/* Toolbar */}
-      <div className="flex items-center justify-between px-4 py-2 bg-[#252526] border-b border-black">
-        <div className="flex gap-2">
-          <div className="flex items-center gap-2 px-3 py-1 bg-[#1e1e1e] text-gray-300 text-xs rounded-t border-t border-blue-500">
-            <span className="text-blue-400">JS</span> agent.js
+      <div className="flex items-center justify-between px-4 py-3 bg-[#252526] border-b border-black">
+        <div className="flex items-center gap-4">
+          <div className="flex flex-col">
+            <span className="text-[10px] uppercase text-gray-500 font-bold tracking-wider">Active Context</span>
+            <select 
+              value={activeChallenge.id}
+              onChange={(e) => handleChallengeChange(e.target.value)}
+              className="bg-transparent text-gray-200 text-sm font-medium focus:outline-none cursor-pointer hover:text-blue-400 transition-colors"
+            >
+              {CHALLENGES.map(c => (
+                <option key={c.id} value={c.id} className="bg-[#1e1e1e]">{c.title}</option>
+              ))}
+            </select>
           </div>
-          <div className="flex items-center gap-2 px-3 py-1 text-gray-500 text-xs hover:bg-[#2d2d2d] cursor-pointer">
-            <span className="text-yellow-600">{}</span> input.json
-          </div>
+          
+          <div className="h-6 w-px bg-gray-700 mx-2" />
+          
+          <span className="text-xs text-gray-500 italic truncate max-w-[300px]">
+            {activeChallenge.description}
+          </span>
         </div>
+
         <button
           onClick={handleSubmit}
           disabled={status === 'submitting'}
-          className="flex items-center gap-2 bg-green-700 hover:bg-green-600 text-white text-xs px-3 py-1 rounded transition-colors disabled:opacity-50"
+          className="flex items-center gap-2 bg-green-700 hover:bg-green-600 text-white text-xs px-4 py-2 rounded transition-colors disabled:opacity-50 font-bold uppercase tracking-wide"
         >
           {status === 'submitting' ? 'Running...' : '▶ Run Agent'}
         </button>
@@ -74,7 +127,10 @@ function agent(input) {
 
       <div className="flex flex-1 overflow-hidden">
         {/* Code Editor (Main) */}
-        <div className="w-2/3 h-full border-r border-black relative">
+        <div className="w-2/3 h-full border-r border-black relative flex flex-col">
+           <div className="px-4 py-1 bg-[#1e1e1e] text-[10px] text-blue-400 font-mono border-b border-gray-800">
+             AGENT.JS
+           </div>
            <Editor
              height="100%"
              defaultLanguage="javascript"
@@ -87,6 +143,7 @@ function agent(input) {
                fontFamily: "'Fira Code', monospace",
                scrollBeyondLastLine: false,
                automaticLayout: true,
+               padding: { top: 16 }
              }}
            />
         </div>
@@ -95,8 +152,9 @@ function agent(input) {
         <div className="w-1/3 h-full flex flex-col bg-[#1e1e1e]">
           {/* Input Section */}
           <div className="h-1/3 border-b border-black flex flex-col">
-            <div className="px-3 py-1 bg-[#252526] text-xs font-bold text-gray-400 uppercase tracking-wider">
-              Input (JSON)
+            <div className="px-3 py-1 bg-[#252526] text-[10px] font-bold text-gray-400 uppercase tracking-wider flex justify-between items-center">
+              <span>Input (JSON)</span>
+              <span className="text-xs text-yellow-600">{}</span>
             </div>
             <div className="flex-1 relative">
               <Editor
@@ -111,6 +169,7 @@ function agent(input) {
                   fontSize: 12,
                   scrollBeyondLastLine: false,
                   automaticLayout: true,
+                  folding: false
                 }}
               />
             </div>
@@ -118,25 +177,28 @@ function agent(input) {
 
           {/* Output Section */}
           <div className="flex-1 flex flex-col min-h-0 bg-[#1e1e1e]">
-             <div className="px-3 py-1 bg-[#252526] text-xs font-bold text-gray-400 uppercase tracking-wider flex justify-between">
-                <span>Terminal</span>
+             <div className="px-3 py-1 bg-[#252526] text-[10px] font-bold text-gray-400 uppercase tracking-wider flex justify-between items-center">
+                <span>Terminal Output</span>
                 {status !== 'idle' && (
-                  <span className={status === 'error' ? 'text-red-500' : 'text-green-500'}>
-                    ● {status}
+                  <span className={`text-[10px] ${status === 'error' ? 'text-red-500' : 'text-green-500'}`}>
+                    ● {status.toUpperCase()}
                   </span>
                 )}
              </div>
-             <div className="flex-1 p-3 font-mono text-xs overflow-auto text-gray-300 custom-scrollbar">
-                {result ? result : <span className="text-gray-600 italic">Ready to execute...</span>}
+             <div className="flex-1 p-3 font-mono text-xs overflow-auto text-gray-300 custom-scrollbar bg-[#181818]">
+                {result ? result : <span className="text-gray-600 italic opacity-50">Waiting for execution...</span>}
              </div>
           </div>
         </div>
       </div>
       
       {/* Status Bar */}
-      <div className="bg-blue-600 text-white text-[10px] px-2 py-0.5 flex justify-between">
-        <span>The Jam Arena v0.3</span>
-        <span>Sovereign Engine: Online</span>
+      <div className="bg-[#007acc] text-white text-[10px] px-3 py-1 flex justify-between select-none">
+        <div className="flex gap-4">
+          <span>The Jam Arena</span>
+          <span>Target: Node.js (Sandbox)</span>
+        </div>
+        <span>Ln {code.split('\n').length}, Col 1</span>
       </div>
     </div>
   )
