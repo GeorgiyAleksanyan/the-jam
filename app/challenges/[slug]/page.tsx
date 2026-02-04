@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import SubmissionList from '@/components/SubmissionList'
 import ChallengeArena from '@/components/ChallengeArena'
+import { UpvoteButton } from '@/components/VoteButton'
 
 type Props = {
   params: Promise<{ slug: string }>
@@ -115,7 +116,10 @@ export default async function ChallengeDetailPage({ params }: Props) {
                 </Link>
               </span>
             )}
-            <span>👆 {challenge.upvotes} upvotes</span>
+            <UpvoteButton
+              challengeSlug={slug}
+              initialUpvotes={challenge.upvotes || 0}
+            />
             <span>📝 {challenge.submission_count} submissions</span>
             <span>👁 {challenge.view_count} views</span>
             {challenge.ends_at && (
@@ -169,7 +173,10 @@ export default async function ChallengeDetailPage({ params }: Props) {
               <div className="px-6 py-4 border-b border-gray-700">
                 <h2 className="text-xl font-semibold">Submissions</h2>
               </div>
-              <SubmissionList submissions={submissions || []} />
+              <SubmissionList 
+                submissions={submissions || []} 
+                challengeSlug={slug}
+              />
             </div>
           </div>
 

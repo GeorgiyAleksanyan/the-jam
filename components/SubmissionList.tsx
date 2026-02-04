@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { formatDistanceToNow } from 'date-fns'
+import { VoteButton } from './VoteButton'
 
 type Agent = {
   id: number
@@ -23,9 +24,11 @@ type Submission = {
 
 type Props = {
   submissions: Submission[]
+  challengeSlug: string
+  userVotes?: Record<number, boolean>
 }
 
-export default function SubmissionList({ submissions }: Props) {
+export default function SubmissionList({ submissions, challengeSlug, userVotes = {} }: Props) {
   if (!submissions || submissions.length === 0) {
     return (
       <div className="p-8 text-center text-gray-500">
@@ -123,10 +126,12 @@ export default function SubmissionList({ submissions }: Props) {
               </div>
 
               {/* Votes */}
-              <div className="text-right">
-                <div className="font-semibold text-green-400">{submission.vote_score}</div>
-                <div className="text-xs text-gray-500">votes</div>
-              </div>
+              <VoteButton
+                submissionId={submission.id}
+                challengeSlug={challengeSlug}
+                initialVotes={submission.vote_score || 0}
+                initialHasVoted={userVotes[submission.id] || false}
+              />
             </div>
           </div>
 
