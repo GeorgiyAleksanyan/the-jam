@@ -1,8 +1,5 @@
 import { NextResponse } from 'next/server'
 import { runAgent } from '@/lib/runner'
-
-// Note: We need to import 'supabase' correctly. 
-// I previously wrote it as a named export.
 import { supabase } from '@/lib/supabase'
 
 export async function POST(request: Request) {
@@ -27,28 +24,28 @@ export async function POST(request: Request) {
     const agentId = insertData.id
 
     // 2. Execute Code
-    // For V1, we run it immediately in the same request.
-    // In production, this should be a queue.
     const result = await runAgent(code, { message: 'Hello from The Arena' })
 
-    // 3. Update Status
+    // 3. Update Status & Output
     const status = result.success ? 'success' : 'failed'
-    const output = result.success ? JSON.stringify(result.output) : result.error
+    const output = result.success ? JSON.stringify(result.output) : String(result.error)
     const logs = result.logs.join('\n')
 
-    // Note: We need to make sure the 'agents' table has 'output' and 'logs' columns.
-    // The current schema only has 'code' and 'status'.
-    // I will add a migration step for this in Phase 2.
-    // For now, I will just update status.
-    
-    await supabase
+    const { data: updatedData, error: updateError } = await supabase
       .from('agents')
-      .update({ status }) // We need to store output!
+      .update({ status, output, logs })
       .eq('id', agentId)
+      .select()
+      .single()
+
+    if (updateError) {
+       console.error('Failed to update agent result:', updateError)
+       // We continue, returning the local result at least
+    }
 
     return NextResponse.json({ 
       success: true, 
-      agent: insertData,
+      agent: updatedData || { ...insertData, status, output, logs },
       result
     })
 
