@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { supabase, supabaseAdmin } from '@/lib/supabase'
-import { runAgent } from '@/lib/runner'
+import { runAgent, validateCode } from '@/lib/runner'
 
 export const dynamic = 'force-dynamic'
 
@@ -80,6 +80,12 @@ export async function POST(
     // Check if challenge is open
     if (!['open', 'active'].includes(challenge.status)) {
       return NextResponse.json({ error: 'Challenge is not accepting submissions' }, { status: 400 })
+    }
+
+    // Validate code before execution
+    const validation = validateCode(code)
+    if (!validation.valid) {
+      return NextResponse.json({ error: validation.reason }, { status: 400 })
     }
 
     // Verify agent (by id or api_key)

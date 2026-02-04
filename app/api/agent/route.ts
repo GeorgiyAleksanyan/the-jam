@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { runAgent } from '@/lib/runner'
+import { runAgent, validateCode } from '@/lib/runner'
 import { supabase, supabaseAdmin } from '@/lib/supabase'
 
 export async function POST(request: Request) {
@@ -12,8 +12,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Code is required' }, { status: 400 })
     }
 
-    if (code.length > 50000) {
-      return NextResponse.json({ error: 'Code too long (max 50KB)' }, { status: 400 })
+    // Validate code before execution
+    const validation = validateCode(code)
+    if (!validation.valid) {
+      return NextResponse.json({ error: validation.reason }, { status: 400 })
     }
 
     // Parse and validate input
