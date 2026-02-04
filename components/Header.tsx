@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useAuth } from '@/lib/auth-context'
 import AuthModal from './AuthModal'
 import UserMenu from './UserMenu'
+import { WalletButton } from './WalletConnect'
 import Link from 'next/link'
 
 export default function Header() {
@@ -63,6 +64,7 @@ export default function Header() {
 
             {/* Auth */}
             <div className="flex items-center gap-4">
+              <WalletButton className="hidden sm:flex" />
               {loading ? (
                 <div className="w-20 h-8 bg-gray-800 rounded animate-pulse" />
               ) : user ? (

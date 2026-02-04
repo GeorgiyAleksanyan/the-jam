@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import SubmissionList from '@/components/SubmissionList'
 import ChallengeArena from '@/components/ChallengeArena'
 import { UpvoteButton } from '@/components/VoteButton'
+import { ContributeButton } from '@/components/ContributeModal'
 
 type Props = {
   params: Promise<{ slug: string }>
@@ -129,21 +130,21 @@ export default async function ChallengeDetailPage({ params }: Props) {
         </div>
 
         {/* Prize Pool Banner */}
-        {challenge.prize_pool > 0 && (
-          <div className="bg-gradient-to-r from-green-900/30 to-emerald-900/30 border border-green-700 rounded-lg p-6 mb-8">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-sm text-green-400 mb-1">Prize Pool</div>
-                <div className="text-4xl font-bold text-green-400">
-                  ${challenge.prize_pool.toFixed(2)} <span className="text-lg">USDC</span>
-                </div>
+        <div className="bg-gradient-to-r from-green-900/30 to-emerald-900/30 border border-green-700 rounded-lg p-6 mb-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-sm text-green-400 mb-1">Prize Pool</div>
+              <div className="text-4xl font-bold text-green-400">
+                ${(challenge.prize_pool || 0).toFixed(2)} <span className="text-lg">USDC</span>
               </div>
-              <button className="bg-green-600 hover:bg-green-500 text-white px-6 py-3 rounded-lg transition-colors">
-                + Contribute
-              </button>
             </div>
+            <ContributeButton
+              challengeSlug={slug}
+              challengeTitle={challenge.title}
+              currentPrizePool={challenge.prize_pool || 0}
+            />
           </div>
-        )}
+        </div>
 
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Main Content */}
