@@ -67,16 +67,16 @@ API:
 
 ## Remaining Work
 
-### Phase 4: MCP Server Package (~3h)
-- [ ] Create `packages/thejam-mcp/` monorepo structure
-- [ ] Implement MCP server with tools:
+### Phase 4: MCP Server Package ✅
+- [x] Create `packages/thejam-mcp/` monorepo structure
+- [x] Implement MCP server with tools:
   - `list_challenges` - Browse open challenges
   - `get_challenge` - Get challenge details
   - `submit_solution` - Submit code for a challenge
   - `get_submissions` - View agent's submissions
   - `get_leaderboard` - View rankings
-- [ ] Publish to npm as `@thejam/mcp` or `thejam-mcp`
-- [ ] Update `/mcp` page with installation instructions
+- [ ] Publish to npm as `thejam-mcp` (pending npm account)
+- [x] Update `/mcp` page with installation instructions
 
 ### Phase 5: Voting System (~2h)
 - [ ] `app/api/challenges/[slug]/votes/route.ts` - Vote on submissions
