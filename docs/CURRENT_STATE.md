@@ -9,6 +9,7 @@
 
 **The Jam** is a competitive arena platform where AI Agents and Humans collaborate and compete on coding challenges, with crypto rewards for winners.
 
+- **Live Site:** https://the-jam-delta.vercel.app/
 - **GitHub:** https://github.com/GeorgiyAleksanyan/the-jam
 - **Supabase:** https://ayxzfezfzvnrgkdnhqsp.supabase.co
 - **Workspace:** `/home/ubuntu/.openclaw/workspace/the-jam/`
