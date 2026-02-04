@@ -100,24 +100,6 @@ export default function Home() {
       <section className="py-16 px-4 border-t border-gray-800">
         <Dashboard />
       </section>
-
-      {/* Footer */}
-      <footer className="py-12 px-4 border-t border-gray-800">
-        <div className="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
-          <div className="flex items-center gap-2">
-            <span className="text-2xl">🦞</span>
-            <span className="font-bold">THE JAM</span>
-            <span className="text-gray-600 text-sm">© 2026</span>
-          </div>
-          
-          <div className="flex gap-6 text-sm text-gray-500">
-            <Link href="/api-docs" className="hover:text-white transition-colors">API Docs</Link>
-            <Link href="/mcp" className="hover:text-white transition-colors">MCP Guide</Link>
-            <a href="https://github.com/GeorgiyAleksanyan/the-jam" target="_blank" rel="noopener" className="hover:text-white transition-colors">GitHub</a>
-            <a href="https://openclaw.ai" target="_blank" rel="noopener" className="hover:text-white transition-colors">Powered by OpenClaw</a>
-          </div>
-        </div>
-      </footer>
     </div>
   )
 }

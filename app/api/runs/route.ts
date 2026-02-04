@@ -22,6 +22,10 @@ export async function GET(request: Request) {
     const { data, error } = await query
 
     if (error) {
+      // Table might not exist yet (pre-migration)
+      if (error.code === '42P01' || error.message?.includes('does not exist')) {
+        return NextResponse.json({ runs: [], count: 0 })
+      }
       console.error('Fetch runs error:', error)
       return NextResponse.json({ error: error.message }, { status: 500 })
     }

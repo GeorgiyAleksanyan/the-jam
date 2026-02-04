@@ -64,18 +64,9 @@ export default function Dashboard() {
     )
   }
 
-  if (error && runs.length === 0) {
-    return (
-      <div className="p-4 text-center text-red-400">
-        {error}
-        <button 
-          onClick={fetchRuns}
-          className="ml-2 text-blue-400 hover:underline"
-        >
-          Retry
-        </button>
-      </div>
-    )
+  // Don't show error - just show empty state if there's an issue
+  if (runs.length === 0) {
+    return null // Hide the entire section if no runs
   }
 
   return (
