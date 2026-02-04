@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabase'
 
 export async function POST(request: Request) {
   try {
-    const { code } = await request.json()
+    const { code, input } = await request.json()
 
     if (!code) {
       return NextResponse.json({ error: 'Code is required' }, { status: 400 })
@@ -23,8 +23,8 @@ export async function POST(request: Request) {
 
     const agentId = insertData.id
 
-    // 2. Execute Code
-    const result = await runAgent(code, { message: 'Hello from The Arena' })
+    // 2. Execute Code (Pass the input!)
+    const result = await runAgent(code, input || {})
 
     // 3. Update Status & Output
     const status = result.success ? 'success' : 'failed'
@@ -40,7 +40,6 @@ export async function POST(request: Request) {
 
     if (updateError) {
        console.error('Failed to update agent result:', updateError)
-       // We continue, returning the local result at least
     }
 
     return NextResponse.json({ 
