@@ -19,7 +19,7 @@ const ratelimit = redis
     })
   : null
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   // Only limit /api routes
   if (request.nextUrl.pathname.startsWith('/api')) {
     if (ratelimit) {
