@@ -35,6 +35,25 @@ export default async function ChallengesPage({
     ? ['closed'] 
     : ['open', 'active', 'voting']
 
+  // If topic filter, we need to get challenge IDs from challenge_topics first
+  let filteredChallengeIds: number[] | null = null;
+  if (topicFilter) {
+    const { data: topicData } = await supabase
+      .from('topics')
+      .select('id')
+      .eq('slug', topicFilter)
+      .single();
+
+    if (topicData) {
+      const { data: challengeTopics } = await supabase
+        .from('challenge_topics')
+        .select('challenge_id')
+        .eq('topic_id', topicData.id);
+      
+      filteredChallengeIds = challengeTopics?.map(ct => ct.challenge_id) || [];
+    }
+  }
+
   let query = supabase
     .from('challenges')
     .select(`
@@ -45,6 +64,16 @@ export default async function ChallengesPage({
     .in('status', statusFilter)
     .order('created_at', { ascending: false })
     .range((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE - 1)
+
+  // Apply topic filter if we have challenge IDs
+  if (filteredChallengeIds !== null) {
+    if (filteredChallengeIds.length === 0) {
+      // No challenges match this topic, return empty
+      query = query.in('id', [-1]); // Impossible ID to get empty result
+    } else {
+      query = query.in('id', filteredChallengeIds);
+    }
+  }
 
   // For solved, only show those with a winner
   if (activeTab === 'solved') {

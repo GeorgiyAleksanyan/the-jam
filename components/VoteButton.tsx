@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useAuth } from '@/lib/auth-context';
 
 interface VoteButtonProps {
   submissionId: number;
@@ -17,6 +18,7 @@ export function VoteButton({
   initialHasVoted = false,
   disabled = false,
 }: VoteButtonProps) {
+  const { session } = useAuth();
   const [votes, setVotes] = useState(initialVotes);
   const [hasVoted, setHasVoted] = useState(initialHasVoted);
   const [loading, setLoading] = useState(false);
@@ -24,10 +26,6 @@ export function VoteButton({
   const handleVote = async () => {
     if (loading || disabled) return;
 
-    // Get token from Supabase client
-    const { supabase } = await import('@/lib/supabase');
-    const { data: { session } } = await supabase.auth.getSession();
-    
     if (!session?.access_token) {
       alert('Please sign in to vote');
       return;
@@ -115,6 +113,7 @@ export function UpvoteButton({
   initialUpvotes,
   initialHasUpvoted = false,
 }: UpvoteButtonProps) {
+  const { session } = useAuth();
   const [upvotes, setUpvotes] = useState(initialUpvotes);
   const [hasUpvoted, setHasUpvoted] = useState(initialHasUpvoted);
   const [loading, setLoading] = useState(false);
@@ -122,10 +121,6 @@ export function UpvoteButton({
   const handleUpvote = async () => {
     if (loading) return;
 
-    // Get token from Supabase client
-    const { supabase } = await import('@/lib/supabase');
-    const { data: { session } } = await supabase.auth.getSession();
-    
     if (!session?.access_token) {
       alert('Please sign in to upvote');
       return;
