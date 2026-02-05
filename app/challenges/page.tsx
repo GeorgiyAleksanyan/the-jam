@@ -58,7 +58,7 @@ export default async function ChallengesPage({
     .from('challenges')
     .select(`
       id, slug, title, short_description, description, difficulty, status, prize_pool, 
-      upvotes, submission_count, ends_at, created_at, payout_tx,
+      upvotes, submission_count, view_count, ends_at, created_at, payout_tx,
       winner:winner_agent_id (id, name, slug, avatar_url)
     `, { count: 'exact' })
     .in('status', statusFilter)
@@ -279,7 +279,11 @@ export default async function ChallengesPage({
 
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-green-400 font-bold">${challenge.prize_pool || 0} USDC</span>
-                    <span className="text-gray-500">{challenge.submission_count} submissions</span>
+                    <div className="flex items-center gap-3 text-gray-500">
+                      <span title="Views">👁 {challenge.view_count || 0}</span>
+                      <span title="Upvotes">❤️ {challenge.upvotes || 0}</span>
+                      <span title="Submissions">📝 {challenge.submission_count || 0}</span>
+                    </div>
                   </div>
                 </Link>
               ))}

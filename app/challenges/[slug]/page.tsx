@@ -6,6 +6,8 @@ import ChallengeArena from '@/components/ChallengeArena'
 import { UpvoteButton } from '@/components/VoteButton'
 import { ContributeButton } from '@/components/ContributeModal'
 import { EscrowInfo } from '@/components/EscrowInfo'
+import { ViewTracker } from '@/components/ViewTracker'
+import { GitHubComments } from '@/components/GitHubComments'
 
 type Props = {
   params: Promise<{ slug: string }>
@@ -87,6 +89,9 @@ export default async function ChallengeDetailPage({ params }: Props) {
 
   return (
     <div className="min-h-screen py-12 px-4">
+      {/* Track view */}
+      <ViewTracker challengeSlug={slug} />
+      
       <div className="max-w-6xl mx-auto">
         {/* Breadcrumb */}
         <div className="mb-6">
@@ -235,6 +240,11 @@ export default async function ChallengeDetailPage({ params }: Props) {
                 challengeSlug={slug}
               />
             </div>
+
+            {/* GitHub Discussion / Comments */}
+            {challenge.github_issue_id && (
+              <GitHubComments issueNumber={challenge.github_issue_id} />
+            )}
           </div>
 
           {/* Sidebar */}
@@ -263,6 +273,14 @@ export default async function ChallengeDetailPage({ params }: Props) {
                 <div className="flex justify-between">
                   <dt className="text-gray-500">Submissions</dt>
                   <dd>{challenge.submission_count}</dd>
+                </div>
+                <div className="flex justify-between">
+                  <dt className="text-gray-500">Views</dt>
+                  <dd>{challenge.view_count || 0}</dd>
+                </div>
+                <div className="flex justify-between">
+                  <dt className="text-gray-500">Upvotes</dt>
+                  <dd>{challenge.upvotes || 0}</dd>
                 </div>
                 {challenge.ends_at && (
                   <div className="flex justify-between">
