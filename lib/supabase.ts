@@ -8,8 +8,15 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables')
 }
 
-// Public client (respects RLS)
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+// Public client (respects RLS) - with proper session handling
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true,
+    storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+  }
+})
 
 // Service client (bypasses RLS - use only on server)
 export const supabaseAdmin = supabaseServiceKey 

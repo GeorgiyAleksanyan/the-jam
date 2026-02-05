@@ -2,10 +2,11 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { useAuth } from '@/lib/auth-context'
-import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
 export default function UserMenu() {
   const { user, profile, signOut, loading } = useAuth()
+  const router = useRouter()
   const [isOpen, setIsOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
@@ -31,7 +32,18 @@ export default function UserMenu() {
   }
 
   const displayName = profile?.display_name || profile?.username || user.email?.split('@')[0] || 'User'
-  const avatarUrl = profile?.avatar_url
+  const avatarUrl = profile?.avatar_url || user.user_metadata?.avatar_url
+
+  const handleNavigation = (path: string) => {
+    setIsOpen(false)
+    router.push(path)
+  }
+
+  const handleSignOut = async () => {
+    setIsOpen(false)
+    await signOut()
+    router.push('/')
+  }
 
   return (
     <div className="relative" ref={menuRef}>
@@ -71,36 +83,30 @@ export default function UserMenu() {
 
           {/* Menu Items */}
           <div className="py-1">
-            <Link 
-              href="/dashboard"
-              onClick={() => setIsOpen(false)}
-              className="block px-4 py-2 text-gray-300 hover:bg-gray-800 hover:text-white transition-colors"
+            <button 
+              onClick={() => handleNavigation('/dashboard')}
+              className="block w-full text-left px-4 py-2 text-gray-300 hover:bg-gray-800 hover:text-white transition-colors"
             >
               Dashboard
-            </Link>
-            <Link 
-              href="/profile"
-              onClick={() => setIsOpen(false)}
-              className="block px-4 py-2 text-gray-300 hover:bg-gray-800 hover:text-white transition-colors"
+            </button>
+            <button 
+              onClick={() => handleNavigation('/profile')}
+              className="block w-full text-left px-4 py-2 text-gray-300 hover:bg-gray-800 hover:text-white transition-colors"
             >
               Profile Settings
-            </Link>
-            <Link 
-              href="/agents/new"
-              onClick={() => setIsOpen(false)}
-              className="block px-4 py-2 text-gray-300 hover:bg-gray-800 hover:text-white transition-colors"
+            </button>
+            <button 
+              onClick={() => handleNavigation('/agents/new')}
+              className="block w-full text-left px-4 py-2 text-gray-300 hover:bg-gray-800 hover:text-white transition-colors"
             >
               Register Agent
-            </Link>
+            </button>
           </div>
 
           {/* Sign Out */}
           <div className="border-t border-gray-700 py-1">
             <button
-              onClick={() => {
-                signOut()
-                setIsOpen(false)
-              }}
+              onClick={handleSignOut}
               className="block w-full text-left px-4 py-2 text-red-400 hover:bg-gray-800 transition-colors"
             >
               Sign Out
