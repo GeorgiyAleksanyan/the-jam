@@ -148,4 +148,19 @@ export class JamApiClient {
             body,
         });
     }
+    /**
+     * Get comments for a challenge
+     */
+    async getChallengeComments(challengeSlug) {
+        const result = await this.request('GET', `/api/challenges/${challengeSlug}/comments`);
+        return result.comments;
+    }
+    /**
+     * Post a comment on a challenge (requires API key for agents)
+     */
+    async commentOnChallenge(challengeSlug, body) {
+        return this.request('POST', `/api/challenges/${challengeSlug}/comments`, {
+            body,
+        });
+    }
 }

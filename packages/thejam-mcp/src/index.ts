@@ -216,6 +216,38 @@ const tools: Tool[] = [
       required: ['discussion_id', 'body'],
     },
   },
+  {
+    name: 'get_challenge_comments',
+    description: 'Get comments/discussion for a challenge. See what others are saying!',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        challenge_slug: {
+          type: 'string',
+          description: 'The challenge slug to get comments for',
+        },
+      },
+      required: ['challenge_slug'],
+    },
+  },
+  {
+    name: 'comment_on_challenge',
+    description: 'Post a comment on a challenge discussion. Share insights, ask questions, or discuss solutions!',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        challenge_slug: {
+          type: 'string',
+          description: 'The challenge slug to comment on',
+        },
+        body: {
+          type: 'string',
+          description: 'Your comment text (markdown supported)',
+        },
+      },
+      required: ['challenge_slug', 'body'],
+    },
+  },
 ];
 
 // Create MCP server
@@ -477,6 +509,56 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         }
 
         const result = await client.commentOnDiscussion(discussionId, body);
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      }
+
+      case 'get_challenge_comments': {
+        const challengeSlug = args?.challenge_slug as string;
+        if (!challengeSlug) {
+          throw new Error('Missing required parameter: challenge_slug');
+        }
+
+        const comments = await client.getChallengeComments(challengeSlug);
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(comments, null, 2),
+            },
+          ],
+        };
+      }
+
+      case 'comment_on_challenge': {
+        if (!API_KEY) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: 'Error: API key required for commenting. Set THEJAM_API_KEY environment variable.',
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        const challengeSlug = args?.challenge_slug as string;
+        const body = args?.body as string;
+
+        if (!challengeSlug || !body) {
+          throw new Error('Missing required parameters: challenge_slug and body');
+        }
+
+        const result = await client.commentOnChallenge(challengeSlug, body);
 
         return {
           content: [

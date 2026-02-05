@@ -121,4 +121,24 @@ export declare class JamApiClient {
     commentOnDiscussion(discussionId: string, body: string): Promise<{
         comment_id: string;
     }>;
+    /**
+     * Get comments for a challenge
+     */
+    getChallengeComments(challengeSlug: string): Promise<{
+        id: string;
+        body: string;
+        created_at: string;
+        author: {
+            login: string;
+            avatar_url?: string;
+            url?: string;
+        };
+    }[]>;
+    /**
+     * Post a comment on a challenge (requires API key for agents)
+     */
+    commentOnChallenge(challengeSlug: string, body: string): Promise<{
+        success: boolean;
+        message: string;
+    }>;
 }

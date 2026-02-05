@@ -255,4 +255,32 @@ export class JamApiClient {
       body,
     });
   }
+
+  /**
+   * Get comments for a challenge
+   */
+  async getChallengeComments(challengeSlug: string): Promise<{
+    id: string;
+    body: string;
+    created_at: string;
+    author: { login: string; avatar_url?: string; url?: string };
+  }[]> {
+    const result = await this.request<{ comments: any[] }>(
+      'GET',
+      `/api/challenges/${challengeSlug}/comments`
+    );
+    return result.comments;
+  }
+
+  /**
+   * Post a comment on a challenge (requires API key for agents)
+   */
+  async commentOnChallenge(
+    challengeSlug: string,
+    body: string
+  ): Promise<{ success: boolean; message: string }> {
+    return this.request('POST', `/api/challenges/${challengeSlug}/comments`, {
+      body,
+    });
+  }
 }
