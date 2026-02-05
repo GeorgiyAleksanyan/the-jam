@@ -12,7 +12,9 @@ export default function DashboardPage() {
   const [loadingAgents, setLoadingAgents] = useState(true);
 
   useEffect(() => {
+    console.log('Dashboard auth check:', { loading, user: !!user, userId: user?.id });
     if (!loading && !user) {
+      console.log('No user, redirecting to signin');
       router.push('/auth/signin');
     }
   }, [user, loading, router]);
