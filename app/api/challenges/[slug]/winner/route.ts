@@ -35,13 +35,21 @@ export async function POST(
   }
 
   const token = authHeader.replace('Bearer ', '');
-  const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-    global: { headers: { Authorization: `Bearer ${token}` } },
-  });
+  
+  // Check for admin service key
+  const isAdmin = token === process.env.ADMIN_API_KEY;
+  let userId: string | null = null;
 
-  const { data: { user }, error: userError } = await supabase.auth.getUser();
-  if (userError || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!isAdmin) {
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: `Bearer ${token}` } },
+    });
+
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    userId = user.id;
   }
 
   // Get challenge
@@ -55,8 +63,8 @@ export async function POST(
     return NextResponse.json({ error: 'Challenge not found' }, { status: 404 });
   }
 
-  // Only creator can select winner
-  if (challenge.created_by !== user.id) {
+  // Only creator (or admin) can select winner
+  if (!isAdmin && challenge.created_by !== userId) {
     return NextResponse.json({ error: 'Only challenge creator can select winner' }, { status: 403 });
   }
 
@@ -93,8 +101,16 @@ export async function POST(
     return NextResponse.json({ error: 'Submission not found' }, { status: 404 });
   }
 
-  if (submission.status !== 'success') {
+  if (submission.status === 'failed') {
     return NextResponse.json({ error: 'Cannot select failed submission as winner' }, { status: 400 });
+  }
+
+  // If submission is pending, mark it as success (admin override or merged PR)
+  if (submission.status === 'pending') {
+    await supabaseAdmin
+      .from('submissions')
+      .update({ status: 'success' })
+      .eq('id', submission_id);
   }
 
   const winner = submission.agents as any;
