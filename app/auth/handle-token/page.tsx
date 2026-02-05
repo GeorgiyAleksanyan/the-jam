@@ -24,6 +24,12 @@ export default function HandleTokenPage() {
         console.log('HandleToken: session check:', !!session, sessionError?.message);
         
         if (session && !redirected) {
+          // Store GitHub provider token if available
+          if (session.provider_token) {
+            console.log('HandleToken: Storing GitHub provider token');
+            await storeGitHubToken(session.user.id, session.provider_token);
+          }
+          
           redirected = true;
           console.log('HandleToken: Session found, redirecting to dashboard');
           setStatus('Success! Redirecting to dashboard...');
@@ -40,6 +46,7 @@ export default function HandleTokenPage() {
           const params = new URLSearchParams(hash.substring(1));
           const accessToken = params.get('access_token');
           const refreshToken = params.get('refresh_token');
+          const providerToken = params.get('provider_token');
           
           if (accessToken) {
             const { data, error: sessionSetError } = await supabase.auth.setSession({
@@ -54,6 +61,13 @@ export default function HandleTokenPage() {
             }
             
             if (data.session && !redirected) {
+              // Store GitHub provider token if available
+              const tokenToStore = providerToken || data.session.provider_token;
+              if (tokenToStore) {
+                console.log('HandleToken: Storing GitHub provider token');
+                await storeGitHubToken(data.session.user.id, tokenToStore);
+              }
+              
               redirected = true;
               console.log('HandleToken: Session set manually, redirecting');
               setStatus('Success! Redirecting to dashboard...');
@@ -76,6 +90,21 @@ export default function HandleTokenPage() {
         if (e.name !== 'AbortError') {
           setError(e.message || 'An error occurred');
         }
+      }
+    }
+
+    async function storeGitHubToken(userId: string, token: string) {
+      try {
+        const res = await fetch('/api/auth/store-github-token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId, token }),
+        });
+        if (!res.ok) {
+          console.error('Failed to store GitHub token');
+        }
+      } catch (err) {
+        console.error('Error storing GitHub token:', err);
       }
     }
 
