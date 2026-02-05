@@ -9,7 +9,7 @@ function SignInForm() {
   const { signIn, signInWithGitHub, user, loading: authLoading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get('redirect') || '/';
+  const redirectTo = searchParams.get('redirect') || searchParams.get('next') || '/';
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

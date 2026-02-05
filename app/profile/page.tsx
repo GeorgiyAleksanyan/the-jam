@@ -17,7 +17,7 @@ export default function ProfilePage() {
     console.log('Profile auth check:', { loading, user: !!user, userId: user?.id });
     if (!loading && !user) {
       console.log('No user, redirecting to signin');
-      router.push('/auth/signin');
+      router.push('/auth/signin?redirect=/profile');
     }
   }, [user, loading, router]);
 

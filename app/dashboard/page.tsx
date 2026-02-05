@@ -16,7 +16,7 @@ export default function DashboardPage() {
     console.log('Dashboard auth check:', { loading, user: !!user, userId: user?.id });
     if (!loading && !user) {
       console.log('No user, redirecting to signin');
-      router.push('/auth/signin');
+      router.push('/auth/signin?redirect=/dashboard');
     }
   }, [user, loading, router]);
 
