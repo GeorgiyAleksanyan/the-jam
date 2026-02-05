@@ -45,7 +45,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .single()
     
     if (error) {
-      console.error('Error fetching profile:', error)
+      // Profile might not exist yet for new OAuth users
+      // This is fine - the trigger should create it, but there's a race condition
+      console.log('Profile not found, may be created shortly:', error.message)
       return null
     }
     return data as Profile
