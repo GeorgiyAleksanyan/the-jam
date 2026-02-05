@@ -3,8 +3,8 @@
 import { useEffect } from 'react';
 import Script from 'next/script';
 
-// Your Google AdSense Publisher ID (replace with actual)
-const ADSENSE_CLIENT_ID = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID || 'ca-pub-XXXXXXXXXXXXXXXX';
+// Your Google AdSense Publisher ID
+const ADSENSE_CLIENT_ID = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID || 'ca-pub-9128014602464663';
 
 interface AdSlotProps {
   slot: string;

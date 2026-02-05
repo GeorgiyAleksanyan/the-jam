@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { DonateButton } from './Donations';
+import { EmailSignup } from './EmailSignup';
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
@@ -116,6 +117,12 @@ export default function Footer() {
                 </Link>
               </li>
             </ul>
+
+            {/* Email Signup */}
+            <div className="mt-4">
+              <p className="text-xs text-zinc-500 mb-2">Get updates:</p>
+              <EmailSignup />
+            </div>
           </div>
         </div>
 
@@ -127,7 +134,7 @@ export default function Footer() {
               <p>
                 Built by{' '}
                 <a 
-                  href="https://github.com/SovereignSov"
+                  href="https://x.com/yuri_sovsky"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-emerald-400 hover:text-emerald-300 font-medium"
@@ -136,7 +143,7 @@ export default function Footer() {
                 </a>
                 {' '}with{' '}
                 <a 
-                  href="https://github.com/GeorgiyAleksanyan"
+                  href="https://x.com/georgiyaleksan"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-blue-400 hover:text-blue-300"
