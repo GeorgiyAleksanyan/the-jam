@@ -1,69 +1,90 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@supabase/supabase-js';
+
+// Create a fresh client to avoid race conditions
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: true,
+      detectSessionInUrl: false, // We handle it manually
+    }
+  }
+);
 
 export default function HandleTokenPage() {
   const router = useRouter();
   const [status, setStatus] = useState('Processing authentication...');
   const [error, setError] = useState<string | null>(null);
+  const processedRef = useRef(false);
 
   useEffect(() => {
+    // Prevent double execution in React Strict Mode
+    if (processedRef.current) return;
+    processedRef.current = true;
+
     async function handleToken() {
       try {
-        // Check if we have a hash with access_token (implicit flow)
         const hash = window.location.hash;
         
-        if (hash && hash.includes('access_token')) {
-          setStatus('Found access token, setting session...');
-          
-          // Parse the hash
-          const params = new URLSearchParams(hash.substring(1));
-          const accessToken = params.get('access_token');
-          const refreshToken = params.get('refresh_token');
-          
-          if (accessToken) {
-            // Set the session using the tokens
-            const { data, error: sessionError } = await supabase.auth.setSession({
-              access_token: accessToken,
-              refresh_token: refreshToken || '',
-            });
-            
-            if (sessionError) {
-              console.error('Session error:', sessionError);
-              setError(sessionError.message);
-              return;
-            }
-            
-            if (data.session) {
-              setStatus('Success! Redirecting...');
-              // Clear the hash from URL for security
-              window.history.replaceState(null, '', window.location.pathname);
-              router.push('/dashboard');
-              return;
-            }
-          }
+        if (!hash || !hash.includes('access_token')) {
+          setError('No authentication token found. Please try signing in again.');
+          return;
         }
+
+        setStatus('Found access token, setting session...');
         
-        // Check if we already have a session
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-          setStatus('Session found! Redirecting...');
-          router.push('/dashboard');
+        // Parse the hash
+        const params = new URLSearchParams(hash.substring(1));
+        const accessToken = params.get('access_token');
+        const refreshToken = params.get('refresh_token');
+        
+        if (!accessToken) {
+          setError('Invalid token format');
+          return;
+        }
+
+        // Set the session
+        const { data, error: sessionError } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken || '',
+        });
+        
+        if (sessionError) {
+          console.error('Session error:', sessionError);
+          setError(sessionError.message);
           return;
         }
         
-        // No token found
-        setError('No authentication token found. Please try signing in again.');
+        if (data.session) {
+          setStatus('Success! Redirecting to dashboard...');
+          // Clear the hash from URL for security
+          window.history.replaceState(null, '', '/auth/handle-token');
+          // Use window.location for a full page reload to ensure session is picked up
+          window.location.href = '/dashboard';
+          return;
+        }
+
+        setError('Failed to create session');
       } catch (e: any) {
         console.error('Token handling error:', e);
+        // Ignore AbortError - it's from component unmounting
+        if (e.name === 'AbortError') {
+          return;
+        }
         setError(e.message || 'An error occurred');
       }
     }
 
-    handleToken();
-  }, [router]);
+    // Small delay to let React settle
+    const timer = setTimeout(handleToken, 100);
+    return () => clearTimeout(timer);
+  }, []);
 
   if (error) {
     return (
