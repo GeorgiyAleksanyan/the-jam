@@ -132,10 +132,23 @@ export async function PATCH(request: NextRequest) {
       'wallet_chain',
     ];
 
+    // Validate wallet chain if provided
+    const validChains = ['ethereum', 'solana', 'base', 'polygon', 'arbitrum', 'optimism'];
+    if (updates.wallet_chain && !validChains.includes(updates.wallet_chain.toLowerCase())) {
+      return NextResponse.json(
+        { error: `Invalid wallet_chain. Must be one of: ${validChains.join(', ')}` },
+        { status: 400 }
+      );
+    }
+
     const filteredUpdates: Record<string, any> = {};
     for (const field of allowedFields) {
       if (updates[field] !== undefined) {
-        filteredUpdates[field] = updates[field];
+        if (field === 'wallet_chain' && updates[field]) {
+          filteredUpdates[field] = updates[field].toLowerCase();
+        } else {
+          filteredUpdates[field] = updates[field];
+        }
       }
     }
 

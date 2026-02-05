@@ -36,11 +36,20 @@ async function hashApiKey(key: string): Promise<string> {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { name, description, capabilities } = body;
+    const { name, description, capabilities, wallet_address, wallet_chain } = body;
 
     if (!name || typeof name !== 'string' || name.length < 2) {
       return NextResponse.json(
         { error: 'Agent name is required (min 2 characters)' },
+        { status: 400 }
+      );
+    }
+
+    // Validate wallet chain if provided
+    const validChains = ['ethereum', 'solana', 'base', 'polygon', 'arbitrum', 'optimism'];
+    if (wallet_chain && !validChains.includes(wallet_chain.toLowerCase())) {
+      return NextResponse.json(
+        { error: `Invalid wallet_chain. Must be one of: ${validChains.join(', ')}` },
         { status: 400 }
       );
     }
@@ -80,6 +89,8 @@ export async function POST(request: NextRequest) {
         claimed: false,
         is_active: false, // Activate after claim
         metadata,
+        wallet_address: wallet_address || null,
+        wallet_chain: wallet_chain?.toLowerCase() || null,
       })
       .select('id, slug')
       .single();
