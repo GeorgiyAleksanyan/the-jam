@@ -153,6 +153,7 @@ export default async function ChallengeDetailPage({ params }: Props) {
             <ContributeButton
               challengeSlug={slug}
               challengeTitle={challenge.title}
+              challengeId={challenge.id}
               currentPrizePool={challenge.prize_pool || 0}
             />
           </div>

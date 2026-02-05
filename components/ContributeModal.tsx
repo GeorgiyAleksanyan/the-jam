@@ -1,291 +1,276 @@
 'use client';
 
 import { useState } from 'react';
-import { WalletButton, useWallet } from './WalletConnect';
+import { ESCROW_ADDRESS, USDC_ADDRESS, ACTIVE_CHAIN_ID } from '@/lib/escrow';
 
 interface ContributeModalProps {
   challengeSlug: string;
   challengeTitle: string;
+  challengeId: number;
   currentPrizePool: number;
   isOpen: boolean;
   onClose: () => void;
-  onSuccess?: (newTotal: number) => void;
+  onSuccess?: (newTotal: number, txHash: string) => void;
 }
 
 export function ContributeModal({
   challengeSlug,
   challengeTitle,
+  challengeId,
   currentPrizePool,
   isOpen,
   onClose,
   onSuccess,
 }: ContributeModalProps) {
-  const { connected, address, chain } = useWallet();
-  const [amount, setAmount] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [amount, setAmount] = useState('5');
+  const [status, setStatus] = useState<'idle' | 'connecting' | 'approving' | 'funding' | 'success' | 'error'>('idle');
   const [error, setError] = useState<string | null>(null);
-  const [step, setStep] = useState<'amount' | 'confirm' | 'pending' | 'success'>('amount');
   const [txHash, setTxHash] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
-  const handleSubmit = async () => {
-    if (!connected || !address || !chain) {
-      setError('Please connect your wallet first');
+  const handleFund = async () => {
+    if (!window.ethereum) {
+      setError('Please install MetaMask or another Web3 wallet');
       return;
     }
-
-    const numAmount = parseFloat(amount);
-    if (isNaN(numAmount) || numAmount <= 0) {
-      setError('Please enter a valid amount');
-      return;
-    }
-
-    setStep('confirm');
-  };
-
-  const handleConfirm = async () => {
-    if (!address || !chain) return;
-    
-    setLoading(true);
-    setError(null);
-    setStep('pending');
 
     try {
-      // In a real implementation, this would:
-      // 1. Create a transaction to send USDC to the escrow address
-      // 2. Sign with the wallet
-      // 3. Wait for confirmation
-      // For now, we'll simulate with a mock tx hash
-      
-      // Simulated transaction (replace with real wallet transaction)
-      const mockTxHash = `0x${Array.from({ length: 64 }, () => 
-        Math.floor(Math.random() * 16).toString(16)).join('')}`;
-      
-      // Record the contribution
-      const token = localStorage.getItem('supabase_access_token');
-      const res = await fetch(`/api/challenges/${challengeSlug}/contributions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({
-          amount: parseFloat(amount),
-          token: 'USDC',
-          chain,
-          tx_hash: mockTxHash,
-          wallet_address: address,
-        }),
-      });
+      setStatus('connecting');
+      setError(null);
 
-      const data = await res.json();
+      // Request account access
+      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+      const account = accounts[0];
 
-      if (!res.ok) {
-        throw new Error(data.error || 'Failed to record contribution');
+      // Check/switch network
+      const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+      if (parseInt(chainId, 16) !== ACTIVE_CHAIN_ID) {
+        try {
+          await window.ethereum.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: `0x${ACTIVE_CHAIN_ID.toString(16)}` }],
+          });
+        } catch (switchError: any) {
+          if (switchError.code === 4902) {
+            await window.ethereum.request({
+              method: 'wallet_addEthereumChain',
+              params: [{
+                chainId: `0x${ACTIVE_CHAIN_ID.toString(16)}`,
+                chainName: ACTIVE_CHAIN_ID === 84532 ? 'Base Sepolia' : 'Base',
+                nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
+                rpcUrls: [ACTIVE_CHAIN_ID === 84532 ? 'https://sepolia.base.org' : 'https://mainnet.base.org'],
+                blockExplorerUrls: [ACTIVE_CHAIN_ID === 84532 ? 'https://sepolia.basescan.org' : 'https://basescan.org'],
+              }],
+            });
+          } else {
+            throw switchError;
+          }
+        }
       }
 
-      setTxHash(mockTxHash);
-      setStep('success');
-      onSuccess?.(data.new_prize_pool);
+      // Get fund params from API
+      setStatus('approving');
+      const paramsRes = await fetch(`/api/escrow/fund-params?challengeId=${challengeId}&amount=${amount}`);
+      const params = await paramsRes.json();
+
+      if (!paramsRes.ok) {
+        throw new Error(params.error || 'Failed to get fund parameters');
+      }
+
+      // Step 1: Approve USDC
+      const approveTx = await window.ethereum.request({
+        method: 'eth_sendTransaction',
+        params: [{
+          from: account,
+          to: params.transactions[0].to,
+          data: params.transactions[0].data,
+        }],
+      });
+
+      await waitForTransaction(approveTx);
+
+      // Step 2: Fund the challenge
+      setStatus('funding');
+      const fundTx = await window.ethereum.request({
+        method: 'eth_sendTransaction',
+        params: [{
+          from: account,
+          to: params.transactions[1].to,
+          data: params.transactions[1].data,
+        }],
+      });
+
+      await waitForTransaction(fundTx);
+
+      setTxHash(fundTx);
+      setStatus('success');
+      
+      const newTotal = currentPrizePool + parseFloat(amount);
+      onSuccess?.(newTotal, fundTx);
+
     } catch (err: any) {
-      setError(err.message || 'Transaction failed');
-      setStep('amount');
-    } finally {
-      setLoading(false);
+      console.error('Fund error:', err);
+      if (err.code === 4001) {
+        setError('Transaction rejected by user');
+      } else {
+        setError(err.message || 'Transaction failed');
+      }
+      setStatus('error');
     }
   };
 
-  const handleClose = () => {
-    setAmount('');
-    setError(null);
-    setStep('amount');
-    setTxHash(null);
-    onClose();
+  const waitForTransaction = async (hash: string): Promise<void> => {
+    for (let i = 0; i < 60; i++) {
+      const receipt = await window.ethereum?.request({
+        method: 'eth_getTransactionReceipt',
+        params: [hash],
+      });
+      if (receipt) return;
+      await new Promise(r => setTimeout(r, 2000));
+    }
+    throw new Error('Transaction timeout');
   };
 
-  const presetAmounts = [5, 10, 25, 50, 100];
+  const explorerUrl = ACTIVE_CHAIN_ID === 84532 
+    ? 'https://sepolia.basescan.org' 
+    : 'https://basescan.org';
 
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-      <div className="bg-zinc-900 border border-zinc-700 rounded-xl max-w-md w-full overflow-hidden">
+    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+      <div className="bg-[#1a1a1a] border border-gray-700 rounded-xl max-w-md w-full p-6">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-zinc-700 flex items-center justify-between">
-          <h2 className="text-xl font-semibold">Contribute to Prize Pool</h2>
-          <button onClick={handleClose} className="text-zinc-500 hover:text-white">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-bold">Fund Challenge</h2>
+          <button 
+            onClick={onClose}
+            className="text-gray-500 hover:text-white text-2xl"
+          >
+            ×
           </button>
         </div>
 
-        {/* Content */}
-        <div className="p-6">
-          {step === 'amount' && (
-            <>
-              <p className="text-zinc-400 mb-4">
-                Add to the prize pool for <span className="text-white font-medium">{challengeTitle}</span>
+        {status === 'success' ? (
+          <div className="text-center py-6">
+            <div className="text-5xl mb-4">🎉</div>
+            <h3 className="text-xl font-bold text-green-400 mb-2">Funded Successfully!</h3>
+            <p className="text-gray-400 mb-4">
+              You contributed ${amount} USDC to "{challengeTitle}"
+            </p>
+            <a
+              href={`${explorerUrl}/tx/${txHash}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-400 hover:underline text-sm"
+            >
+              View transaction →
+            </a>
+            <button
+              onClick={onClose}
+              className="block w-full mt-6 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg font-semibold transition"
+            >
+              Close
+            </button>
+          </div>
+        ) : (
+          <>
+            {/* Challenge Info */}
+            <div className="bg-gray-800/50 rounded-lg p-4 mb-6">
+              <p className="text-sm text-gray-400 mb-1">Contributing to:</p>
+              <p className="font-semibold">{challengeTitle}</p>
+              <p className="text-sm text-gray-400 mt-2">
+                Current pool: <span className="text-green-400">${currentPrizePool.toFixed(2)} USDC</span>
               </p>
+            </div>
 
-              {/* Current Prize Pool */}
-              <div className="bg-zinc-800 rounded-lg p-4 mb-6">
-                <div className="text-sm text-zinc-500">Current Prize Pool</div>
-                <div className="text-2xl font-bold text-green-400">
-                  ${currentPrizePool.toFixed(2)} USDC
+            {/* Amount Input */}
+            <div className="mb-6">
+              <label className="block text-sm text-gray-400 mb-2">Amount</label>
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  min="1"
+                  step="1"
+                  className="flex-1 bg-gray-900 border border-gray-600 rounded-lg px-4 py-3 text-white text-lg"
+                  placeholder="5"
+                  disabled={status !== 'idle' && status !== 'error'}
+                />
+                <div className="flex items-center px-4 bg-gray-800 rounded-lg border border-gray-600">
+                  <span className="text-gray-300 font-medium">USDC</span>
                 </div>
               </div>
-
-              {/* Wallet Connection */}
-              <div className="mb-6">
-                <label className="block text-sm text-zinc-500 mb-2">Wallet</label>
-                <WalletButton />
-              </div>
-
-              {/* Amount Input */}
-              <div className="mb-4">
-                <label className="block text-sm text-zinc-500 mb-2">Amount (USDC)</label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500">$</span>
-                  <input
-                    type="number"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    placeholder="0.00"
-                    min="1"
-                    step="0.01"
-                    className="w-full bg-zinc-800 border border-zinc-700 rounded-lg pl-8 pr-16 py-3 text-lg focus:border-green-500 focus:outline-none"
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500">USDC</span>
-                </div>
-              </div>
-
-              {/* Preset Amounts */}
-              <div className="flex gap-2 mb-6">
-                {presetAmounts.map((preset) => (
+              {/* Quick amounts */}
+              <div className="flex gap-2 mt-2">
+                {['5', '10', '25', '50'].map((preset) => (
                   <button
                     key={preset}
-                    onClick={() => setAmount(preset.toString())}
-                    className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      amount === preset.toString()
-                        ? 'bg-green-600 text-white'
-                        : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
+                    onClick={() => setAmount(preset)}
+                    className={`px-3 py-1 rounded text-sm transition ${
+                      amount === preset 
+                        ? 'bg-green-600 text-white' 
+                        : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
                     }`}
+                    disabled={status !== 'idle' && status !== 'error'}
                   >
                     ${preset}
                   </button>
                 ))}
               </div>
-
-              {error && (
-                <div className="mb-4 p-3 bg-red-900/30 border border-red-700 rounded-lg text-red-300 text-sm">
-                  {error}
-                </div>
-              )}
-
-              <button
-                onClick={handleSubmit}
-                disabled={!connected || !amount}
-                className="w-full py-3 bg-gradient-to-r from-green-600 to-emerald-600 rounded-lg font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {!connected ? 'Connect Wallet First' : 'Continue'}
-              </button>
-            </>
-          )}
-
-          {step === 'confirm' && (
-            <>
-              <div className="text-center mb-6">
-                <div className="text-6xl mb-4">💰</div>
-                <h3 className="text-xl font-semibold mb-2">Confirm Contribution</h3>
-                <p className="text-zinc-400">
-                  You&apos;re about to contribute <span className="text-green-400 font-bold">${amount} USDC</span> to the prize pool.
-                </p>
-              </div>
-
-              <div className="bg-zinc-800 rounded-lg p-4 mb-6 space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-zinc-500">Amount</span>
-                  <span className="text-green-400">${amount} USDC</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-zinc-500">Chain</span>
-                  <span>{chain?.toUpperCase()}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-zinc-500">Wallet</span>
-                  <span className="font-mono text-xs">{address?.slice(0, 8)}...{address?.slice(-6)}</span>
-                </div>
-              </div>
-
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setStep('amount')}
-                  className="flex-1 py-3 bg-zinc-800 rounded-lg font-medium hover:bg-zinc-700 transition-colors"
-                >
-                  Back
-                </button>
-                <button
-                  onClick={handleConfirm}
-                  disabled={loading}
-                  className="flex-1 py-3 bg-gradient-to-r from-green-600 to-emerald-600 rounded-lg font-semibold hover:opacity-90 transition-opacity"
-                >
-                  Confirm & Send
-                </button>
-              </div>
-            </>
-          )}
-
-          {step === 'pending' && (
-            <div className="text-center py-8">
-              <div className="w-16 h-16 border-4 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-6" />
-              <h3 className="text-xl font-semibold mb-2">Processing Transaction</h3>
-              <p className="text-zinc-400">Please confirm in your wallet...</p>
             </div>
-          )}
 
-          {step === 'success' && (
-            <div className="text-center py-4">
-              <div className="text-6xl mb-4">🎉</div>
-              <h3 className="text-xl font-semibold mb-2 text-green-400">Contribution Successful!</h3>
-              <p className="text-zinc-400 mb-6">
-                You&apos;ve added <span className="text-green-400 font-bold">${amount} USDC</span> to the prize pool.
-              </p>
-
-              {txHash && (
-                <div className="bg-zinc-800 rounded-lg p-3 mb-6">
-                  <div className="text-xs text-zinc-500 mb-1">Transaction Hash</div>
-                  <code className="text-xs font-mono break-all">{txHash}</code>
-                </div>
-              )}
-
-              <button
-                onClick={handleClose}
-                className="w-full py-3 bg-zinc-800 rounded-lg font-medium hover:bg-zinc-700 transition-colors"
-              >
-                Done
-              </button>
+            {/* Info */}
+            <div className="text-sm text-gray-500 mb-6">
+              <p>• Funds go directly to escrow smart contract</p>
+              <p>• Winner receives 95% (5% platform fee)</p>
+              <p>• Network: {ACTIVE_CHAIN_ID === 84532 ? 'Base Sepolia (Testnet)' : 'Base'}</p>
             </div>
-          )}
-        </div>
+
+            {/* Error */}
+            {error && (
+              <div className="bg-red-900/30 border border-red-700 text-red-400 rounded-lg p-3 mb-4 text-sm">
+                {error}
+              </div>
+            )}
+
+            {/* Button */}
+            <button
+              onClick={handleFund}
+              disabled={status === 'connecting' || status === 'approving' || status === 'funding'}
+              className={`w-full py-3 rounded-lg font-semibold text-lg transition ${
+                status === 'connecting' || status === 'approving' || status === 'funding'
+                  ? 'bg-gray-600 cursor-wait'
+                  : 'bg-green-600 hover:bg-green-500'
+              }`}
+            >
+              {status === 'connecting' && '⏳ Connecting Wallet...'}
+              {status === 'approving' && '⏳ Approving USDC...'}
+              {status === 'funding' && '⏳ Sending to Escrow...'}
+              {(status === 'idle' || status === 'error') && `Fund $${amount} USDC`}
+            </button>
+          </>
+        )}
       </div>
     </div>
   );
 }
 
+// Button to trigger the modal
 interface ContributeButtonProps {
   challengeSlug: string;
   challengeTitle: string;
+  challengeId: number;
   currentPrizePool: number;
-  onSuccess?: (newTotal: number) => void;
-  className?: string;
+  onSuccess?: (newTotal: number, txHash: string) => void;
 }
 
 export function ContributeButton({
   challengeSlug,
   challengeTitle,
+  challengeId,
   currentPrizePool,
   onSuccess,
-  className = '',
 }: ContributeButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -293,21 +278,25 @@ export function ContributeButton({
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className={`bg-green-600 hover:bg-green-500 text-white px-6 py-3 rounded-lg font-medium transition-colors ${className}`}
+        className="px-6 py-3 bg-green-600 hover:bg-green-500 rounded-lg font-semibold transition flex items-center gap-2"
       >
-        + Contribute
+        <span>💰</span>
+        <span>Fund This Challenge</span>
       </button>
+
       <ContributeModal
         challengeSlug={challengeSlug}
         challengeTitle={challengeTitle}
+        challengeId={challengeId}
         currentPrizePool={currentPrizePool}
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}
-        onSuccess={(newTotal) => {
-          onSuccess?.(newTotal);
-          setIsOpen(false);
+        onSuccess={(newTotal, txHash) => {
+          onSuccess?.(newTotal, txHash);
         }}
       />
     </>
   );
 }
+
+// Window.ethereum type is declared elsewhere
