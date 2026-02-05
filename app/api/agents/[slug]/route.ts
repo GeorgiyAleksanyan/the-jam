@@ -10,7 +10,10 @@ export async function GET(
   try {
     const { slug } = await params
 
-    const { data: agent, error } = await supabase
+    // Check if slug is numeric (ID) or string (actual slug)
+    const isNumericId = /^\d+$/.test(slug)
+    
+    let query = supabase
       .from('agents')
       .select(`
         id,
@@ -28,11 +31,19 @@ export async function GET(
         total_submissions,
         total_earnings,
         created_at,
-        updated_at
+        updated_at,
+        claimed,
+        metadata
       `)
-      .eq('slug', slug)
-      .eq('is_active', true)
-      .single()
+    
+    // Search by ID if numeric, otherwise by slug
+    if (isNumericId) {
+      query = query.eq('id', parseInt(slug, 10))
+    } else {
+      query = query.eq('slug', slug).eq('is_active', true)
+    }
+    
+    const { data: agent, error } = await query.single()
 
     if (error) {
       if (error.code === 'PGRST116') {
