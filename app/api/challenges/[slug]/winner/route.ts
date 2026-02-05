@@ -1,18 +1,21 @@
 /**
- * Select winner and close challenge
- * POST: Select winner (challenge creator only)
+ * Select winner and pay from escrow
+ * POST: Select winner (challenge creator or admin only)
  * 
  * Flow:
- * 1. Creator selects winning submission
- * 2. Challenge status → closed
- * 3. GitHub issue gets closed with winner comment
- * 4. Creator manually sends payout
- * 5. Creator records tx_hash via /payout endpoint
+ * 1. Creator/admin selects winning submission
+ * 2. If escrow has funds → auto-pay winner on-chain
+ * 3. Challenge status → closed
+ * 4. GitHub issue closed with winner comment
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { createWalletClient, createPublicClient, http, formatUnits } from 'viem';
+import { privateKeyToAccount } from 'viem/accounts';
+import { baseSepolia } from 'viem/chains';
 import { supabaseAdmin } from '@/lib/supabase';
+import { ESCROW_ADDRESS, ESCROW_ABI } from '@/lib/escrow';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -105,7 +108,7 @@ export async function POST(
     return NextResponse.json({ error: 'Cannot select failed submission as winner' }, { status: 400 });
   }
 
-  // If submission is pending, mark it as success (admin override or merged PR)
+  // If submission is pending, mark it as success
   if (submission.status === 'pending') {
     await supabaseAdmin
       .from('submissions')
@@ -115,13 +118,69 @@ export async function POST(
 
   const winner = submission.agents as any;
 
+  // Check escrow for funds and attempt payout
+  let payoutResult: { success: boolean; txHash?: string; error?: string } = { success: false };
+  
+  if (winner.wallet_address && process.env.ESCROW_ADMIN_PRIVATE_KEY) {
+    try {
+      const publicClient = createPublicClient({
+        chain: baseSepolia,
+        transport: http('https://sepolia.base.org'),
+      });
+
+      // Check on-chain balance
+      const [pool, , paid, refunded] = await publicClient.readContract({
+        address: ESCROW_ADDRESS as `0x${string}`,
+        abi: ESCROW_ABI,
+        functionName: 'getChallenge',
+        args: [BigInt(challenge.id)],
+      }) as [bigint, bigint, boolean, boolean];
+
+      if (pool > BigInt(0) && !paid && !refunded) {
+        // Execute payout
+        const account = privateKeyToAccount(process.env.ESCROW_ADMIN_PRIVATE_KEY as `0x${string}`);
+        const walletClient = createWalletClient({
+          account,
+          chain: baseSepolia,
+          transport: http('https://sepolia.base.org'),
+        });
+
+        const hash = await walletClient.writeContract({
+          address: ESCROW_ADDRESS as `0x${string}`,
+          abi: ESCROW_ABI,
+          functionName: 'payWinner',
+          args: [BigInt(challenge.id), winner.wallet_address as `0x${string}`],
+        });
+
+        // Wait for confirmation
+        await publicClient.waitForTransactionReceipt({ hash });
+
+        payoutResult = { success: true, txHash: hash };
+      } else if (paid) {
+        payoutResult = { success: false, error: 'Already paid' };
+      } else {
+        payoutResult = { success: false, error: 'No funds in escrow' };
+      }
+    } catch (err) {
+      console.error('Escrow payout failed:', err);
+      payoutResult = { success: false, error: err instanceof Error ? err.message : 'Payout failed' };
+    }
+  }
+
   // Update challenge with winner
+  const updateData: any = {
+    status: 'closed',
+    winner_agent_id: submission.agent_id,
+  };
+
+  if (payoutResult.success && payoutResult.txHash) {
+    updateData.payout_tx = payoutResult.txHash;
+    updateData.payout_at = new Date().toISOString();
+  }
+
   const { error: updateError } = await supabaseAdmin
     .from('challenges')
-    .update({
-      status: 'closed',
-      winner_agent_id: submission.agent_id,
-    })
+    .update(updateData)
     .eq('id', challenge.id);
 
   if (updateError) {
@@ -134,8 +193,7 @@ export async function POST(
     .update({ is_winner: true, rank: 1 })
     .eq('id', submission_id);
 
-  // Update agent stats - increment wins and earnings
-  // Note: Supabase doesn't have atomic increment in update, so we fetch + update
+  // Update agent stats
   const { data: agentStats } = await supabaseAdmin
     .from('agents')
     .select('total_wins, total_earnings')
@@ -147,7 +205,7 @@ export async function POST(
       .from('agents')
       .update({
         total_wins: (agentStats.total_wins || 0) + 1,
-        total_earnings: (agentStats.total_earnings || 0) + challenge.prize_pool,
+        total_earnings: (agentStats.total_earnings || 0) + (payoutResult.success ? challenge.prize_pool : 0),
       })
       .eq('id', submission.agent_id);
   }
@@ -173,6 +231,10 @@ export async function POST(
 
       // Add winner comment
       if (response.ok) {
+        const payoutInfo = payoutResult.success 
+          ? `\n**Payout TX:** [View on Basescan](https://sepolia.basescan.org/tx/${payoutResult.txHash})`
+          : '';
+        
         await fetch(
           `https://api.github.com/repos/GeorgiyAleksanyan/the-jam/issues/${challenge.github_issue_id}/comments`,
           {
@@ -184,14 +246,13 @@ export async function POST(
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              body: `## 🏆 Challenge Complete!\n\n**Winner:** ${winner.name} (@${winner.slug})\n**Prize:** ${challenge.prize_pool} USDC\n\nCongratulations! 🎉`,
+              body: `## 🏆 Challenge Complete!\n\n**Winner:** ${winner.name} (@${winner.slug})\n**Prize:** $${challenge.prize_pool} USDC${payoutInfo}\n\nCongratulations! 🎉`,
             }),
           }
         );
       }
     } catch (err) {
       console.error('Failed to close GitHub issue:', err);
-      // Don't fail the request if GitHub update fails
     }
   }
 
@@ -202,12 +263,12 @@ export async function POST(
       name: winner.name,
       slug: winner.slug,
       wallet_address: winner.wallet_address,
-      wallet_chain: winner.wallet_chain,
     },
     prize_pool: challenge.prize_pool,
-    next_step: winner.wallet_address 
-      ? `Send ${challenge.prize_pool} USDC to ${winner.wallet_address}, then record tx via /api/challenges/${slug}/payout`
-      : 'Winner has no wallet configured - contact them to set up payout',
+    payout: payoutResult,
+    explorer_url: payoutResult.txHash 
+      ? `https://sepolia.basescan.org/tx/${payoutResult.txHash}`
+      : null,
   });
 }
 
@@ -250,5 +311,8 @@ export async function GET(
     payout_tx: challenge.payout_tx,
     payout_at: challenge.payout_at,
     paid: !!challenge.payout_tx,
+    explorer_url: challenge.payout_tx 
+      ? `https://sepolia.basescan.org/tx/${challenge.payout_tx}`
+      : null,
   });
 }
