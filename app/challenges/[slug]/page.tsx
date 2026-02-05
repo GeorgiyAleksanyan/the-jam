@@ -5,6 +5,7 @@ import SubmissionList from '@/components/SubmissionList'
 import ChallengeArena from '@/components/ChallengeArena'
 import { UpvoteButton } from '@/components/VoteButton'
 import { ContributeButton } from '@/components/ContributeModal'
+import { EscrowInfo } from '@/components/EscrowInfo'
 
 type Props = {
   params: Promise<{ slug: string }>
@@ -20,7 +21,8 @@ export default async function ChallengeDetailPage({ params }: Props) {
     .from('challenges')
     .select(`
       *,
-      profiles:created_by (username, display_name, avatar_url)
+      profiles:created_by (username, display_name, avatar_url),
+      winner:winner_agent_id (id, name, slug, avatar_url)
     `)
     .eq('slug', slug)
     .single()
@@ -141,23 +143,64 @@ export default async function ChallengeDetailPage({ params }: Props) {
           </div>
         </div>
 
-        {/* Prize Pool Banner */}
-        <div className="bg-gradient-to-r from-green-900/30 to-emerald-900/30 border border-green-700 rounded-lg p-6 mb-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-sm text-green-400 mb-1">Prize Pool</div>
-              <div className="text-4xl font-bold text-green-400">
-                ${(challenge.prize_pool || 0).toFixed(2)} <span className="text-lg">USDC</span>
+        {/* Winner Banner (for solved challenges) */}
+        {challenge.status === 'closed' && challenge.winner && (
+          <div className="bg-gradient-to-r from-yellow-900/30 to-amber-900/30 border border-yellow-600 rounded-lg p-6 mb-8">
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <div className="flex items-center gap-4">
+                <span className="text-4xl">🏆</span>
+                <div>
+                  <div className="text-sm text-yellow-400 mb-1">Winner</div>
+                  <Link 
+                    href={`/agents/${challenge.winner.slug}`}
+                    className="text-2xl font-bold text-yellow-400 hover:underline flex items-center gap-2"
+                  >
+                    {challenge.winner.avatar_url && (
+                      <img src={challenge.winner.avatar_url} alt="" className="w-8 h-8 rounded-full" />
+                    )}
+                    {challenge.winner.name}
+                  </Link>
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-sm text-gray-400 mb-1">Prize Awarded</div>
+                <div className="text-2xl font-bold text-green-400">
+                  ${(challenge.prize_pool || 0).toFixed(2)} USDC
+                </div>
+                {challenge.payout_tx && (
+                  <a 
+                    href={`https://basescan.org/tx/${challenge.payout_tx}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-blue-400 hover:underline"
+                  >
+                    View Transaction ↗
+                  </a>
+                )}
               </div>
             </div>
-            <ContributeButton
-              challengeSlug={slug}
-              challengeTitle={challenge.title}
-              challengeId={challenge.id}
-              currentPrizePool={challenge.prize_pool || 0}
-            />
           </div>
-        </div>
+        )}
+
+        {/* Prize Pool Banner (only for active challenges) */}
+        {challenge.status !== 'closed' && (
+          <div className="bg-gradient-to-r from-green-900/30 to-emerald-900/30 border border-green-700 rounded-lg p-6 mb-8">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-sm text-green-400 mb-1">Prize Pool</div>
+                <div className="text-4xl font-bold text-green-400">
+                  ${(challenge.prize_pool || 0).toFixed(2)} <span className="text-lg">USDC</span>
+                </div>
+              </div>
+              <ContributeButton
+                challengeSlug={slug}
+                challengeTitle={challenge.title}
+                challengeId={challenge.id}
+                currentPrizePool={challenge.prize_pool || 0}
+              />
+            </div>
+          </div>
+        )}
 
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Main Content */}
@@ -196,6 +239,9 @@ export default async function ChallengeDetailPage({ params }: Props) {
 
           {/* Sidebar */}
           <div className="space-y-6">
+            {/* On-Chain Escrow Info */}
+            <EscrowInfo challengeId={challenge.id} />
+
             {/* Quick Stats */}
             <div className="bg-[#1e1e1e] border border-gray-700 rounded-lg p-6">
               <h3 className="font-semibold mb-4">Challenge Info</h3>

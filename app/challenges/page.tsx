@@ -14,11 +14,12 @@ const ITEMS_PER_PAGE = 12
 export default async function ChallengesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; topic?: string }>
+  searchParams: Promise<{ page?: string; topic?: string; tab?: string }>
 }) {
   const params = await searchParams
   const page = Math.max(1, parseInt(params.page || '1'))
   const topicFilter = params.topic
+  const activeTab = params.tab || 'active'
 
   // Get featured challenges (high prize pool, active)
   const { data: featured } = await supabase
@@ -29,19 +30,42 @@ export default async function ChallengesPage({
     .order('prize_pool', { ascending: false })
     .limit(3)
 
-  // Build query for regular challenges
+  // Build query based on active tab
+  const statusFilter = activeTab === 'solved' 
+    ? ['closed'] 
+    : ['open', 'active', 'voting']
+
   let query = supabase
     .from('challenges')
-    .select('id, slug, title, short_description, description, difficulty, status, prize_pool, upvotes, submission_count, ends_at, created_at', { count: 'exact' })
-    .in('status', ['open', 'active', 'voting'])
+    .select(`
+      id, slug, title, short_description, description, difficulty, status, prize_pool, 
+      upvotes, submission_count, ends_at, created_at, payout_tx,
+      winner:winner_agent_id (id, name, slug, avatar_url)
+    `, { count: 'exact' })
+    .in('status', statusFilter)
     .order('created_at', { ascending: false })
     .range((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE - 1)
 
-  // TODO: Add topic filtering via challenge_topics join
+  // For solved, only show those with a winner
+  if (activeTab === 'solved') {
+    query = query.not('winner_agent_id', 'is', null)
+  }
   
   const { data: challenges, count, error } = await query
 
   const totalPages = Math.ceil((count || 0) / ITEMS_PER_PAGE)
+
+  // Get counts for tabs
+  const { count: activeCount } = await supabase
+    .from('challenges')
+    .select('id', { count: 'exact', head: true })
+    .in('status', ['open', 'active', 'voting'])
+
+  const { count: solvedCount } = await supabase
+    .from('challenges')
+    .select('id', { count: 'exact', head: true })
+    .eq('status', 'closed')
+    .not('winner_agent_id', 'is', null)
 
   const { data: topics } = await supabase
     .from('topics')
@@ -63,13 +87,16 @@ export default async function ChallengesPage({
       case 'open': return 'text-blue-400'
       case 'active': return 'text-green-400'
       case 'voting': return 'text-yellow-400'
+      case 'closed': return 'text-gray-400'
       default: return 'text-gray-400'
     }
   }
 
-  // Filter out featured from regular list
+  // Filter out featured from regular list (only for active tab)
   const featuredIds = new Set(featured?.map(c => c.id) || [])
-  const regularChallenges = challenges?.filter(c => !featuredIds.has(c.id)) || []
+  const regularChallenges = activeTab === 'active' 
+    ? (challenges?.filter(c => !featuredIds.has(c.id)) || [])
+    : (challenges || [])
 
   return (
     <div className="min-h-screen py-12 px-4">
@@ -77,7 +104,7 @@ export default async function ChallengesPage({
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold mb-2">Challenges</h1>
-            <p className="text-gray-500">Compete for crypto prizes • {count || 0} active</p>
+            <p className="text-gray-500">Compete for crypto prizes</p>
           </div>
           <Link 
             href="/challenges/new"
@@ -87,11 +114,35 @@ export default async function ChallengesPage({
           </Link>
         </div>
 
+        {/* Tabs */}
+        <div className="flex gap-4 mb-6 border-b border-gray-700">
+          <Link
+            href="/challenges?tab=active"
+            className={`pb-3 px-1 border-b-2 transition-colors ${
+              activeTab === 'active' 
+                ? 'border-blue-500 text-white' 
+                : 'border-transparent text-gray-500 hover:text-gray-300'
+            }`}
+          >
+            Active <span className="text-gray-500">({activeCount || 0})</span>
+          </Link>
+          <Link
+            href="/challenges?tab=solved"
+            className={`pb-3 px-1 border-b-2 transition-colors ${
+              activeTab === 'solved' 
+                ? 'border-green-500 text-white' 
+                : 'border-transparent text-gray-500 hover:text-gray-300'
+            }`}
+          >
+            Solved <span className="text-gray-500">({solvedCount || 0})</span>
+          </Link>
+        </div>
+
         {/* Topics filter */}
         {topics && topics.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-8">
             <Link
-              href="/challenges"
+              href={`/challenges?tab=${activeTab}`}
               className={`px-3 py-1 rounded-full text-sm transition-colors ${
                 !topicFilter ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-400 hover:text-white'
               }`}
@@ -99,13 +150,11 @@ export default async function ChallengesPage({
               All
             </Link>
             {topics.map((topic: any) => (
-              <Link 
+              <Link
                 key={topic.id}
-                href={`/challenges?topic=${topic.slug}`}
+                href={`/challenges?tab=${activeTab}&topic=${topic.slug}`}
                 className={`px-3 py-1 rounded-full text-sm transition-colors ${
-                  topicFilter === topic.slug 
-                    ? 'bg-blue-600 text-white' 
-                    : 'bg-gray-800 text-gray-400 hover:text-white'
+                  topicFilter === topic.slug ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-400 hover:text-white'
                 }`}
               >
                 {topic.icon} {topic.name}
@@ -114,158 +163,125 @@ export default async function ChallengesPage({
           </div>
         )}
 
-        {error && (
-          <div className="bg-red-900/50 border border-red-700 rounded-lg p-4 mb-8 text-red-300">
-            Error loading challenges: {error.message}
-          </div>
-        )}
-
-        {/* Featured Section */}
-        {featured && featured.length > 0 && page === 1 && (
-          <section className="mb-12">
-            <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-              <span className="text-yellow-400">⭐</span> Featured Challenges
+        {/* Featured Challenges (only on active tab) */}
+        {activeTab === 'active' && featured && featured.length > 0 && (
+          <div className="mb-12">
+            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+              🔥 Featured Challenges
             </h2>
             <div className="grid md:grid-cols-3 gap-4">
               {featured.map((challenge: any) => (
-                <Link 
+                <Link
                   key={challenge.id}
                   href={`/challenges/${challenge.slug}`}
-                  className="block bg-gradient-to-br from-yellow-900/20 to-orange-900/20 border border-yellow-700/50 rounded-xl p-5 hover:border-yellow-600 transition-colors"
+                  className="bg-gradient-to-br from-yellow-900/20 to-orange-900/20 border border-yellow-700/50 rounded-lg p-5 hover:border-yellow-500 transition-colors"
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className={`text-xs px-2 py-0.5 rounded ${getDifficultyColor(challenge.difficulty)}`}>
+                      {challenge.difficulty}
+                    </span>
+                  </div>
+                  <h3 className="font-semibold mb-2">{challenge.title}</h3>
+                  <p className="text-sm text-gray-400 mb-4 line-clamp-2">
+                    {challenge.short_description || challenge.description?.substring(0, 100)}
+                  </p>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-green-400 font-bold">${challenge.prize_pool} USDC</span>
+                    <span className="text-gray-500">{challenge.submission_count} submissions</span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Regular Challenges */}
+        <div>
+          <h2 className="text-xl font-semibold mb-4">
+            {activeTab === 'solved' ? '🏆 Solved Challenges' : 'All Challenges'}
+          </h2>
+
+          {regularChallenges.length === 0 ? (
+            <div className="text-center py-12 text-gray-500">
+              {activeTab === 'solved' 
+                ? 'No solved challenges yet. Be the first to win!' 
+                : 'No challenges found.'}
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {regularChallenges.map((challenge: any) => (
+                <Link
+                  key={challenge.id}
+                  href={`/challenges/${challenge.slug}`}
+                  className="bg-[#1e1e1e] border border-gray-700 rounded-lg p-5 hover:border-gray-500 transition-colors"
                 >
                   <div className="flex items-center gap-2 mb-2">
                     <span className={`text-xs px-2 py-0.5 rounded ${getDifficultyColor(challenge.difficulty)}`}>
                       {challenge.difficulty}
                     </span>
                     <span className={`text-xs ${getStatusColor(challenge.status)}`}>
-                      ● {challenge.status}
+                      {challenge.status === 'closed' ? '✓ Solved' : `● ${challenge.status}`}
                     </span>
                   </div>
-                  <h3 className="text-lg font-semibold mb-2 line-clamp-1">{challenge.title}</h3>
-                  <p className="text-gray-400 text-sm line-clamp-2 mb-4">
-                    {challenge.short_description || challenge.description}
+                  <h3 className="font-semibold mb-2">{challenge.title}</h3>
+                  <p className="text-sm text-gray-400 mb-4 line-clamp-2">
+                    {challenge.short_description || challenge.description?.substring(0, 100)}
                   </p>
-                  <div className="flex items-center justify-between">
-                    <span className="text-2xl font-bold text-green-400">
-                      ${challenge.prize_pool?.toFixed(0) || '0'}
-                    </span>
-                    <span className="text-sm text-gray-500">
-                      {challenge.submission_count} submissions
-                    </span>
+
+                  {/* Winner display for solved challenges */}
+                  {challenge.status === 'closed' && challenge.winner && (
+                    <div className="flex items-center gap-2 mb-3 p-2 bg-green-900/20 border border-green-800 rounded">
+                      <span className="text-yellow-400">🏆</span>
+                      {challenge.winner.avatar_url && (
+                        <img 
+                          src={challenge.winner.avatar_url} 
+                          alt="" 
+                          className="w-5 h-5 rounded-full"
+                        />
+                      )}
+                      <span className="text-sm text-green-400">{challenge.winner.name}</span>
+                      {challenge.payout_tx && (
+                        <a 
+                          href={`https://basescan.org/tx/${challenge.payout_tx}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-blue-400 hover:underline ml-auto"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          View TX ↗
+                        </a>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-green-400 font-bold">${challenge.prize_pool || 0} USDC</span>
+                    <span className="text-gray-500">{challenge.submission_count} submissions</span>
                   </div>
                 </Link>
               ))}
-            </div>
-          </section>
-        )}
-
-        {/* All Challenges Section */}
-        <section>
-          <h2 className="text-xl font-bold mb-4">
-            {page === 1 ? 'All Challenges' : `Challenges (Page ${page})`}
-          </h2>
-          
-          {regularChallenges.length > 0 ? (
-            <div className="space-y-4">
-              {regularChallenges.map((challenge: any) => (
-                <Link 
-                  key={challenge.id}
-                  href={`/challenges/${challenge.slug}`}
-                  className="block bg-[#1e1e1e] border border-gray-700 rounded-lg p-6 hover:border-gray-600 transition-colors"
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="text-xl font-semibold truncate">{challenge.title}</h3>
-                        <span className={`text-xs px-2 py-0.5 rounded ${getDifficultyColor(challenge.difficulty)}`}>
-                          {challenge.difficulty}
-                        </span>
-                        <span className={`text-xs ${getStatusColor(challenge.status)}`}>
-                          ● {challenge.status}
-                        </span>
-                      </div>
-                      <p className="text-gray-400 text-sm line-clamp-2">
-                        {challenge.short_description || challenge.description}
-                      </p>
-                      <div className="flex items-center gap-4 mt-4 text-sm text-gray-500">
-                        <span>👆 {challenge.upvotes} upvotes</span>
-                        <span>📝 {challenge.submission_count} submissions</span>
-                        {challenge.ends_at && (
-                          <span>⏰ Ends {new Date(challenge.ends_at).toLocaleDateString()}</span>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="text-right">
-                      <div className="text-2xl font-bold text-green-400">
-                        ${challenge.prize_pool?.toFixed(0) || '0'}
-                      </div>
-                      <div className="text-gray-500 text-xs">prize pool</div>
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-16 bg-zinc-900/50 rounded-xl">
-              <div className="text-6xl mb-4">🎯</div>
-              <h2 className="text-xl font-semibold mb-2">No challenges yet</h2>
-              <p className="text-gray-500 mb-6">Be the first to create a challenge!</p>
-              <Link 
-                href="/challenges/new"
-                className="inline-block bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-lg transition-colors"
-              >
-                Create Challenge
-              </Link>
             </div>
           )}
-        </section>
+        </div>
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="flex justify-center items-center gap-2 mt-12">
+          <div className="flex justify-center gap-2 mt-8">
             {page > 1 && (
               <Link
-                href={`/challenges?page=${page - 1}${topicFilter ? `&topic=${topicFilter}` : ''}`}
-                className="px-4 py-2 bg-zinc-800 rounded-lg hover:bg-zinc-700 transition-colors"
+                href={`/challenges?tab=${activeTab}&page=${page - 1}${topicFilter ? `&topic=${topicFilter}` : ''}`}
+                className="px-4 py-2 bg-gray-800 rounded hover:bg-gray-700 transition-colors"
               >
                 ← Previous
               </Link>
             )}
-            
-            <div className="flex items-center gap-1">
-              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                let pageNum: number
-                if (totalPages <= 5) {
-                  pageNum = i + 1
-                } else if (page <= 3) {
-                  pageNum = i + 1
-                } else if (page >= totalPages - 2) {
-                  pageNum = totalPages - 4 + i
-                } else {
-                  pageNum = page - 2 + i
-                }
-                
-                return (
-                  <Link
-                    key={pageNum}
-                    href={`/challenges?page=${pageNum}${topicFilter ? `&topic=${topicFilter}` : ''}`}
-                    className={`w-10 h-10 flex items-center justify-center rounded-lg transition-colors ${
-                      pageNum === page 
-                        ? 'bg-blue-600 text-white' 
-                        : 'bg-zinc-800 hover:bg-zinc-700'
-                    }`}
-                  >
-                    {pageNum}
-                  </Link>
-                )
-              })}
-            </div>
-
+            <span className="px-4 py-2 text-gray-500">
+              Page {page} of {totalPages}
+            </span>
             {page < totalPages && (
               <Link
-                href={`/challenges?page=${page + 1}${topicFilter ? `&topic=${topicFilter}` : ''}`}
-                className="px-4 py-2 bg-zinc-800 rounded-lg hover:bg-zinc-700 transition-colors"
+                href={`/challenges?tab=${activeTab}&page=${page + 1}${topicFilter ? `&topic=${topicFilter}` : ''}`}
+                className="px-4 py-2 bg-gray-800 rounded hover:bg-gray-700 transition-colors"
               >
                 Next →
               </Link>
