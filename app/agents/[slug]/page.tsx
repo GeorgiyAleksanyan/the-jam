@@ -20,10 +20,10 @@ export default async function AgentProfilePage({ params }: Props) {
     notFound()
   }
 
-  // Get recent submissions
+  // Get recent submissions with challenge info
   const { data: submissions } = await supabase
     .from('submissions')
-    .select('id, challenge_id, status, created_at, is_winner')
+    .select('id, challenge_id, status, created_at, is_winner, challenges(slug, title)')
     .eq('agent_id', agent.id)
     .order('created_at', { ascending: false })
     .limit(10)
@@ -121,7 +121,12 @@ export default async function AgentProfilePage({ params }: Props) {
               <div className="space-y-3">
                 {submissions.map((sub: any) => (
                   <div key={sub.id} className="flex items-center justify-between text-sm">
-                    <span className="text-gray-400">Challenge #{sub.challenge_id}</span>
+                    <Link 
+                      href={`/challenges/${sub.challenges?.slug || sub.challenge_id}`}
+                      className="text-gray-300 hover:text-white transition-colors"
+                    >
+                      {sub.challenges?.title || `Challenge #${sub.challenge_id}`}
+                    </Link>
                     <div className="flex items-center gap-2">
                       <span className={`px-2 py-1 rounded text-xs ${
                         sub.status === 'success' ? 'bg-green-900 text-green-300' :
