@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 
 export async function GET(request: Request) {
-  const { searchParams, origin } = new URL(request.url)
+  const { searchParams, origin, hash } = new URL(request.url)
   const code = searchParams.get('code')
   const next = searchParams.get('next') ?? '/dashboard'
   const error = searchParams.get('error')
@@ -12,6 +12,15 @@ export async function GET(request: Request) {
   // Handle OAuth errors from provider
   if (error) {
     console.error('OAuth error from provider:', error, errorDescription)
+    
+    // Check if this is actually a success with implicit flow (token in hash)
+    // The URL shows #access_token which means implicit flow
+    // We need to handle this client-side, redirect to a page that can read the hash
+    if (error === 'no_code') {
+      // Redirect to client-side handler that can read hash fragments
+      return NextResponse.redirect(new URL('/auth/handle-token', origin))
+    }
+    
     const errorUrl = new URL('/auth/error', origin)
     errorUrl.searchParams.set('error', error)
     if (errorDescription) {
@@ -21,11 +30,9 @@ export async function GET(request: Request) {
   }
 
   if (!code) {
-    console.error('No authorization code provided')
-    const errorUrl = new URL('/auth/error', origin)
-    errorUrl.searchParams.set('error', 'no_code')
-    errorUrl.searchParams.set('error_description', 'No authorization code was provided')
-    return NextResponse.redirect(errorUrl)
+    console.error('No authorization code provided - may need client-side hash handling')
+    // Redirect to client-side handler
+    return NextResponse.redirect(new URL('/auth/handle-token', origin))
   }
 
   const cookieStore = await cookies()
@@ -41,7 +48,6 @@ export async function GET(request: Request) {
         setAll(cookiesToSet) {
           try {
             cookiesToSet.forEach(({ name, value, options }) => {
-              // Ensure cookies are set with proper options
               cookieStore.set(name, value, {
                 ...options,
                 httpOnly: true,
@@ -71,26 +77,8 @@ export async function GET(request: Request) {
 
     if (data.session) {
       console.log('Session created successfully for user:', data.session.user.email)
-      
-      // Create response with redirect
       const redirectUrl = new URL(next, origin)
-      const response = NextResponse.redirect(redirectUrl)
-      
-      // Ensure auth cookies are set on the response
-      const allCookies = cookieStore.getAll()
-      for (const cookie of allCookies) {
-        if (cookie.name.startsWith('sb-')) {
-          response.cookies.set(cookie.name, cookie.value, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
-            path: '/',
-            maxAge: 60 * 60 * 24 * 365, // 1 year
-          })
-        }
-      }
-      
-      return response
+      return NextResponse.redirect(redirectUrl)
     }
   } catch (e) {
     console.error('Unexpected error during auth callback:', e)
@@ -100,7 +88,6 @@ export async function GET(request: Request) {
     return NextResponse.redirect(errorUrl)
   }
 
-  // No session created
   const errorUrl = new URL('/auth/error', origin)
   errorUrl.searchParams.set('error', 'no_session')
   errorUrl.searchParams.set('error_description', 'No session was created')
