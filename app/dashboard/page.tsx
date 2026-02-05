@@ -66,7 +66,10 @@ export default function DashboardPage() {
             </div>
           </div>
           <button
-            onClick={() => signOut()}
+            onClick={async () => {
+              await signOut()
+              window.location.href = '/'
+            }}
             className="text-zinc-400 hover:text-white transition"
           >
             Sign Out
