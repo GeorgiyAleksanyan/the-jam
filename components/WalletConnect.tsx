@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 
-type WalletType = 'phantom' | 'coinbase' | null;
+type WalletType = 'metamask' | 'phantom' | 'coinbase' | null;
 type Chain = 'solana' | 'base' | 'ethereum';
 
 interface WalletState {
@@ -21,19 +21,31 @@ interface PhantomProvider {
   publicKey?: { toString: () => string };
 }
 
-interface CoinbaseProvider {
+interface EthereumProvider {
   request: (args: { method: string; params?: any[] }) => Promise<any>;
   on: (event: string, callback: (...args: any[]) => void) => void;
   removeListener: (event: string, callback: (...args: any[]) => void) => void;
+  isMetaMask?: boolean;
+  isCoinbaseWallet?: boolean;
 }
 
 declare global {
   interface Window {
     phantom?: { solana?: PhantomProvider };
-    coinbaseWalletExtension?: CoinbaseProvider;
-    ethereum?: CoinbaseProvider & { isCoinbaseWallet?: boolean };
+    coinbaseWalletExtension?: EthereumProvider;
+    ethereum?: EthereumProvider;
   }
 }
+
+// Base chain ID
+const BASE_CHAIN_ID = '0x2105'; // 8453 in hex
+const BASE_CHAIN_CONFIG = {
+  chainId: BASE_CHAIN_ID,
+  chainName: 'Base',
+  nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+  rpcUrls: ['https://mainnet.base.org'],
+  blockExplorerUrls: ['https://basescan.org'],
+};
 
 export function useWallet() {
   const [state, setState] = useState<WalletState>({
@@ -64,6 +76,58 @@ export function useWallet() {
       localStorage.removeItem('jam_wallet');
     }
   }, [state]);
+
+  const switchToBase = async (provider: EthereumProvider) => {
+    try {
+      await provider.request({
+        method: 'wallet_switchEthereumChain',
+        params: [{ chainId: BASE_CHAIN_ID }],
+      });
+    } catch (switchError: any) {
+      // Chain not added, add it
+      if (switchError.code === 4902) {
+        await provider.request({
+          method: 'wallet_addEthereumChain',
+          params: [BASE_CHAIN_CONFIG],
+        });
+      } else {
+        throw switchError;
+      }
+    }
+  };
+
+  const connectMetaMask = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const provider = window.ethereum;
+      if (!provider?.isMetaMask) {
+        window.open('https://metamask.io/download/', '_blank');
+        throw new Error('MetaMask not installed');
+      }
+
+      const accounts = await provider.request({ method: 'eth_requestAccounts' });
+      const address = accounts[0];
+
+      // Try to switch to Base
+      try {
+        await switchToBase(provider);
+      } catch (e) {
+        console.log('Could not switch to Base, staying on current chain');
+      }
+
+      setState({
+        connected: true,
+        address,
+        chain: 'base',
+        walletType: 'metamask',
+      });
+    } catch (err: any) {
+      setError(err.message || 'Failed to connect MetaMask');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   const connectPhantom = useCallback(async () => {
     setLoading(true);
@@ -106,7 +170,13 @@ export function useWallet() {
       const accounts = await provider.request({ method: 'eth_requestAccounts' });
       const address = accounts[0];
 
-      // Default to Base chain
+      // Try to switch to Base
+      try {
+        await switchToBase(provider);
+      } catch (e) {
+        console.log('Could not switch to Base');
+      }
+
       setState({
         connected: true,
         address,
@@ -120,12 +190,48 @@ export function useWallet() {
     }
   }, []);
 
+  const connectAny = useCallback(async () => {
+    // Try to connect with any available wallet
+    setLoading(true);
+    setError(null);
+    try {
+      const provider = window.ethereum;
+      if (!provider) {
+        throw new Error('No wallet detected. Install MetaMask or Coinbase Wallet.');
+      }
+
+      const accounts = await provider.request({ method: 'eth_requestAccounts' });
+      const address = accounts[0];
+
+      // Determine wallet type
+      const walletType: WalletType = provider.isMetaMask ? 'metamask' : 
+        provider.isCoinbaseWallet ? 'coinbase' : 'metamask';
+
+      // Try to switch to Base
+      try {
+        await switchToBase(provider);
+      } catch (e) {
+        console.log('Could not switch to Base');
+      }
+
+      setState({
+        connected: true,
+        address,
+        chain: 'base',
+        walletType,
+      });
+    } catch (err: any) {
+      setError(err.message || 'Failed to connect wallet');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   const disconnect = useCallback(async () => {
     try {
       if (state.walletType === 'phantom') {
         await window.phantom?.solana?.disconnect();
       }
-      // Coinbase doesn't have a disconnect method
     } catch {}
     
     setState({
@@ -140,8 +246,10 @@ export function useWallet() {
     ...state,
     loading,
     error,
+    connectMetaMask,
     connectPhantom,
     connectCoinbase,
+    connectAny,
     disconnect,
   };
 }
@@ -159,6 +267,7 @@ export function WalletButton({ onConnect, className = '' }: WalletButtonProps) {
     walletType,
     loading,
     error,
+    connectMetaMask,
     connectPhantom,
     connectCoinbase,
     disconnect,
@@ -241,15 +350,15 @@ export function WalletButton({ onConnect, className = '' }: WalletButtonProps) {
           <div className="p-2">
             <button
               onClick={() => {
-                connectPhantom();
+                connectMetaMask();
                 setShowMenu(false);
               }}
               className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-zinc-700 transition-colors"
             >
-              <img src="https://phantom.app/img/phantom-logo.svg" alt="Phantom" className="w-6 h-6" />
+              <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" alt="MetaMask" className="w-6 h-6" />
               <div className="text-left">
-                <div className="font-medium">Phantom</div>
-                <div className="text-xs text-zinc-500">Solana</div>
+                <div className="font-medium">MetaMask</div>
+                <div className="text-xs text-zinc-500">Base / Ethereum</div>
               </div>
             </button>
             <button
@@ -263,6 +372,19 @@ export function WalletButton({ onConnect, className = '' }: WalletButtonProps) {
               <div className="text-left">
                 <div className="font-medium">Coinbase Wallet</div>
                 <div className="text-xs text-zinc-500">Base / Ethereum</div>
+              </div>
+            </button>
+            <button
+              onClick={() => {
+                connectPhantom();
+                setShowMenu(false);
+              }}
+              className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-zinc-700 transition-colors"
+            >
+              <img src="https://phantom.app/img/phantom-logo.svg" alt="Phantom" className="w-6 h-6" />
+              <div className="text-left">
+                <div className="font-medium">Phantom</div>
+                <div className="text-xs text-zinc-500">Solana</div>
               </div>
             </button>
           </div>
