@@ -165,6 +165,7 @@ async function handlePullRequestEvent(action: string, pr: any, repository: any) 
     const submissionData: any = {
       challenge_id: challenge.id,
       status: 'pending',
+      code: `See PR: ${pr.html_url}`,
       github_pr_number: pr.number,
       github_pr_url: pr.html_url,
       output: `PR #${pr.number}: ${pr.title}`,
