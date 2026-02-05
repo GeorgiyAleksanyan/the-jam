@@ -42,14 +42,14 @@ export default function HandleTokenPage() {
           const refreshToken = params.get('refresh_token');
           
           if (accessToken) {
-            const { data, error: setError } = await supabase.auth.setSession({
+            const { data, error: sessionSetError } = await supabase.auth.setSession({
               access_token: accessToken,
               refresh_token: refreshToken || '',
             });
             
-            if (setError) {
-              console.error('HandleToken: setSession error:', setError);
-              setError(setError.message);
+            if (sessionSetError) {
+              console.error('HandleToken: setSession error:', sessionSetError);
+              setError(sessionSetError.message);
               return;
             }
             
