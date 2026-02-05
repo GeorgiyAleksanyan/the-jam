@@ -2,20 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@supabase/supabase-js';
-
-// Create a fresh client to avoid race conditions
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: true,
-      detectSessionInUrl: false, // We handle it manually
-    }
-  }
-);
+import { supabase } from '@/lib/supabase';
 
 export default function HandleTokenPage() {
   const router = useRouter();
@@ -31,8 +18,16 @@ export default function HandleTokenPage() {
     async function handleToken() {
       try {
         const hash = window.location.hash;
+        console.log('HandleToken: hash present:', !!hash, hash?.substring(0, 50));
         
         if (!hash || !hash.includes('access_token')) {
+          // Maybe session already exists from Supabase auto-detection
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session) {
+            console.log('HandleToken: Session already exists, redirecting');
+            window.location.href = '/dashboard';
+            return;
+          }
           setError('No authentication token found. Please try signing in again.');
           return;
         }
@@ -44,24 +39,27 @@ export default function HandleTokenPage() {
         const accessToken = params.get('access_token');
         const refreshToken = params.get('refresh_token');
         
+        console.log('HandleToken: tokens found:', !!accessToken, !!refreshToken);
+        
         if (!accessToken) {
           setError('Invalid token format');
           return;
         }
 
-        // Set the session
+        // Set the session using the SHARED supabase client
         const { data, error: sessionError } = await supabase.auth.setSession({
           access_token: accessToken,
           refresh_token: refreshToken || '',
         });
         
         if (sessionError) {
-          console.error('Session error:', sessionError);
+          console.error('HandleToken: Session error:', sessionError);
           setError(sessionError.message);
           return;
         }
         
         if (data.session) {
+          console.log('HandleToken: Session set successfully');
           setStatus('Success! Redirecting to dashboard...');
           // Clear the hash from URL for security
           window.history.replaceState(null, '', '/auth/handle-token');
@@ -72,8 +70,7 @@ export default function HandleTokenPage() {
 
         setError('Failed to create session');
       } catch (e: any) {
-        console.error('Token handling error:', e);
-        // Ignore AbortError - it's from component unmounting
+        console.error('HandleToken: error:', e);
         if (e.name === 'AbortError') {
           return;
         }
