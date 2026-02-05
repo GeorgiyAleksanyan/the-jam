@@ -241,15 +241,9 @@ export default async function ChallengesPage({
                       )}
                       <span className="text-sm text-green-400">{challenge.winner.name}</span>
                       {challenge.payout_tx && (
-                        <a 
-                          href={`https://basescan.org/tx/${challenge.payout_tx}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs text-blue-400 hover:underline ml-auto"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          View TX ↗
-                        </a>
+                        <span className="text-xs text-blue-400 ml-auto">
+                          Paid ✓
+                        </span>
                       )}
                     </div>
                   )}
