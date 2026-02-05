@@ -41,8 +41,15 @@ export default function UserMenu() {
 
   const handleSignOut = async () => {
     setIsOpen(false)
-    await signOut()
-    router.push('/')
+    try {
+      await signOut()
+      // Force a hard reload to clear any cached state
+      window.location.href = '/'
+    } catch (err) {
+      console.error('Sign out error:', err)
+      // Force reload anyway
+      window.location.href = '/'
+    }
   }
 
   return (
