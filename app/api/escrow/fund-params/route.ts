@@ -91,7 +91,7 @@ function encodeApproveCall(spender: string, amount: bigint): string {
 
 // Simple ABI encoding for fund(uint256,uint256)
 function encodeFundCall(challengeId: bigint, amount: bigint): string {
-  const selector = '0xca1d209d'; // keccak256("fund(uint256,uint256)")[:4]
+  const selector = '0xa65e2cfd'; // keccak256("fund(uint256,uint256)")[:4]
   const paddedChallengeId = challengeId.toString(16).padStart(64, '0');
   const paddedAmount = amount.toString(16).padStart(64, '0');
   return selector + paddedChallengeId + paddedAmount;
