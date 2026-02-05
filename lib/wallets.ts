@@ -8,7 +8,7 @@
 export const PLATFORM_WALLETS = {
   // Primary donation wallet (Base/Ethereum)
   base: {
-    address: '0x8f0525A43a9e0E60B17f2b9a41AF82E07F142188',
+    address: '0x37D270b764FC1AF0509C5Ad4B3d3EF8f1485605a',
     chain: 'base',
     chainId: 8453,
     name: 'The Jam (Base)',
@@ -17,7 +17,7 @@ export const PLATFORM_WALLETS = {
   
   // Ethereum (same address works on ETH mainnet)
   ethereum: {
-    address: '0x8f0525A43a9e0E60B17f2b9a41AF82E07F142188',
+    address: '0x37D270b764FC1AF0509C5Ad4B3d3EF8f1485605a',
     chain: 'ethereum',
     chainId: 1,
     name: 'The Jam (Ethereum)',
