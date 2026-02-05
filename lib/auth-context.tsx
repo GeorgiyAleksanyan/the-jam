@@ -159,15 +159,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const signOut = async () => {
-    try {
-      await supabase.auth.signOut()
-    } catch (err) {
-      console.error('Supabase signOut error:', err)
-    }
-    // Always clear local state regardless of API result
+    // Clear local state FIRST, don't wait for API
     setUser(null)
     setProfile(null)
     setSession(null)
+    
     // Clear any lingering auth tokens from localStorage
     if (typeof window !== 'undefined') {
       Object.keys(localStorage).forEach(key => {
@@ -176,6 +172,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       })
     }
+    
+    // Fire and forget the API call
+    supabase.auth.signOut().catch(err => {
+      console.error('Supabase signOut error (ignored):', err)
+    })
   }
 
   return (
