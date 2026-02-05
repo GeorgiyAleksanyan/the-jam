@@ -129,12 +129,22 @@ export async function POST(request: NextRequest) {
           if (label.name === 'completed') status = 'completed';
         }
 
-        // Check if challenge exists (by github_issue_id)
-        const { data: existing } = await supabaseAdmin
+        // Check if challenge exists (by github_issue_id OR by slug)
+        let { data: existing } = await supabaseAdmin
           .from('challenges')
           .select('id')
           .eq('github_issue_id', issue.number)
           .single();
+
+        // If not found by github_issue_id, try by slug (for pre-existing challenges)
+        if (!existing) {
+          const { data: bySlug } = await supabaseAdmin
+            .from('challenges')
+            .select('id')
+            .eq('slug', slug)
+            .single();
+          existing = bySlug;
+        }
 
         const challengeData = {
           title,
