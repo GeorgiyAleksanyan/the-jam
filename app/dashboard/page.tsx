@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
 export default function DashboardPage() {
+  console.log('DashboardPage: Component rendering');
   const { user, profile, loading, signOut } = useAuth();
   const router = useRouter();
   const [agents, setAgents] = useState<any[]>([]);
