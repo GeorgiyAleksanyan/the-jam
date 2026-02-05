@@ -18,7 +18,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'signin' }: A
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
 
-  const { signIn, signUp, signInWithGitHub, signInWithTwitter } = useAuth()
+  const { signIn, signUp, signInWithGitHub } = useAuth()
 
   if (!isOpen) return null
 
@@ -54,14 +54,6 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'signin' }: A
   const handleGitHub = async () => {
     setError(null)
     const { error } = await signInWithGitHub()
-    if (error) {
-      setError(error.message)
-    }
-  }
-
-  const handleTwitter = async () => {
-    setError(null)
-    const { error } = await signInWithTwitter()
     if (error) {
       setError(error.message)
     }
@@ -103,16 +95,15 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'signin' }: A
             Continue with GitHub
           </button>
 
-          {/* Twitter/X OAuth */}
-          <button
-            onClick={handleTwitter}
-            className="w-full flex items-center justify-center gap-2 bg-gray-800 hover:bg-gray-700 text-white py-3 px-4 rounded-lg transition-colors mb-4"
-          >
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-            </svg>
-            Continue with X (Twitter)
-          </button>
+          {/* Twitter Note */}
+          <p className="text-center text-gray-500 text-xs mb-4">
+            <span className="inline-flex items-center gap-1">
+              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+              </svg>
+              Link X account after signing in
+            </span>
+          </p>
 
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">

@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 export default function SignUpPage() {
-  const { signUp, signInWithGitHub, signInWithTwitter, user } = useAuth();
+  const { signUp, signInWithGitHub, user } = useAuth();
   const router = useRouter();
 
   const [email, setEmail] = useState('');
@@ -47,16 +47,6 @@ export default function SignUpPage() {
     setLoading(true);
     setError(null);
     const { error } = await signInWithGitHub();
-    if (error) {
-      setError(error.message);
-      setLoading(false);
-    }
-  };
-
-  const handleTwitterSignIn = async () => {
-    setLoading(true);
-    setError(null);
-    const { error } = await signInWithTwitter();
     if (error) {
       setError(error.message);
       setLoading(false);
@@ -109,18 +99,16 @@ export default function SignUpPage() {
             </svg>
             Sign up with GitHub
           </button>
+        </div>
 
-          {/* Twitter/X */}
-          <button
-            onClick={handleTwitterSignIn}
-            disabled={loading}
-            className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded-lg font-medium transition-colors disabled:opacity-50"
-          >
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+        {/* Twitter Note */}
+        <div className="text-center text-sm text-zinc-500 mb-4">
+          <span className="inline-flex items-center gap-1">
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
               <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
             </svg>
-            Sign up with X (Twitter)
-          </button>
+            Verify your X account after signing up
+          </span>
         </div>
 
         {/* Divider */}
