@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState, Suspense, useEffect } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
 function SignInForm() {
-  const { signIn, signInWithGitHub, user } = useAuth();
+  const { signIn, signInWithGitHub, user, loading: authLoading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get('redirect') || '/';
@@ -16,9 +16,26 @@ function SignInForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Redirect if already logged in
+  // Redirect if already logged in (but wait for auth to load first)
+  useEffect(() => {
+    console.log('SignIn: auth check', { authLoading, user: !!user, redirectTo });
+    if (!authLoading && user) {
+      console.log('SignIn: User logged in, redirecting to', redirectTo);
+      router.push(redirectTo);
+    }
+  }, [user, authLoading, router, redirectTo]);
+
+  // Show loading while checking auth
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-pulse text-zinc-500">Loading...</div>
+      </div>
+    );
+  }
+
+  // If user is logged in, show nothing while redirecting
   if (user) {
-    router.push(redirectTo);
     return null;
   }
 
