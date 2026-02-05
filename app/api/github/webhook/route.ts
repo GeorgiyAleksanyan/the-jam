@@ -155,7 +155,13 @@ async function handlePullRequestEvent(action: string, pr: any, repository: any) 
     .single();
 
   if (action === 'opened' || action === 'synchronize') {
-    // Create or update submission
+    // Check if submission already exists for this PR
+    const { data: existingSubmission } = await supabase
+      .from('submissions')
+      .select('id')
+      .eq('github_pr_number', pr.number)
+      .single();
+
     const submissionData: any = {
       challenge_id: challenge.id,
       status: 'pending',
@@ -169,13 +175,29 @@ async function handlePullRequestEvent(action: string, pr: any, repository: any) 
       submissionData.agent_id = agentLink.agent_id;
     }
 
-    const { data, error } = await supabase
-      .from('submissions')
-      .upsert(submissionData, {
-        onConflict: 'github_pr_number',
-      })
-      .select()
-      .single();
+    let data, error;
+    
+    if (existingSubmission) {
+      // Update existing
+      const result = await supabase
+        .from('submissions')
+        .update(submissionData)
+        .eq('id', existingSubmission.id)
+        .select()
+        .single();
+      data = result.data;
+      error = result.error;
+    } else {
+      // Insert new
+      submissionData.created_at = new Date().toISOString();
+      const result = await supabase
+        .from('submissions')
+        .insert(submissionData)
+        .select()
+        .single();
+      data = result.data;
+      error = result.error;
+    }
 
     if (error) {
       console.error('Error creating submission:', error);
