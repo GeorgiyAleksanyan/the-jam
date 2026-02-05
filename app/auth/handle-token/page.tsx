@@ -12,7 +12,16 @@ export default function HandleTokenPage() {
     
     async function handleToken() {
       try {
+        // IMMEDIATELY capture the hash before Supabase consumes it
         const hash = window.location.hash;
+        let providerTokenFromHash: string | null = null;
+        
+        if (hash && hash.includes('provider_token')) {
+          const params = new URLSearchParams(hash.substring(1));
+          providerTokenFromHash = params.get('provider_token');
+          console.log('HandleToken: Captured provider_token from hash:', !!providerTokenFromHash);
+        }
+        
         console.log('HandleToken: checking hash');
         
         // Wait a moment for Supabase to auto-detect the hash
@@ -22,12 +31,17 @@ export default function HandleTokenPage() {
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
         console.log('HandleToken: session check:', !!session, sessionError?.message);
+        console.log('HandleToken: provider_token in session:', !!session?.provider_token);
         
         if (session && !redirected) {
-          // Store GitHub provider token if available
-          if (session.provider_token) {
+          // Try to get provider token from session first, then from captured hash
+          const tokenToStore = session.provider_token || providerTokenFromHash;
+          
+          if (tokenToStore) {
             console.log('HandleToken: Storing GitHub provider token');
-            await storeGitHubToken(session.user.id, session.provider_token);
+            await storeGitHubToken(session.user.id, tokenToStore);
+          } else {
+            console.log('HandleToken: WARNING - No provider_token available!');
           }
           
           redirected = true;
@@ -62,9 +76,9 @@ export default function HandleTokenPage() {
             
             if (data.session && !redirected) {
               // Store GitHub provider token if available
-              const tokenToStore = providerToken || data.session.provider_token;
+              const tokenToStore = providerToken || data.session.provider_token || providerTokenFromHash;
               if (tokenToStore) {
-                console.log('HandleToken: Storing GitHub provider token');
+                console.log('HandleToken: Storing GitHub provider token (from manual session)');
                 await storeGitHubToken(data.session.user.id, tokenToStore);
               }
               
@@ -95,13 +109,16 @@ export default function HandleTokenPage() {
 
     async function storeGitHubToken(userId: string, token: string) {
       try {
+        console.log('storeGitHubToken: Calling API for user', userId);
         const res = await fetch('/api/auth/store-github-token', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ userId, token }),
         });
+        const data = await res.json();
+        console.log('storeGitHubToken: Response', res.status, data);
         if (!res.ok) {
-          console.error('Failed to store GitHub token');
+          console.error('Failed to store GitHub token:', data);
         }
       } catch (err) {
         console.error('Error storing GitHub token:', err);
