@@ -24,12 +24,16 @@ export function VoteButton({
   const handleVote = async () => {
     if (loading || disabled) return;
 
-    const token = localStorage.getItem('supabase_access_token');
-    if (!token) {
+    // Get token from Supabase client
+    const { supabase } = await import('@/lib/supabase');
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session?.access_token) {
       alert('Please sign in to vote');
       return;
     }
 
+    const token = session.access_token;
     setLoading(true);
 
     try {
@@ -118,8 +122,11 @@ export function UpvoteButton({
   const handleUpvote = async () => {
     if (loading) return;
 
-    const token = localStorage.getItem('supabase_access_token');
-    if (!token) {
+    // Get token from Supabase client
+    const { supabase } = await import('@/lib/supabase');
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session?.access_token) {
       alert('Please sign in to upvote');
       return;
     }
@@ -129,7 +136,7 @@ export function UpvoteButton({
     try {
       const res = await fetch(`/api/challenges/${challengeSlug}/upvote`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${session.access_token}` },
       });
       const data = await res.json();
       if (res.ok) {

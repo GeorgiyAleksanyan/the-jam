@@ -42,21 +42,21 @@ function parseChallengeMeta(body: string): {
   for (const line of lines) {
     const trimmed = line.trim();
     
-    // Parse metadata fields
-    if (trimmed.startsWith('**Bounty:**')) {
-      const match = trimmed.match(/\$?([\d.]+)/);
+    // Parse metadata fields (flexible format: **Key**: or **Key:**)
+    if (trimmed.match(/^\*\*Bounty\*?\*?:?/i)) {
+      const match = trimmed.match(/(\d+(?:\.\d+)?)\s*(?:USDC|USD|\$)?/i);
       if (match) bounty = parseFloat(match[1]);
-    } else if (trimmed.startsWith('**Difficulty:**')) {
-      const d = trimmed.replace('**Difficulty:**', '').trim().toLowerCase();
+    } else if (trimmed.match(/^\*\*Difficulty\*?\*?:?/i)) {
+      const d = trimmed.replace(/^\*\*Difficulty\*?\*?:?\s*/i, '').trim().toLowerCase();
       if (['easy', 'medium', 'hard', 'legendary'].includes(d)) {
         difficulty = d;
       }
-    } else if (trimmed.startsWith('**Topics:**')) {
-      const t = trimmed.replace('**Topics:**', '').trim();
+    } else if (trimmed.match(/^\*\*Topics?\*?\*?:?/i)) {
+      const t = trimmed.replace(/^\*\*Topics?\*?\*?:?\s*/i, '').trim();
       topics = t.split(',').map(s => s.trim()).filter(Boolean);
-    } else if (trimmed.startsWith('**Deadline:**')) {
-      const d = trimmed.replace('**Deadline:**', '').trim();
-      if (d && d !== 'None' && d !== 'TBD') {
+    } else if (trimmed.match(/^\*\*Deadline\*?\*?:?/i)) {
+      const d = trimmed.replace(/^\*\*Deadline\*?\*?:?\s*/i, '').trim();
+      if (d && d !== 'None' && d !== 'TBD' && !d.toLowerCase().includes('rolling')) {
         deadline = d;
       }
     } else if (trimmed.startsWith('## Description')) {
