@@ -57,10 +57,10 @@ export function ContributeModal({
               method: 'wallet_addEthereumChain',
               params: [{
                 chainId: `0x${ACTIVE_CHAIN_ID.toString(16)}`,
-                chainName: ACTIVE_CHAIN_ID === 84532 ? 'Base Sepolia' : 'Base',
+                chainName: 'Base',
                 nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
-                rpcUrls: [ACTIVE_CHAIN_ID === 84532 ? 'https://sepolia.base.org' : 'https://mainnet.base.org'],
-                blockExplorerUrls: [ACTIVE_CHAIN_ID === 84532 ? 'https://sepolia.basescan.org' : 'https://basescan.org'],
+                rpcUrls: ['https://mainnet.base.org'],
+                blockExplorerUrls: ['https://basescan.org'],
               }],
             });
           } else {
@@ -132,8 +132,8 @@ export function ContributeModal({
     throw new Error('Transaction timeout');
   };
 
-  const explorerUrl = ACTIVE_CHAIN_ID === 84532 
-    ? 'https://sepolia.basescan.org' 
+  const explorerUrl = false 
+    ? 'https://basescan.org' 
     : 'https://basescan.org';
 
   return (
@@ -224,7 +224,7 @@ export function ContributeModal({
             <div className="text-sm text-gray-500 mb-6">
               <p>• Funds go directly to escrow smart contract</p>
               <p>• Winner receives 95% (5% platform fee)</p>
-              <p>• Network: {ACTIVE_CHAIN_ID === 84532 ? 'Base Sepolia (Testnet)' : 'Base'}</p>
+              <p>• Network: {false ? 'Base Sepolia (Testnet)' : 'Base'}</p>
             </div>
 
             {/* Error */}

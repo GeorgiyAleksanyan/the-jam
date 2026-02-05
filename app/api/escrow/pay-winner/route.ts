@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createWalletClient, createPublicClient, http, parseUnits } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
-import { baseSepolia } from 'viem/chains';
+import { base } from 'viem/chains';
 import { ESCROW_ADDRESS, ESCROW_ABI } from '@/lib/escrow';
 import { supabaseAdmin } from '@/lib/supabase';
 
@@ -52,13 +52,13 @@ export async function POST(request: NextRequest) {
     const account = privateKeyToAccount(ADMIN_PRIVATE_KEY as `0x${string}`);
     const walletClient = createWalletClient({
       account,
-      chain: baseSepolia,
-      transport: http('https://sepolia.base.org'),
+      chain: base,
+      transport: http('https://mainnet.base.org'),
     });
 
     const publicClient = createPublicClient({
-      chain: baseSepolia,
-      transport: http('https://sepolia.base.org'),
+      chain: base,
+      transport: http('https://mainnet.base.org'),
     });
 
     // Check escrow has funds
@@ -117,7 +117,7 @@ export async function POST(request: NextRequest) {
       success: true,
       transactionHash: hash,
       blockNumber: receipt.blockNumber.toString(),
-      explorerUrl: `https://sepolia.basescan.org/tx/${hash}`,
+      explorerUrl: `https://basescan.org/tx/${hash}`,
       winner: winnerAddress,
       challengeId,
     });

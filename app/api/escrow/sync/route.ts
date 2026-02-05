@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createPublicClient, http, formatUnits } from 'viem';
-import { baseSepolia } from 'viem/chains';
+import { base } from 'viem/chains';
 import { ESCROW_ADDRESS, ESCROW_ABI } from '@/lib/escrow';
 import { supabaseAdmin } from '@/lib/supabase';
 
 const publicClient = createPublicClient({
-  chain: baseSepolia,
-  transport: http('https://sepolia.base.org'),
+  chain: base,
+  transport: http('https://mainnet.base.org'),
 });
 
 /**

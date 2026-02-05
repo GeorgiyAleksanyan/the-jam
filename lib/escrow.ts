@@ -2,7 +2,7 @@
 export const ESCROW_ADDRESSES = {
   // Base Mainnet
   8453: {
-    escrow: '', // TODO: Deploy to mainnet
+    escrow: '0x8fFEcDf8a26279d61CAa8e2D52C9A3335963A102',
     usdc: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
   },
   // Base Sepolia (Testnet)
@@ -12,8 +12,8 @@ export const ESCROW_ADDRESSES = {
   },
 } as const;
 
-// Default to testnet for now
-export const ACTIVE_CHAIN_ID = 84532;
+// Use mainnet by default
+export const ACTIVE_CHAIN_ID = 8453;
 export const ESCROW_ADDRESS = ESCROW_ADDRESSES[ACTIVE_CHAIN_ID].escrow;
 export const USDC_ADDRESS = ESCROW_ADDRESSES[ACTIVE_CHAIN_ID].usdc;
 

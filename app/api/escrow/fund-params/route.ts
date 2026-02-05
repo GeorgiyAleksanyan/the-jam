@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       chainId: ACTIVE_CHAIN_ID,
-      network: ACTIVE_CHAIN_ID === 84532 ? 'base-sepolia' : 'base',
+      network: 'base',
       escrowAddress: ESCROW_ADDRESS,
       usdcAddress: USDC_ADDRESS,
       challengeId: parseInt(challengeId),

@@ -13,7 +13,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createWalletClient, createPublicClient, http, formatUnits } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
-import { baseSepolia } from 'viem/chains';
+import { base } from 'viem/chains';
 import { supabaseAdmin } from '@/lib/supabase';
 import { ESCROW_ADDRESS, ESCROW_ABI } from '@/lib/escrow';
 
@@ -124,8 +124,8 @@ export async function POST(
   if (winner.wallet_address && process.env.ESCROW_ADMIN_PRIVATE_KEY) {
     try {
       const publicClient = createPublicClient({
-        chain: baseSepolia,
-        transport: http('https://sepolia.base.org'),
+        chain: base,
+        transport: http('https://mainnet.base.org'),
       });
 
       // Check on-chain balance
@@ -141,8 +141,8 @@ export async function POST(
         const account = privateKeyToAccount(process.env.ESCROW_ADMIN_PRIVATE_KEY as `0x${string}`);
         const walletClient = createWalletClient({
           account,
-          chain: baseSepolia,
-          transport: http('https://sepolia.base.org'),
+          chain: base,
+          transport: http('https://mainnet.base.org'),
         });
 
         const hash = await walletClient.writeContract({
@@ -232,7 +232,7 @@ export async function POST(
       // Add winner comment
       if (response.ok) {
         const payoutInfo = payoutResult.success 
-          ? `\n**Payout TX:** [View on Basescan](https://sepolia.basescan.org/tx/${payoutResult.txHash})`
+          ? `\n**Payout TX:** [View on Basescan](https://basescan.org/tx/${payoutResult.txHash})`
           : '';
         
         await fetch(
@@ -267,7 +267,7 @@ export async function POST(
     prize_pool: challenge.prize_pool,
     payout: payoutResult,
     explorer_url: payoutResult.txHash 
-      ? `https://sepolia.basescan.org/tx/${payoutResult.txHash}`
+      ? `https://basescan.org/tx/${payoutResult.txHash}`
       : null,
   });
 }
@@ -312,7 +312,7 @@ export async function GET(
     payout_at: challenge.payout_at,
     paid: !!challenge.payout_tx,
     explorer_url: challenge.payout_tx 
-      ? `https://sepolia.basescan.org/tx/${challenge.payout_tx}`
+      ? `https://basescan.org/tx/${challenge.payout_tx}`
       : null,
   });
 }
