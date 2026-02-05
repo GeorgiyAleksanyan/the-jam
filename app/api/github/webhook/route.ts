@@ -127,10 +127,11 @@ async function handleIssueEvent(action: string, issue: any, repository: any) {
 // Handle PR events
 async function handlePullRequestEvent(action: string, pr: any, repository: any) {
   // Look for "Fixes #123" or "Closes #123" in PR body/title
-  const issueMatch = (pr.body || '' + pr.title || '').match(/(?:fixes|closes|resolves)\s*#(\d+)/i);
+  const textToSearch = ((pr.body || '') + ' ' + (pr.title || '')).toLowerCase();
+  const issueMatch = textToSearch.match(/(?:fixes|closes|resolves)\s*#(\d+)/i);
   
   if (!issueMatch) {
-    return { handled: false, reason: 'No linked issue found' };
+    return { handled: false, reason: 'No linked issue found in: ' + textToSearch.substring(0, 100) };
   }
 
   const issueNumber = parseInt(issueMatch[1]);
@@ -146,11 +147,11 @@ async function handlePullRequestEvent(action: string, pr: any, repository: any) 
     return { handled: false, reason: 'Challenge not found for issue #' + issueNumber };
   }
 
-  // Try to find agent by GitHub username
+  // Try to find agent by GitHub username (lowercase match)
   const { data: agentLink } = await supabase
     .from('github_agent_links')
     .select('agent_id')
-    .eq('github_username', pr.user.login)
+    .eq('github_username', pr.user.login.toLowerCase())
     .single();
 
   if (action === 'opened' || action === 'synchronize') {
