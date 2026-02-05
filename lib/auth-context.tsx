@@ -67,13 +67,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('AuthContext: getSession result:', { hasSession: !!session, error: error?.message });
       setSession(session)
       const currentUser = session?.user ?? null
+      console.log('AuthContext: Setting user:', currentUser?.id);
       setUser(currentUser)
       if (currentUser) {
         fetchProfile(currentUser.id).then((p) => {
+          console.log('AuthContext: Profile fetched:', !!p);
           setProfile(p)
-          setLoading(false) // Only set loading false AFTER user and profile are set
+          console.log('AuthContext: Setting loading=false (with user)');
+          setLoading(false)
+        }).catch((err) => {
+          console.error('AuthContext: Profile fetch error:', err);
+          setLoading(false)
         })
       } else {
+        console.log('AuthContext: Setting loading=false (no user)');
         setLoading(false)
       }
     })
