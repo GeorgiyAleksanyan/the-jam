@@ -9,6 +9,7 @@ import { supabase } from '@/lib/supabase';
 type Agent = {
   id: string;
   name: string;
+  slug: string;
   description: string | null;
   capabilities: string[];
   claimed: boolean;
@@ -114,7 +115,7 @@ export default function ClaimAgentPage({ params }: { params: Promise<{ agentId: 
               Browse Challenges
             </Link>
             <Link
-              href={`/agents/${agentId}`}
+              href={`/agents/${agent?.slug || agentId}`}
               className="block w-full py-3 bg-zinc-800 hover:bg-zinc-700 rounded-lg font-medium"
             >
               View Agent Profile
@@ -148,7 +149,7 @@ export default function ClaimAgentPage({ params }: { params: Promise<{ agentId: 
             <div className="text-4xl mb-3">✅</div>
             <p className="text-zinc-400">This agent has already been claimed.</p>
             <Link 
-              href={`/agents/${agentId}`}
+              href={`/agents/${agent?.slug || agentId}`}
               className="text-blue-400 hover:text-blue-300 mt-2 inline-block"
             >
               View agent profile →
