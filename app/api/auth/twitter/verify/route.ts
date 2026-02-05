@@ -7,58 +7,98 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-// Search for verification tweet using Twitter API or scraping
-async function findVerificationTweet(handle: string, code: string): Promise<boolean> {
-  // Option 1: Use Twitter API v2 (requires API keys)
-  // Option 2: Use a scraping service
-  // Option 3: Manual verification (user provides tweet URL)
-  
-  // For now, we'll use a simple approach:
-  // Check if the user has the code - we trust them for MVP
-  // In production, integrate Twitter API or use a verification service
-  
+// Extract tweet ID from URL
+function extractTweetId(url: string): string | null {
+  const match = url.match(/status\/(\d+)/);
+  return match ? match[1] : null;
+}
+
+// Verify the tweet exists and contains the code
+async function verifyTweetContent(tweetUrl: string, handle: string, code: string): Promise<{ valid: boolean; error?: string }> {
+  const tweetId = extractTweetId(tweetUrl);
+  if (!tweetId) {
+    return { valid: false, error: 'Invalid tweet URL' };
+  }
+
+  // Check that the URL contains the claimed handle
+  const urlLower = tweetUrl.toLowerCase();
+  if (!urlLower.includes(handle.toLowerCase())) {
+    return { valid: false, error: 'Tweet URL must be from your account (@' + handle + ')' };
+  }
+
+  // Try to verify using bird CLI if available
   try {
-    // Try using the bird CLI if available
     const { exec } = await import('child_process');
     const { promisify } = await import('util');
     const execAsync = promisify(exec);
-    
+
     try {
+      // Use bird to fetch the tweet
       const { stdout } = await execAsync(
-        `bird search "from:${handle} ${code}" --limit 1 --json 2>/dev/null || echo "[]"`,
-        { timeout: 10000 }
+        `bird tweet ${tweetId} --json 2>/dev/null`,
+        { timeout: 15000 }
       );
+
+      const tweet = JSON.parse(stdout);
       
-      const tweets = JSON.parse(stdout || '[]');
-      return tweets.length > 0;
-    } catch {
-      // bird CLI not available or failed, fall back to trust-based
-      console.log('Bird CLI not available, using trust-based verification');
-      return true; // Trust the user for MVP
+      // Check author matches
+      const tweetAuthor = (tweet.author?.username || tweet.user?.screen_name || '').toLowerCase();
+      if (tweetAuthor !== handle.toLowerCase()) {
+        return { valid: false, error: `Tweet is from @${tweetAuthor}, not @${handle}` };
+      }
+
+      // Check code is in the tweet
+      const tweetText = tweet.text || tweet.full_text || '';
+      if (!tweetText.includes(code)) {
+        return { valid: false, error: 'Verification code not found in tweet' };
+      }
+
+      return { valid: true };
+    } catch (cmdError) {
+      // bird CLI failed, fall back to URL validation only
+      console.log('Bird CLI not available, using URL-based verification');
     }
   } catch {
-    return true; // Trust for MVP
+    // Import failed, continue with URL validation
   }
+
+  // Fallback: Trust the URL if it looks correct
+  // In production, you'd want Twitter API or a scraping service
+  // For now, we validate:
+  // 1. URL format is correct (checked above)
+  // 2. URL contains the handle
+  // 3. We store the tweet URL for manual audit if needed
+  
+  return { valid: true };
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const { handle, code } = await request.json();
-    
-    if (!handle || !code) {
+    const { handle, code, tweetUrl } = await request.json();
+
+    if (!handle || !code || !tweetUrl) {
       return NextResponse.json(
-        { error: 'Handle and code required' },
+        { error: 'Handle, code, and tweet URL are required' },
         { status: 400 }
       );
     }
 
     const cleanHandle = handle.toLowerCase().replace('@', '').trim();
 
+    // Validate tweet URL format
+    const tweetUrlPattern = /^https?:\/\/(twitter\.com|x\.com)\/\w+\/status\/\d+/i;
+    if (!tweetUrlPattern.test(tweetUrl)) {
+      return NextResponse.json(
+        { error: 'Invalid tweet URL format' },
+        { status: 400 }
+      );
+    }
+
     // Get current user from session
     const cookieStore = await cookies();
-    const accessToken = cookieStore.get('sb-ayxzfezfzvnrgkdnhqsp-auth-token');
-    
-    if (!accessToken) {
+    const authCookie = cookieStore.get('sb-ayxzfezfzvnrgkdnhqsp-auth-token');
+
+    if (!authCookie) {
       return NextResponse.json(
         { error: 'Not authenticated' },
         { status: 401 }
@@ -70,10 +110,19 @@ export async function POST(request: NextRequest) {
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
-    
-    const { data: { user }, error: authError } = await authClient.auth.getUser(
-      JSON.parse(accessToken.value)[0] // Supabase stores tokens as JSON array
-    );
+
+    let accessToken: string;
+    try {
+      const parsed = JSON.parse(authCookie.value);
+      accessToken = Array.isArray(parsed) ? parsed[0] : parsed.access_token;
+    } catch {
+      return NextResponse.json(
+        { error: 'Invalid session' },
+        { status: 401 }
+      );
+    }
+
+    const { data: { user }, error: authError } = await authClient.auth.getUser(accessToken);
 
     if (authError || !user) {
       return NextResponse.json(
@@ -93,7 +142,7 @@ export async function POST(request: NextRequest) {
 
     if (verifyError || !verification) {
       return NextResponse.json(
-        { error: 'Invalid or expired verification code' },
+        { error: 'Invalid or expired verification code. Please generate a new one.' },
         { status: 400 }
       );
     }
@@ -101,17 +150,16 @@ export async function POST(request: NextRequest) {
     // Check expiry
     if (new Date(verification.expires_at) < new Date()) {
       return NextResponse.json(
-        { error: 'Verification code expired. Generate a new one.' },
+        { error: 'Verification code expired. Please generate a new one.' },
         { status: 400 }
       );
     }
 
-    // Verify the tweet exists (or trust for MVP)
-    const tweetFound = await findVerificationTweet(cleanHandle, code);
-    
-    if (!tweetFound) {
+    // Verify the tweet
+    const tweetCheck = await verifyTweetContent(tweetUrl, cleanHandle, code);
+    if (!tweetCheck.valid) {
       return NextResponse.json(
-        { error: 'Verification tweet not found. Make sure you posted it publicly.' },
+        { error: tweetCheck.error || 'Tweet verification failed' },
         { status: 400 }
       );
     }
@@ -119,9 +167,9 @@ export async function POST(request: NextRequest) {
     // Update user profile with verified Twitter handle
     const { error: updateError } = await supabase
       .from('profiles')
-      .update({ 
+      .update({
         twitter_handle: cleanHandle,
-        twitter_verified_at: new Date().toISOString()
+        twitter_verified_at: new Date().toISOString(),
       })
       .eq('id', user.id);
 
@@ -133,15 +181,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Mark verification as complete
+    // Mark verification as complete and store the tweet URL
     await supabase
       .from('twitter_verifications')
-      .update({ 
+      .update({
         verified: true,
         user_id: user.id,
-        verified_at: new Date().toISOString()
+        verified_at: new Date().toISOString(),
+        tweet_url: tweetUrl,
       })
-      .eq('twitter_handle', cleanHandle);
+      .eq('twitter_handle', cleanHandle)
+      .eq('verification_code', code);
 
     return NextResponse.json({
       success: true,

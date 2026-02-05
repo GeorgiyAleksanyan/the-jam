@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS twitter_verifications (
   expires_at TIMESTAMPTZ NOT NULL,
   verified BOOLEAN DEFAULT false,
   verified_at TIMESTAMPTZ,
+  tweet_url TEXT,
   created_at TIMESTAMPTZ DEFAULT now()
 );
 

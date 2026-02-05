@@ -10,7 +10,7 @@ export default function TwitterVerification() {
   const [step, setStep] = useState<VerificationStep>('generate');
   const [handle, setHandle] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
-  const [claimUrl, setClaimUrl] = useState('');
+  const [tweetUrl, setTweetUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -69,7 +69,6 @@ export default function TwitterVerification() {
       }
 
       setVerificationCode(data.code);
-      setClaimUrl(data.tweetUrl);
       setStep('pending');
     } catch (err: any) {
       setError(err.message);
@@ -79,6 +78,18 @@ export default function TwitterVerification() {
   };
 
   const verifyTweet = async () => {
+    if (!tweetUrl.trim()) {
+      setError('Please paste the URL of your verification tweet');
+      return;
+    }
+
+    // Validate it looks like a tweet URL
+    const tweetUrlPattern = /^https?:\/\/(twitter\.com|x\.com)\/\w+\/status\/\d+/i;
+    if (!tweetUrlPattern.test(tweetUrl.trim())) {
+      setError('Please enter a valid tweet URL (e.g., https://x.com/username/status/123...)');
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
@@ -88,7 +99,8 @@ export default function TwitterVerification() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           handle: handle.replace('@', ''),
-          code: verificationCode 
+          code: verificationCode,
+          tweetUrl: tweetUrl.trim(),
         }),
       });
 
@@ -160,7 +172,7 @@ export default function TwitterVerification() {
       {step === 'pending' && (
         <>
           <div className="mb-4 p-4 bg-zinc-800 rounded-lg">
-            <p className="text-sm text-zinc-400 mb-2">Post this tweet to verify:</p>
+            <p className="text-sm text-zinc-400 mb-2">Step 1: Post this tweet</p>
             <p className="font-mono text-sm break-all">{tweetText}</p>
           </div>
 
@@ -168,14 +180,26 @@ export default function TwitterVerification() {
             href={tweetIntentUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="block w-full py-2 bg-black border border-zinc-600 hover:bg-zinc-800 rounded-lg font-medium text-center mb-3"
+            className="block w-full py-2 bg-black border border-zinc-600 hover:bg-zinc-800 rounded-lg font-medium text-center mb-4"
           >
             📝 Post on X
           </a>
 
-          <p className="text-xs text-zinc-500 mb-4 text-center">
-            After posting, click below to verify
-          </p>
+          <div className="mb-4">
+            <label className="block text-sm text-zinc-400 mb-2">
+              Step 2: Paste the tweet URL here
+            </label>
+            <input
+              type="url"
+              value={tweetUrl}
+              onChange={(e) => setTweetUrl(e.target.value)}
+              placeholder="https://x.com/yourhandle/status/123456789..."
+              className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 focus:border-blue-500 focus:outline-none text-sm"
+            />
+            <p className="text-xs text-zinc-500 mt-1">
+              After posting, copy the URL from your browser or the share button
+            </p>
+          </div>
 
           {error && (
             <div className="mb-4 p-3 bg-red-900/30 border border-red-700 rounded-lg text-red-300 text-sm">
@@ -185,14 +209,14 @@ export default function TwitterVerification() {
 
           <button
             onClick={verifyTweet}
-            disabled={loading}
+            disabled={loading || !tweetUrl.trim()}
             className="w-full py-2 bg-green-600 hover:bg-green-500 rounded-lg font-medium disabled:opacity-50"
           >
-            {loading ? 'Checking...' : "I've Posted It — Verify"}
+            {loading ? 'Verifying...' : 'Verify My Tweet'}
           </button>
 
           <button
-            onClick={() => setStep('generate')}
+            onClick={() => { setStep('generate'); setError(null); }}
             className="w-full py-2 mt-2 text-zinc-500 hover:text-white text-sm"
           >
             ← Back
