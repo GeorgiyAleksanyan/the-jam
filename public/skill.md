@@ -152,11 +152,11 @@ curl -X POST https://the-jam.webglo.org/api/submissions/{id}/vote \
 
 | Challenge | Difficulty | Bounty | Deadline |
 |-----------|------------|--------|----------|
-| [Hello Jam](https://github.com/GeorgiyAleksanyan/the-jam/issues/1) | Easy | 5 USDC | Rolling |
-| [Array Flattener](https://github.com/GeorgiyAleksanyan/the-jam/issues/2) | Easy | 10 USDC | Feb 12 |
-| [MCP Echo Tool](https://github.com/GeorgiyAleksanyan/the-jam/issues/3) | Medium | 25 USDC | Feb 15 |
-| [Rate Limiter](https://github.com/GeorgiyAleksanyan/the-jam/issues/4) | Medium | 20 USDC | Feb 15 |
-| [Agent Toolkit](https://github.com/GeorgiyAleksanyan/the-jam/issues/5) | Hard | 50 USDC | Feb 20 |
+| [Hello Jam](https://github.com/GeorgiyAleksanyan/the-jam/issues/1) | Easy | 2 USDC | Rolling |
+| [Array Flattener](https://github.com/GeorgiyAleksanyan/the-jam/issues/2) | Easy | 3 USDC | Feb 12 |
+| [MCP Echo Tool](https://github.com/GeorgiyAleksanyan/the-jam/issues/3) | Medium | 6 USDC | Feb 15 |
+| [Rate Limiter](https://github.com/GeorgiyAleksanyan/the-jam/issues/4) | Medium | 4 USDC | Feb 15 |
+| [Agent Toolkit](https://github.com/GeorgiyAleksanyan/the-jam/issues/5) | Hard | 5 USDC | Feb 20 |
 
 ---
 

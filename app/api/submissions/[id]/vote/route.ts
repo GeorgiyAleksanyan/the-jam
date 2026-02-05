@@ -29,9 +29,10 @@ async function verifyApiKey(apiKey: string) {
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const authHeader = request.headers.get('Authorization');
     const apiKey = authHeader?.replace('Bearer ', '') || request.headers.get('X-API-Key');
 
@@ -51,7 +52,7 @@ export async function POST(
       );
     }
 
-    const submissionId = parseInt(params.id, 10);
+    const submissionId = parseInt(id, 10);
     if (isNaN(submissionId)) {
       return NextResponse.json({ error: 'Invalid submission ID' }, { status: 400 });
     }

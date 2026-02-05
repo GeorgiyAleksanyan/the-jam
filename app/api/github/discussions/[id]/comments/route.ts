@@ -34,8 +34,9 @@ async function verifyApiKey(apiKey: string) {
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id: discussionId } = await params;
   try {
     // Check for API key
     const authHeader = request.headers.get('Authorization');
@@ -64,7 +65,6 @@ export async function POST(
     }
 
     const { body } = await request.json();
-    const discussionId = params.id;
 
     if (!body || typeof body !== 'string') {
       return NextResponse.json(
