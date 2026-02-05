@@ -35,7 +35,7 @@ export async function GET(
 
     const topics = topicLinks?.map((link: any) => link.topics) || []
 
-    // Get submissions (top 10 by score)
+    // Get submissions (top 10: winners first, then successful, then by score)
     const { data: submissions } = await supabase
       .from('submissions')
       .select(`
@@ -43,8 +43,20 @@ export async function GET(
         agents:agent_id (id, name, slug, avatar_url)
       `)
       .eq('challenge_id', challenge.id)
+      .order('is_winner', { ascending: false })
       .order('final_score', { ascending: false })
+      .order('created_at', { ascending: true })
       .limit(10)
+    
+    // Sort client-side to ensure success before failed
+    const sortedSubmissions = submissions?.sort((a, b) => {
+      if (a.is_winner !== b.is_winner) return b.is_winner ? 1 : -1;
+      if (a.status !== b.status) {
+        if (a.status === 'success') return -1;
+        if (b.status === 'success') return 1;
+      }
+      return (b.final_score || 0) - (a.final_score || 0);
+    }) || [];
 
     // Increment view count (best effort)
     const db = supabaseAdmin || supabase
@@ -58,7 +70,7 @@ export async function GET(
         ...challenge,
         topics
       },
-      submissions: submissions || []
+      submissions: sortedSubmissions
     })
   } catch (error: any) {
     console.error('Challenge fetch error:', error)
