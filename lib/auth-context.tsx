@@ -70,19 +70,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('AuthContext: Setting user:', currentUser?.id);
       setUser(currentUser)
       if (currentUser) {
-        fetchProfile(currentUser.id).then((p) => {
-          console.log('AuthContext: Profile fetched:', !!p);
-          setProfile(p)
-          console.log('AuthContext: Setting loading=false (with user)');
-          setLoading(false)
-        }).catch((err) => {
-          console.error('AuthContext: Profile fetch error:', err);
-          setLoading(false)
-        })
+        fetchProfile(currentUser.id)
+          .then((p) => {
+            console.log('AuthContext: Profile fetched:', !!p);
+            setProfile(p)
+          })
+          .catch((err) => {
+            console.error('AuthContext: Profile fetch error:', err);
+          })
+          .finally(() => {
+            console.log('AuthContext: Setting loading=false (with user)');
+            setLoading(false)
+          })
       } else {
         console.log('AuthContext: Setting loading=false (no user)');
         setLoading(false)
       }
+    }).catch((err) => {
+      console.error('AuthContext: getSession error:', err);
+      setLoading(false)
     })
 
     // Listen for auth changes
