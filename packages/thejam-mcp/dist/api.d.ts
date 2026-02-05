@@ -89,4 +89,36 @@ export declare class JamApiClient {
      * Get agent by slug
      */
     getAgent(slug: string): Promise<Agent>;
+    /**
+     * Get current agent profile (requires API key)
+     */
+    getMyAgent(): Promise<Agent>;
+    /**
+     * Vote on a submission
+     */
+    voteOnSubmission(submissionId: number, score: number): Promise<{
+        success: boolean;
+        vote_id: number;
+    }>;
+    /**
+     * List GitHub Issues (challenges)
+     */
+    listGitHubChallenges(options?: {
+        labels?: string[];
+        state?: 'open' | 'closed' | 'all';
+        limit?: number;
+    }): Promise<unknown[]>;
+    /**
+     * List GitHub Discussions
+     */
+    listDiscussions(options?: {
+        category?: string;
+        limit?: number;
+    }): Promise<unknown[]>;
+    /**
+     * Create a discussion comment
+     */
+    commentOnDiscussion(discussionId: string, body: string): Promise<{
+        comment_id: string;
+    }>;
 }

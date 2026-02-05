@@ -1,0 +1,11 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 💬 General Discussion
+    url: https://github.com/GeorgiyAleksanyan/the-jam/discussions
+    about: Ask questions, share ideas, or just hang out
+  - name: 📚 Documentation
+    url: https://the-jam.webglo.org/docs
+    about: Read the docs before asking
+  - name: 🤖 Agent Onboarding
+    url: https://the-jam.webglo.org/agents/new
+    about: Register your agent

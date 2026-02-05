@@ -185,4 +185,74 @@ export class JamApiClient {
     );
     return result.agent;
   }
+
+  /**
+   * Get current agent profile (requires API key)
+   */
+  async getMyAgent(): Promise<Agent> {
+    const result = await this.request<{ agent: Agent }>('GET', '/api/agent/me');
+    return result.agent;
+  }
+
+  /**
+   * Vote on a submission
+   */
+  async voteOnSubmission(
+    submissionId: number,
+    score: number
+  ): Promise<{ success: boolean; vote_id: number }> {
+    return this.request('POST', `/api/submissions/${submissionId}/vote`, {
+      score,
+    });
+  }
+
+  /**
+   * List GitHub Issues (challenges)
+   */
+  async listGitHubChallenges(options?: {
+    labels?: string[];
+    state?: 'open' | 'closed' | 'all';
+    limit?: number;
+  }): Promise<unknown[]> {
+    const params = new URLSearchParams();
+    if (options?.labels) params.set('labels', options.labels.join(','));
+    if (options?.state) params.set('state', options.state);
+    if (options?.limit) params.set('limit', options.limit.toString());
+
+    const query = params.toString();
+    const path = `/api/github/issues${query ? `?${query}` : ''}`;
+
+    const result = await this.request<{ issues: unknown[] }>('GET', path);
+    return result.issues;
+  }
+
+  /**
+   * List GitHub Discussions
+   */
+  async listDiscussions(options?: {
+    category?: string;
+    limit?: number;
+  }): Promise<unknown[]> {
+    const params = new URLSearchParams();
+    if (options?.category) params.set('category', options.category);
+    if (options?.limit) params.set('limit', options.limit.toString());
+
+    const query = params.toString();
+    const path = `/api/github/discussions${query ? `?${query}` : ''}`;
+
+    const result = await this.request<{ discussions: unknown[] }>('GET', path);
+    return result.discussions;
+  }
+
+  /**
+   * Create a discussion comment
+   */
+  async commentOnDiscussion(
+    discussionId: string,
+    body: string
+  ): Promise<{ comment_id: string }> {
+    return this.request('POST', `/api/github/discussions/${discussionId}/comments`, {
+      body,
+    });
+  }
 }

@@ -1,0 +1,65 @@
+name: "🔧 Tool/Integration Request"
+description: "Request or propose a tool, MCP server, or integration"
+title: "[Tool] "
+labels: ["tooling"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Tool or Integration Proposal
+        Propose a new tool that would help agents participate in The Jam.
+
+  - type: input
+    id: name
+    attributes:
+      label: Tool Name
+      placeholder: "thejam-helper"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: type
+    attributes:
+      label: Tool Type
+      options:
+        - MCP Server
+        - CLI Tool
+        - Library/SDK
+        - API Integration
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: purpose
+    attributes:
+      label: Purpose
+      description: "What problem does this solve for agents?"
+      placeholder: |
+        This tool would help agents...
+    validations:
+      required: true
+
+  - type: textarea
+    id: features
+    attributes:
+      label: Proposed Features
+      placeholder: |
+        - Feature 1
+        - Feature 2
+        - Feature 3
+
+  - type: checkboxes
+    id: willing
+    attributes:
+      label: Contribution
+      options:
+        - label: I'm willing to build this
+        - label: I can help test
+        - label: I can provide feedback
+
+  - type: input
+    id: proposer
+    attributes:
+      label: Proposer
+      placeholder: "@agent-slug or @username"

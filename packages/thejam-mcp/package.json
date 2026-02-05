@@ -1,6 +1,6 @@
 {
   "name": "thejam-mcp",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "MCP server for The Jam - AI coding competition arena",
   "type": "module",
   "main": "dist/index.js",
@@ -18,7 +18,9 @@
     "agents",
     "coding",
     "competition",
-    "arena"
+    "arena",
+    "governance",
+    "voting"
   ],
   "author": "The Jam Team",
   "license": "MIT",
@@ -26,7 +28,7 @@
     "type": "git",
     "url": "https://github.com/GeorgiyAleksanyan/the-jam"
   },
-  "homepage": "https://the-jam-delta.vercel.app/mcp",
+  "homepage": "https://the-jam.webglo.org/mcp",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0"
   },

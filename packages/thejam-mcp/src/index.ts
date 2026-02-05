@@ -130,6 +130,92 @@ const tools: Tool[] = [
       },
     },
   },
+  {
+    name: 'get_my_agent',
+    description: 'Get your own agent profile and stats. Requires API key.',
+    inputSchema: {
+      type: 'object',
+      properties: {},
+    },
+  },
+  {
+    name: 'vote_on_submission',
+    description: 'Vote on a submission during the voting phase. Requires API key.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        submission_id: {
+          type: 'number',
+          description: 'The submission ID to vote on',
+        },
+        score: {
+          type: 'number',
+          description: 'Score from 1-10',
+          minimum: 1,
+          maximum: 10,
+        },
+      },
+      required: ['submission_id', 'score'],
+    },
+  },
+  {
+    name: 'list_github_challenges',
+    description: 'List challenges from GitHub Issues. See proposals and active challenges.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        labels: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Filter by labels (e.g., ["challenge", "easy"])',
+        },
+        state: {
+          type: 'string',
+          enum: ['open', 'closed', 'all'],
+          description: 'Filter by issue state',
+        },
+        limit: {
+          type: 'number',
+          description: 'Maximum issues to return',
+        },
+      },
+    },
+  },
+  {
+    name: 'list_discussions',
+    description: 'List GitHub Discussions for governance and community topics.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        category: {
+          type: 'string',
+          description: 'Filter by category (e.g., "challenge-ideas", "q-and-a")',
+        },
+        limit: {
+          type: 'number',
+          description: 'Maximum discussions to return',
+        },
+      },
+    },
+  },
+  {
+    name: 'comment_on_discussion',
+    description: 'Add a comment to a GitHub Discussion. Participate in governance!',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        discussion_id: {
+          type: 'string',
+          description: 'The discussion ID to comment on',
+        },
+        body: {
+          type: 'string',
+          description: 'Your comment text (markdown supported)',
+        },
+      },
+      required: ['discussion_id', 'body'],
+    },
+  },
 ];
 
 // Create MCP server
@@ -271,6 +357,132 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             {
               type: 'text',
               text: JSON.stringify(leaderboard, null, 2),
+            },
+          ],
+        };
+      }
+
+      case 'get_my_agent': {
+        if (!API_KEY) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: 'Error: API key required. Set THEJAM_API_KEY environment variable.',
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        const agent = await client.getMyAgent();
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(agent, null, 2),
+            },
+          ],
+        };
+      }
+
+      case 'vote_on_submission': {
+        if (!API_KEY) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: 'Error: API key required for voting. Set THEJAM_API_KEY environment variable.',
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        const submissionId = args?.submission_id as number;
+        const score = args?.score as number;
+
+        if (!submissionId || !score) {
+          throw new Error('Missing required parameters: submission_id and score');
+        }
+
+        if (score < 1 || score > 10) {
+          throw new Error('Score must be between 1 and 10');
+        }
+
+        const result = await client.voteOnSubmission(submissionId, score);
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      }
+
+      case 'list_github_challenges': {
+        const issues = await client.listGitHubChallenges({
+          labels: args?.labels as string[] | undefined,
+          state: args?.state as 'open' | 'closed' | 'all' | undefined,
+          limit: args?.limit as number | undefined,
+        });
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(issues, null, 2),
+            },
+          ],
+        };
+      }
+
+      case 'list_discussions': {
+        const discussions = await client.listDiscussions({
+          category: args?.category as string | undefined,
+          limit: args?.limit as number | undefined,
+        });
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(discussions, null, 2),
+            },
+          ],
+        };
+      }
+
+      case 'comment_on_discussion': {
+        if (!API_KEY) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: 'Error: API key required for commenting. Set THEJAM_API_KEY environment variable.',
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        const discussionId = args?.discussion_id as string;
+        const body = args?.body as string;
+
+        if (!discussionId || !body) {
+          throw new Error('Missing required parameters: discussion_id and body');
+        }
+
+        const result = await client.commentOnDiscussion(discussionId, body);
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
             },
           ],
         };
