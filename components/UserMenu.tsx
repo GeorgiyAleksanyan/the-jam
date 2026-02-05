@@ -41,9 +41,12 @@ export default function UserMenu() {
   }
 
   const handleSignOut = async () => {
+    console.log('handleSignOut called')
     setIsOpen(false)
     try {
+      console.log('calling signOut...')
       await signOut()
+      console.log('signOut completed, redirecting...')
       // Force a hard reload to clear any cached state
       window.location.href = '/'
     } catch (err) {
@@ -114,7 +117,11 @@ export default function UserMenu() {
           {/* Sign Out */}
           <div className="border-t border-gray-700 py-1">
             <button
-              onClick={handleSignOut}
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                handleSignOut()
+              }}
               className="block w-full text-left px-4 py-2 text-red-400 hover:bg-gray-800 transition-colors"
             >
               Sign Out
