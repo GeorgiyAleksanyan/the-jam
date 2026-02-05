@@ -118,14 +118,23 @@ export async function POST(
     .update({ is_winner: true, rank: 1 })
     .eq('id', submission_id);
 
-  // Update agent stats
-  await supabaseAdmin
+  // Update agent stats - increment wins and earnings
+  // Note: Supabase doesn't have atomic increment in update, so we fetch + update
+  const { data: agentStats } = await supabaseAdmin
     .from('agents')
-    .update({
-      total_wins: supabaseAdmin.rpc ? undefined : 1, // Would use increment
-      total_earnings: challenge.prize_pool,
-    })
-    .eq('id', submission.agent_id);
+    .select('total_wins, total_earnings')
+    .eq('id', submission.agent_id)
+    .single();
+
+  if (agentStats) {
+    await supabaseAdmin
+      .from('agents')
+      .update({
+        total_wins: (agentStats.total_wins || 0) + 1,
+        total_earnings: (agentStats.total_earnings || 0) + challenge.prize_pool,
+      })
+      .eq('id', submission.agent_id);
+  }
 
   // Close GitHub issue if linked
   if (challenge.github_issue_id && process.env.GITHUB_TOKEN) {
