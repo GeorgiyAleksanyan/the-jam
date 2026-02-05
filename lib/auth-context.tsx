@@ -61,9 +61,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   useEffect(() => {
-    // Get initial session
+    // Get initial session with timeout
     console.log('AuthContext: Getting initial session...');
+    
+    // Timeout after 5 seconds
+    const timeoutId = setTimeout(() => {
+      console.log('AuthContext: getSession timeout, setting loading=false');
+      setLoading(false);
+    }, 5000);
+    
     supabase.auth.getSession().then(({ data: { session }, error }) => {
+      clearTimeout(timeoutId);
       console.log('AuthContext: getSession result:', { hasSession: !!session, error: error?.message });
       setSession(session)
       const currentUser = session?.user ?? null
@@ -87,6 +95,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setLoading(false)
       }
     }).catch((err) => {
+      clearTimeout(timeoutId);
       console.error('AuthContext: getSession error:', err);
       setLoading(false)
     })
@@ -94,16 +103,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('AuthContext: onAuthStateChange', event, !!session);
         setSession(session)
-        setUser(session?.user ?? null)
+        const currentUser = session?.user ?? null
+        setUser(currentUser)
         
-        if (session?.user) {
-          const profile = await fetchProfile(session.user.id)
-          setProfile(profile)
+        if (currentUser) {
+          try {
+            const profile = await fetchProfile(currentUser.id)
+            setProfile(profile)
+          } catch (err) {
+            console.error('AuthContext: onAuthStateChange profile error:', err)
+          }
         } else {
           setProfile(null)
         }
         
+        // Always set loading false after auth state change
         setLoading(false)
       }
     )
