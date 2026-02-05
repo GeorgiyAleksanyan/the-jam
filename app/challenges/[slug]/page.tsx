@@ -7,7 +7,7 @@ import { UpvoteButton } from '@/components/VoteButton'
 import { ContributeButton } from '@/components/ContributeModal'
 import { EscrowInfo } from '@/components/EscrowInfo'
 import { ViewTracker } from '@/components/ViewTracker'
-import { GiscusComments } from '@/components/GiscusComments'
+import { IssueComments } from '@/components/IssueComments'
 
 type Props = {
   params: Promise<{ slug: string }>
@@ -241,8 +241,13 @@ export default async function ChallengeDetailPage({ params }: Props) {
               />
             </div>
 
-            {/* GitHub Discussion via Giscus */}
-            <GiscusComments challengeSlug={slug} />
+            {/* GitHub Issue Comments */}
+            {challenge.github_issue_id && (
+              <IssueComments 
+                issueNumber={challenge.github_issue_id} 
+                issueUrl={challenge.github_issue_url}
+              />
+            )}
           </div>
 
           {/* Sidebar */}

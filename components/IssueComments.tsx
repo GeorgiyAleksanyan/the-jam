@@ -1,0 +1,268 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/lib/auth-context';
+
+interface Comment {
+  id: number;
+  body: string;
+  html_url: string;
+  created_at: string;
+  user: {
+    login: string;
+    avatar_url: string;
+    html_url: string;
+  };
+}
+
+interface IssueCommentsProps {
+  issueNumber: number;
+  issueUrl?: string;
+}
+
+export function IssueComments({ issueNumber, issueUrl }: IssueCommentsProps) {
+  const { session, user } = useAuth();
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [newComment, setNewComment] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    fetchComments();
+  }, [issueNumber]);
+
+  const fetchComments = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Fetch directly from GitHub API (public, no auth needed for reading)
+      const res = await fetch(
+        `https://api.github.com/repos/GeorgiyAleksanyan/the-jam/issues/${issueNumber}/comments`,
+        {
+          headers: {
+            'Accept': 'application/vnd.github.v3+json',
+          },
+          next: { revalidate: 30 },
+        }
+      );
+      
+      if (!res.ok) {
+        throw new Error('Failed to fetch comments');
+      }
+      
+      const data = await res.json();
+      setComments(data.map((c: any) => ({
+        id: c.id,
+        body: c.body,
+        html_url: c.html_url,
+        created_at: c.created_at,
+        user: {
+          login: c.user.login,
+          avatar_url: c.user.avatar_url,
+          html_url: c.user.html_url,
+        },
+      })));
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newComment.trim() || !session) return;
+
+    setSubmitting(true);
+    try {
+      const res = await fetch(`/api/github/issues/${issueNumber}/comments`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ body: newComment }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to post comment');
+      }
+
+      setNewComment('');
+      // Wait a moment for GitHub to process, then refresh
+      setTimeout(() => fetchComments(), 1000);
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return date.toLocaleDateString();
+  };
+
+  // Simple markdown-ish rendering (bold, links, code)
+  const renderBody = (body: string) => {
+    // Escape HTML first
+    let html = body
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+    
+    // Convert markdown-style formatting
+    html = html
+      // Code blocks
+      .replace(/```[\s\S]*?```/g, (match) => 
+        `<pre class="bg-black/50 p-2 rounded my-2 overflow-x-auto text-xs">${match.slice(3, -3)}</pre>`)
+      // Inline code
+      .replace(/`([^`]+)`/g, '<code class="bg-black/50 px-1 rounded text-sm">$1</code>')
+      // Bold
+      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+      // Links
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener" class="text-blue-400 hover:underline">$1</a>')
+      // Plain URLs
+      .replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener" class="text-blue-400 hover:underline break-all">$1</a>')
+      // Newlines
+      .replace(/\n/g, '<br/>');
+    
+    return html;
+  };
+
+  if (loading) {
+    return (
+      <div className="bg-[#1e1e1e] border border-gray-700 rounded-lg p-6">
+        <h2 className="text-xl font-semibold mb-4">💬 Discussion</h2>
+        <div className="flex items-center gap-2 text-gray-500">
+          <svg className="w-5 h-5 animate-spin" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+          </svg>
+          Loading comments...
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-[#1e1e1e] border border-gray-700 rounded-lg p-6">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-semibold">💬 Discussion ({comments.length})</h2>
+        {issueUrl && (
+          <a 
+            href={issueUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm text-blue-400 hover:underline flex items-center gap-1"
+          >
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+              <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.17 6.839 9.49.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.604-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.464-1.11-1.464-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.167 22 16.418 22 12c0-5.523-4.477-10-10-10z" />
+            </svg>
+            View on GitHub
+          </a>
+        )}
+      </div>
+
+      {error && (
+        <div className="text-red-400 mb-4 text-sm bg-red-900/20 border border-red-800 rounded p-3">
+          {error}
+        </div>
+      )}
+
+      {/* Comments list */}
+      <div className="space-y-4 mb-6">
+        {comments.length === 0 ? (
+          <div className="text-gray-500 text-center py-8">
+            No comments yet. Be the first to discuss!
+          </div>
+        ) : (
+          comments.map((comment) => (
+            <div key={comment.id} className="border-l-2 border-gray-700 pl-4 py-2">
+              <div className="flex items-center gap-2 mb-2">
+                <a 
+                  href={comment.user.html_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <img 
+                    src={comment.user.avatar_url} 
+                    alt={comment.user.login}
+                    className="w-6 h-6 rounded-full"
+                  />
+                </a>
+                <a 
+                  href={comment.user.html_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm font-medium text-blue-400 hover:underline"
+                >
+                  {comment.user.login}
+                </a>
+                <span className="text-xs text-gray-500">
+                  {formatDate(comment.created_at)}
+                </span>
+                <a
+                  href={comment.html_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-gray-600 hover:text-gray-400 ml-auto"
+                >
+                  #
+                </a>
+              </div>
+              <div 
+                className="text-sm text-gray-300"
+                dangerouslySetInnerHTML={{ __html: renderBody(comment.body) }}
+              />
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* New comment form */}
+      {user ? (
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <textarea
+            value={newComment}
+            onChange={(e) => setNewComment(e.target.value)}
+            placeholder="Add to the discussion... (Markdown supported)"
+            className="w-full bg-[#2a2a2a] border border-gray-600 rounded-lg px-4 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 resize-none"
+            rows={3}
+          />
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-gray-500">
+              💡 Comments sync with GitHub Issues
+            </span>
+            <button
+              type="submit"
+              disabled={submitting || !newComment.trim()}
+              className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+            >
+              {submitting ? 'Posting...' : 'Comment'}
+            </button>
+          </div>
+        </form>
+      ) : (
+        <div className="text-center py-4 bg-[#2a2a2a] rounded-lg">
+          <span className="text-gray-400 text-sm">
+            <a href="/auth/signin" className="text-blue-400 hover:underline">Sign in</a> to join the discussion
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
