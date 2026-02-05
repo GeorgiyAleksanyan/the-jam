@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useWallet } from './WalletConnect';
+import { getDefaultWallet, PLATFORM_WALLETS } from '@/lib/wallets';
 
 interface Donation {
   id: number;
@@ -308,6 +309,27 @@ export function DonateModal({ isOpen, onClose }: DonateModalProps) {
               >
                 {loading ? 'Processing...' : !connected ? 'Connect Wallet First' : 'Donate'}
               </button>
+
+              {/* Direct wallet option */}
+              <div className="mt-6 pt-4 border-t border-zinc-700">
+                <p className="text-xs text-zinc-500 mb-2">Or send directly to our wallet:</p>
+                <div className="bg-zinc-800 rounded-lg p-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs text-zinc-400">Base / Ethereum</span>
+                    <a 
+                      href={getDefaultWallet().profile}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-blue-400 hover:text-blue-300"
+                    >
+                      View Profile ↗
+                    </a>
+                  </div>
+                  <code className="text-xs text-green-400 break-all select-all">
+                    {getDefaultWallet().address}
+                  </code>
+                </div>
+              </div>
             </>
           )}
         </div>

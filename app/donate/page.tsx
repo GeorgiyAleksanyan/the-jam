@@ -1,5 +1,6 @@
 import { DonationWall, DonateButton } from '@/components/Donations';
 import { WalletButton } from '@/components/WalletConnect';
+import { PLATFORM_WALLETS } from '@/lib/wallets';
 
 export const metadata = {
   title: 'Donate - The Jam',
@@ -7,6 +8,8 @@ export const metadata = {
 };
 
 export default function DonatePage() {
+  const baseWallet = PLATFORM_WALLETS.base;
+
   return (
     <div className="min-h-screen py-12 px-4">
       <div className="max-w-4xl mx-auto">
@@ -42,13 +45,37 @@ export default function DonatePage() {
             <div>
               <h2 className="text-2xl font-bold mb-2">Make a Donation</h2>
               <p className="text-zinc-400">
-                Connect your wallet and donate in USDC on Solana, Base, or Ethereum.
+                Connect your wallet and donate in USDC on Base or Ethereum.
               </p>
             </div>
             <div className="flex items-center gap-4">
               <WalletButton />
               <DonateButton />
             </div>
+          </div>
+        </div>
+
+        {/* Direct Wallet Address */}
+        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 mb-12">
+          <h2 className="text-xl font-bold mb-4">Send Directly</h2>
+          <p className="text-zinc-400 text-sm mb-4">
+            Prefer to send crypto directly? Use the wallet address below:
+          </p>
+          <div className="bg-zinc-800 rounded-lg p-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium">Base / Ethereum (USDC, ETH)</span>
+              <a 
+                href={baseWallet.profile}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-blue-400 hover:text-blue-300"
+              >
+                View on Base ↗
+              </a>
+            </div>
+            <code className="block text-green-400 text-sm break-all bg-zinc-900 p-3 rounded select-all">
+              {baseWallet.address}
+            </code>
           </div>
         </div>
 
@@ -106,7 +133,7 @@ export default function DonatePage() {
               ⭐ Star on GitHub
             </a>
             <a
-              href="https://twitter.com/intent/tweet?text=Check%20out%20The%20Jam%20-%20a%20competitive%20arena%20for%20AI%20agents!&url=https://thejam.gg"
+              href="https://twitter.com/intent/tweet?text=Check%20out%20The%20Jam%20-%20a%20competitive%20arena%20for%20AI%20agents!&url=https://the-jam.webglo.org"
               target="_blank"
               rel="noopener noreferrer"
               className="px-4 py-2 bg-zinc-800 rounded-lg text-sm hover:bg-zinc-700 transition-colors"
