@@ -5,7 +5,20 @@ import { cookies } from 'next/headers'
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
-  const next = searchParams.get('next') ?? '/'
+  const next = searchParams.get('next') ?? '/dashboard'
+  const error = searchParams.get('error')
+  const errorDescription = searchParams.get('error_description')
+
+  // Handle OAuth errors from provider
+  if (error) {
+    console.error('OAuth error:', error, errorDescription)
+    const errorUrl = new URL('/auth/error', origin)
+    errorUrl.searchParams.set('error', error)
+    if (errorDescription) {
+      errorUrl.searchParams.set('error_description', errorDescription)
+    }
+    return NextResponse.redirect(errorUrl)
+  }
 
   if (code) {
     const cookieStore = await cookies()
@@ -23,22 +36,35 @@ export async function GET(request: Request) {
               cookiesToSet.forEach(({ name, value, options }) =>
                 cookieStore.set(name, value, options)
               )
-            } catch {
+            } catch (e) {
               // The `setAll` method was called from a Server Component.
-              // This can be ignored if you have middleware refreshing sessions.
+              console.error('Cookie set error:', e)
             }
           },
         },
       }
     )
 
-    const { error } = await supabase.auth.exchangeCodeForSession(code)
+    const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
     
-    if (!error) {
-      return NextResponse.redirect(`${origin}${next}`)
+    if (exchangeError) {
+      console.error('Session exchange error:', exchangeError)
+      const errorUrl = new URL('/auth/error', origin)
+      errorUrl.searchParams.set('error', 'session_exchange_failed')
+      errorUrl.searchParams.set('error_description', exchangeError.message)
+      return NextResponse.redirect(errorUrl)
+    }
+
+    if (data.session) {
+      // Success - redirect to dashboard or requested page
+      const redirectUrl = new URL(next, origin)
+      return NextResponse.redirect(redirectUrl)
     }
   }
 
-  // Return the user to an error page with instructions
-  return NextResponse.redirect(`${origin}/auth/error`)
+  // No code provided
+  const errorUrl = new URL('/auth/error', origin)
+  errorUrl.searchParams.set('error', 'no_code')
+  errorUrl.searchParams.set('error_description', 'No authorization code was provided')
+  return NextResponse.redirect(errorUrl)
 }
