@@ -1,7 +1,7 @@
 /**
  * Upvote a challenge (like/interest indicator)
- * POST: Toggle upvote
- * GET: Check if current user has upvoted
+ * POST: Toggle upvote (supports both user auth and agent API key)
+ * GET: Check if current user/agent has upvoted
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -11,7 +11,56 @@ import { supabaseAdmin } from '@/lib/supabase';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-// GET /api/challenges/[slug]/upvote - Check if user has upvoted
+// Hash API key for lookup
+async function hashApiKey(key: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(key);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// Authenticate request - returns either user or agent
+async function authenticate(authHeader: string | null): Promise<{
+  type: 'user' | 'agent';
+  id: string;
+} | null> {
+  if (!authHeader?.startsWith('Bearer ')) {
+    return null;
+  }
+
+  const token = authHeader.replace('Bearer ', '');
+
+  // Check if it's an agent API key
+  if (token.startsWith('jam_sk_')) {
+    const keyHash = await hashApiKey(token);
+    const { data: agent } = await supabaseAdmin!
+      .from('agents')
+      .select('id')
+      .eq('api_key_hash', keyHash)
+      .eq('is_active', true)
+      .single();
+
+    if (agent) {
+      return { type: 'agent', id: String(agent.id) };
+    }
+    return null;
+  }
+
+  // Otherwise try as user token
+  const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+    global: { headers: { Authorization: `Bearer ${token}` } },
+  });
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) {
+    return { type: 'user', id: user.id };
+  }
+
+  return null;
+}
+
+// GET /api/challenges/[slug]/upvote - Check if user/agent has upvoted
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ slug: string }> }
@@ -36,23 +85,17 @@ export async function GET(
 
   let hasUpvoted = false;
 
-  if (authHeader?.startsWith('Bearer ')) {
-    const token = authHeader.replace('Bearer ', '');
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: `Bearer ${token}` } },
-    });
+  const auth = await authenticate(authHeader);
+  if (auth) {
+    const column = auth.type === 'user' ? 'user_id' : 'agent_id';
+    const { data: existing } = await supabaseAdmin
+      .from('upvotes')
+      .select('id')
+      .eq('challenge_id', challenge.id)
+      .eq(column, auth.id)
+      .single();
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      const { data: existing } = await supabaseAdmin
-        .from('upvotes')
-        .select('id')
-        .eq('challenge_id', challenge.id)
-        .eq('user_id', user.id)
-        .single();
-
-      hasUpvoted = !!existing;
-    }
+    hasUpvoted = !!existing;
   }
 
   return NextResponse.json({
@@ -73,17 +116,8 @@ export async function POST(
   const { slug } = await params;
   const authHeader = request.headers.get('authorization');
 
-  if (!authHeader?.startsWith('Bearer ')) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  const token = authHeader.replace('Bearer ', '');
-  const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-    global: { headers: { Authorization: `Bearer ${token}` } },
-  });
-
-  const { data: { user }, error: userError } = await supabase.auth.getUser();
-  if (userError || !user) {
+  const auth = await authenticate(authHeader);
+  if (!auth) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -98,12 +132,14 @@ export async function POST(
     return NextResponse.json({ error: 'Challenge not found' }, { status: 404 });
   }
 
+  const column = auth.type === 'user' ? 'user_id' : 'agent_id';
+
   // Check if already upvoted
   const { data: existing } = await supabaseAdmin
     .from('upvotes')
     .select('id')
     .eq('challenge_id', challenge.id)
-    .eq('user_id', user.id)
+    .eq(column, auth.id)
     .single();
 
   let newCount: number;
@@ -120,12 +156,14 @@ export async function POST(
     action = 'removed';
   } else {
     // Add upvote
+    const insertData: Record<string, any> = {
+      challenge_id: challenge.id,
+    };
+    insertData[column] = auth.id;
+
     await supabaseAdmin
       .from('upvotes')
-      .insert({
-        challenge_id: challenge.id,
-        user_id: user.id,
-      });
+      .insert(insertData);
 
     newCount = (challenge.upvotes || 0) + 1;
     action = 'added';
