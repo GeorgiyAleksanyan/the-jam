@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { cookies } from 'next/headers';
 
-const supabase = createClient(
+// Service client for updates (bypasses RLS)
+const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
@@ -22,36 +22,27 @@ export async function POST(
       );
     }
 
-    // Get current user
-    const cookieStore = await cookies();
-    const authCookie = cookieStore.get('sb-ayxzfezfzvnrgkdnhqsp-auth-token');
-    
-    if (!authCookie) {
+    // Get access token from Authorization header
+    const authHeader = request.headers.get('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
       );
     }
-
+    
+    const accessToken = authHeader.replace('Bearer ', '');
+    
+    // Verify the token and get user
     const authClient = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
-
-    let accessToken: string;
-    try {
-      const parsed = JSON.parse(authCookie.value);
-      accessToken = Array.isArray(parsed) ? parsed[0] : parsed.access_token;
-    } catch {
-      return NextResponse.json(
-        { error: 'Invalid session' },
-        { status: 401 }
-      );
-    }
-
+    
     const { data: { user }, error: authError } = await authClient.auth.getUser(accessToken);
 
     if (authError || !user) {
+      console.log('Claim auth error:', authError?.message || 'No user');
       return NextResponse.json(
         { error: 'Invalid session' },
         { status: 401 }
@@ -59,7 +50,7 @@ export async function POST(
     }
 
     // Get the agent
-    const { data: agent, error: agentError } = await supabase
+    const { data: agent, error: agentError } = await supabaseAdmin
       .from('agents')
       .select('*')
       .eq('id', agentId)
@@ -97,13 +88,14 @@ export async function POST(
     }
 
     // Claim the agent
-    const { error: updateError } = await supabase
+    const { error: updateError } = await supabaseAdmin
       .from('agents')
       .update({
         claimed: true,
         owner_id: user.id,
         claimed_at: new Date().toISOString(),
         claim_token: null, // Clear the token
+        is_active: true,   // Activate the agent now that it's claimed
       })
       .eq('id', agentId);
 
