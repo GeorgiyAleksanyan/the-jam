@@ -2,16 +2,17 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 
 /**
- * One-time cleanup endpoint to fix duplicate challenges and migrate old data.
+ * Cleanup endpoint to fix duplicate challenges and migrate old data.
+ * 
+ * SAFEGUARD: Challenges with prize_pool > 0 (funded) are NEVER deleted or merged.
+ * Their DB IDs are used as on-chain escrow IDs, so changing them would orphan funds.
  * 
  * This endpoint:
  * 1. Fetches all GitHub challenge issues to build title -> issue mapping
  * 2. Finds challenges without github_issue_number
  * 3. Matches them to GitHub issues by normalized title
  * 4. Updates with correct github_issue_number and slug
- * 5. Removes duplicates (keeping oldest, moving submissions)
- * 
- * Run once after deploying the sync fix.
+ * 5. Removes duplicates (keeping oldest OR funded one, moving submissions)
  */
 
 const GITHUB_REST = 'https://api.github.com';
@@ -46,7 +47,9 @@ export async function POST(request: NextRequest) {
       orphans_matched: 0,
       duplicates_removed: 0,
       challenges_updated: 0,
+      funded_protected: 0,
       errors: [] as string[],
+      protected_challenges: [] as string[],
     };
 
     // Fetch GitHub issues to build title -> issue number map
@@ -93,10 +96,10 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Get all challenges
+    // Get all challenges INCLUDING prize_pool for protection check
     const { data: allChallenges } = await supabaseAdmin
       .from('challenges')
-      .select('id, slug, title, github_issue_number, source_repo_id, created_at')
+      .select('id, slug, title, github_issue_number, source_repo_id, created_at, prize_pool')
       .order('created_at', { ascending: true });
 
     if (!allChallenges) {
@@ -124,30 +127,56 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
-      // Find the best challenge to keep (one with github_issue_number set, or oldest)
-      let keeper = challenges.find(c => c.github_issue_number === issueInfo.number);
-      if (!keeper) {
-        keeper = challenges[0]; // Keep oldest
+      // SAFEGUARD: Find any funded challenges in this group
+      const fundedChallenges = challenges.filter(c => (c.prize_pool || 0) > 0);
+      
+      // If multiple funded challenges exist for same title, that's a problem - log and skip
+      if (fundedChallenges.length > 1) {
+        results.errors.push(`Multiple funded challenges for "${challenges[0].title}" - manual intervention required`);
+        for (const fc of fundedChallenges) {
+          results.protected_challenges.push(`ID ${fc.id}: ${fc.title} (${fc.prize_pool} USDC)`);
+        }
+        results.funded_protected += fundedChallenges.length;
+        continue;
+      }
+
+      // Choose keeper: prefer funded > has correct issue number > oldest
+      let keeper = fundedChallenges[0] || 
+                   challenges.find(c => c.github_issue_number === issueInfo.number) ||
+                   challenges[0];
+
+      // If keeper is funded, log protection
+      if ((keeper.prize_pool || 0) > 0) {
+        results.protected_challenges.push(`ID ${keeper.id}: ${keeper.title} (${keeper.prize_pool} USDC) - kept as keeper`);
+        results.funded_protected++;
       }
 
       const correctSlug = generateSlug(issueInfo.title, issueInfo.number);
 
-      // First, delete any other entries that would conflict with the new slug
+      // First, check for slug conflicts - but NEVER delete funded challenges
       const { data: conflicting } = await supabaseAdmin
         .from('challenges')
-        .select('id')
+        .select('id, prize_pool, title')
         .eq('slug', correctSlug)
         .neq('id', keeper.id);
 
       if (conflicting?.length) {
         for (const conflict of conflicting) {
+          // SAFEGUARD: Never delete funded challenges
+          if ((conflict.prize_pool || 0) > 0) {
+            results.errors.push(`Cannot delete funded challenge ID ${conflict.id} (${conflict.prize_pool} USDC) - slug conflict with keeper`);
+            results.protected_challenges.push(`ID ${conflict.id}: ${conflict.title} (${conflict.prize_pool} USDC) - protected from deletion`);
+            results.funded_protected++;
+            continue;
+          }
+
           // Move submissions first
           await supabaseAdmin
             .from('submissions')
             .update({ challenge_id: keeper.id })
             .eq('challenge_id', conflict.id);
           
-          // Delete conflicting entry
+          // Delete unfunded conflicting entry
           await supabaseAdmin
             .from('challenges')
             .delete()
@@ -181,13 +210,21 @@ export async function POST(request: NextRequest) {
       // Delete remaining duplicates (same normalized title but different entries)
       const toDelete = challenges.filter(c => c.id !== keeper.id);
       for (const dup of toDelete) {
+        // SAFEGUARD: Never delete funded challenges
+        if ((dup.prize_pool || 0) > 0) {
+          results.errors.push(`Cannot delete funded duplicate ID ${dup.id} (${dup.prize_pool} USDC)`);
+          results.protected_challenges.push(`ID ${dup.id}: ${dup.title} (${dup.prize_pool} USDC) - protected duplicate`);
+          results.funded_protected++;
+          continue;
+        }
+
         // Move submissions to keeper
         await supabaseAdmin
           .from('submissions')
           .update({ challenge_id: keeper.id })
           .eq('challenge_id', dup.id);
 
-        // Delete duplicate
+        // Delete unfunded duplicate
         await supabaseAdmin
           .from('challenges')
           .delete()
@@ -201,6 +238,7 @@ export async function POST(request: NextRequest) {
       success: true,
       ...results,
       github_issues_found: titleToIssue.size,
+      safeguard_note: 'Challenges with prize_pool > 0 are protected from deletion/merging to preserve escrow ID mapping',
     });
   } catch (error) {
     console.error('Cleanup error:', error);
@@ -214,6 +252,7 @@ export async function POST(request: NextRequest) {
 export async function GET() {
   return NextResponse.json({
     message: 'POST to this endpoint to cleanup duplicate challenges and fix data integrity',
-    warning: 'This is a one-time migration endpoint. Matches challenges to GitHub issues by title.',
+    warning: 'This is a migration endpoint. Matches challenges to GitHub issues by title.',
+    safeguard: 'Challenges with prize_pool > 0 (funded) are NEVER deleted or merged. Their DB IDs are locked.',
   });
 }
