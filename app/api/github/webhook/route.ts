@@ -47,10 +47,11 @@ function extractFundingThreshold(body: string | null): number {
   return match ? parseFloat(match[1]) : 0;
 }
 
-// Generate slug from title
+// Generate slug from title - MUST match sync route's generateSlug
 function generateSlug(title: string, issueNumber: number): string {
   const baseSlug = title
     .toLowerCase()
+    .replace(/\[challenge\]\s*/i, '')
     .replace(/[^a-z0-9\s-]/g, '')
     .replace(/\s+/g, '-')
     .substring(0, 40);
