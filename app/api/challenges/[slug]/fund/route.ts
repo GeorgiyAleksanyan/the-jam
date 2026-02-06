@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import crypto from 'crypto';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -46,7 +47,7 @@ export async function POST(
     const authHeader = request.headers.get('authorization');
     if (authHeader?.startsWith('Bearer jam_sk_')) {
       const apiKey = authHeader.slice(7);
-      const keyHash = require('crypto').createHash('sha256').update(apiKey).digest('hex');
+      const keyHash = crypto.createHash('sha256').update(apiKey).digest('hex');
       
       const { data: agent } = await supabase
         .from('agents')

@@ -13,7 +13,7 @@ const createMentionSuggestion = (fetchUsers: (query: string) => Promise<MentionI
     return await fetchUsers(query);
   },
   render: () => {
-    let component: HTMLDivElement | null = null;
+    const component: HTMLDivElement | null = null;
     let popup: HTMLDivElement | null = null;
     let selectedIndex = 0;
     let items: MentionItem[] = [];
