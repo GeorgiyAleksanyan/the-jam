@@ -101,15 +101,17 @@ export default async function ChallengeDetailPage({ params }: Props) {
         </div>
 
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex flex-wrap items-center gap-3 mb-4">
-            <h1 className="text-3xl font-bold">{challenge.title}</h1>
-            <span className={`text-sm px-3 py-1 rounded border ${getDifficultyColor(challenge.difficulty)}`}>
-              {challenge.difficulty}
-            </span>
-            <span className={`text-sm ${statusInfo.color}`}>
-              ● {statusInfo.label}
-            </span>
+        <div className="mb-6 sm:mb-8">
+          <div className="flex flex-wrap items-start sm:items-center gap-2 sm:gap-3 mb-4">
+            <h1 className="text-2xl sm:text-3xl font-bold w-full sm:w-auto">{challenge.title}</h1>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className={`text-xs sm:text-sm px-2 sm:px-3 py-1 rounded border ${getDifficultyColor(challenge.difficulty)}`}>
+                {challenge.difficulty}
+              </span>
+              <span className={`text-xs sm:text-sm ${statusInfo.color}`}>
+                ● {statusInfo.label}
+              </span>
+            </div>
           </div>
 
           {/* Topics */}
@@ -127,7 +129,7 @@ export default async function ChallengeDetailPage({ params }: Props) {
           )}
 
           {/* Meta */}
-          <div className="flex flex-wrap items-center gap-6 text-sm text-gray-500">
+          <div className="flex flex-wrap items-center gap-3 sm:gap-6 text-xs sm:text-sm text-gray-500">
             {creator && (
               <span>
                 Created by{' '}
@@ -150,26 +152,26 @@ export default async function ChallengeDetailPage({ params }: Props) {
 
         {/* Winner Banner (for solved challenges) */}
         {challenge.status === 'closed' && challenge.winner && (
-          <div className="bg-gradient-to-r from-yellow-900/30 to-amber-900/30 border border-yellow-600 rounded-lg p-6 mb-8">
-            <div className="flex items-center justify-between flex-wrap gap-4">
-              <div className="flex items-center gap-4">
-                <span className="text-4xl">🏆</span>
+          <div className="bg-gradient-to-r from-yellow-900/30 to-amber-900/30 border border-yellow-600 rounded-lg p-4 sm:p-6 mb-6 sm:mb-8">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3 sm:gap-4">
+                <span className="text-3xl sm:text-4xl">🏆</span>
                 <div>
-                  <div className="text-sm text-yellow-400 mb-1">Winner</div>
+                  <div className="text-xs sm:text-sm text-yellow-400 mb-1">Winner</div>
                   <Link 
                     href={`/agents/${challenge.winner.slug}`}
-                    className="text-2xl font-bold text-yellow-400 hover:underline flex items-center gap-2"
+                    className="text-xl sm:text-2xl font-bold text-yellow-400 hover:underline flex items-center gap-2"
                   >
                     {challenge.winner.avatar_url && (
-                      <img src={challenge.winner.avatar_url} alt="" className="w-8 h-8 rounded-full" />
+                      <img src={challenge.winner.avatar_url} alt="" className="w-6 h-6 sm:w-8 sm:h-8 rounded-full" />
                     )}
                     {challenge.winner.name}
                   </Link>
                 </div>
               </div>
-              <div className="text-right">
-                <div className="text-sm text-gray-400 mb-1">Prize Awarded</div>
-                <div className="text-2xl font-bold text-green-400">
+              <div className="text-left sm:text-right">
+                <div className="text-xs sm:text-sm text-gray-400 mb-1">Prize Awarded</div>
+                <div className="text-xl sm:text-2xl font-bold text-green-400">
                   ${(challenge.prize_pool || 0).toFixed(2)} USDC
                 </div>
                 {challenge.payout_tx && (
@@ -177,7 +179,7 @@ export default async function ChallengeDetailPage({ params }: Props) {
                     href={`https://basescan.org/tx/${challenge.payout_tx}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-sm text-blue-400 hover:underline"
+                    className="text-xs sm:text-sm text-blue-400 hover:underline"
                   >
                     View Transaction ↗
                   </a>
@@ -189,12 +191,12 @@ export default async function ChallengeDetailPage({ params }: Props) {
 
         {/* Prize Pool Banner (only for active challenges) */}
         {challenge.status !== 'closed' && (
-          <div className="bg-gradient-to-r from-green-900/30 to-emerald-900/30 border border-green-700 rounded-lg p-6 mb-8">
-            <div className="flex items-center justify-between">
+          <div className="bg-gradient-to-r from-green-900/30 to-emerald-900/30 border border-green-700 rounded-lg p-4 sm:p-6 mb-6 sm:mb-8">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div>
-                <div className="text-sm text-green-400 mb-1">Prize Pool</div>
-                <div className="text-4xl font-bold text-green-400">
-                  ${(challenge.prize_pool || 0).toFixed(2)} <span className="text-lg">USDC</span>
+                <div className="text-xs sm:text-sm text-green-400 mb-1">Prize Pool</div>
+                <div className="text-3xl sm:text-4xl font-bold text-green-400">
+                  ${(challenge.prize_pool || 0).toFixed(2)} <span className="text-base sm:text-lg">USDC</span>
                 </div>
               </div>
               <ContributeButton
@@ -207,9 +209,9 @@ export default async function ChallengeDetailPage({ params }: Props) {
           </div>
         )}
 
-        <div className="grid lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
           {/* Main Content */}
-          <div className="lg:col-span-2 space-y-8">
+          <div className="lg:col-span-2 space-y-6 sm:space-y-8 order-2 lg:order-1">
             {/* Description */}
             <div className="bg-[#1e1e1e] border border-gray-700 rounded-lg p-6">
               <h2 className="text-xl font-semibold mb-4">Description</h2>
@@ -251,7 +253,7 @@ export default async function ChallengeDetailPage({ params }: Props) {
           </div>
 
           {/* Sidebar */}
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6 order-1 lg:order-2">
             {/* On-Chain Escrow Info */}
             <EscrowInfo challengeId={challenge.id} />
 

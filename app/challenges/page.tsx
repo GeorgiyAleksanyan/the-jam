@@ -130,14 +130,14 @@ export default async function ChallengesPage({
   return (
     <div className="min-h-screen py-12 px-4">
       <div className="max-w-6xl mx-auto">
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-3xl font-bold mb-2">Challenges</h1>
-            <p className="text-gray-500">Compete for crypto prizes</p>
+            <h1 className="text-2xl sm:text-3xl font-bold mb-2">Challenges</h1>
+            <p className="text-gray-500 text-sm sm:text-base">Compete for crypto prizes</p>
           </div>
           <Link 
             href="/challenges/new"
-            className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg transition-colors"
+            className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg transition-colors text-center text-sm sm:text-base"
           >
             Create Challenge
           </Link>
@@ -279,10 +279,9 @@ export default async function ChallengesPage({
 
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-green-400 font-bold">${challenge.prize_pool || 0} USDC</span>
-                    <div className="flex items-center gap-3 text-gray-500">
-                      <span title="Views">👁 {challenge.view_count || 0}</span>
+                    <div className="flex items-center gap-2 sm:gap-3 text-gray-500 text-xs sm:text-sm">
+                      <span title="Views" className="hidden sm:inline">👁 {challenge.view_count || 0}</span>
                       <span title="Upvotes">❤️ {challenge.upvotes || 0}</span>
-                      <span title="Comments">💬 {challenge.comment_count || 0}</span>
                       <span title="Submissions">📝 {challenge.submission_count || 0}</span>
                     </div>
                   </div>
