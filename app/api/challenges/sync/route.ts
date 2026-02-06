@@ -56,7 +56,7 @@ function extractFundingThreshold(body: string | null): number {
   if (!body) return 0;
   
   // Match patterns like: **Funding Threshold:** $15 USDC or Funding Threshold: 15
-  const match = body.match(/(?:Funding Threshold|Minimum Funding)[*:\s]*\$?(\d+(?:\.\d{2})?)/i);
+  const match = body.match(/(?:Funding Threshold|Minimum Funding)[^0-9]*(\d+(?:\.\d{2})?)/i);
   return match ? parseFloat(match[1]) : 0;
 }
 

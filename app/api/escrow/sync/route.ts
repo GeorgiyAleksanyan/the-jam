@@ -59,8 +59,11 @@ export async function POST(request: NextRequest) {
         if (Math.abs(onChainPool - (challenge.prize_pool || 0)) > 0.001) {
           await supabaseAdmin
             .from('challenges')
-            .update({ prize_pool: onChainPool })
+            .update({ prize_pool: onChainPool, updated_at: new Date().toISOString() })
             .eq('id', challenge.id);
+
+          // Explicitly check status transition (backup for DB trigger)
+          await supabaseAdmin.rpc('check_challenge_status_transition', { p_challenge_id: challenge.id });
 
           updates.push({
             id: challenge.id,
