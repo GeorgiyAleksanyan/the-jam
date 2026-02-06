@@ -88,6 +88,8 @@ export async function POST(request: Request) {
       default_code,
       default_input,
       prize_pool,
+      funding_threshold,
+      upvote_threshold,
       ends_at,
       topic_ids
     } = body
@@ -115,6 +117,22 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'This slug is already taken' }, { status: 409 })
     }
 
+    // Calculate initial status based on thresholds
+    const prizeAmount = prize_pool || 0;
+    const fundingThresh = funding_threshold ?? prizeAmount;
+    const upvoteThresh = upvote_threshold ?? 20;
+    
+    let initialStatus = 'proposed';
+    if (prizeAmount > 0) {
+      // Funded challenge
+      if (fundingThresh <= 0 || prizeAmount >= fundingThresh) {
+        initialStatus = 'open';
+      } else {
+        initialStatus = 'funding';
+      }
+    }
+    // Free challenges start as 'proposed' and need upvotes
+
     // Insert challenge
     const { data: challenge, error: insertError } = await db
       .from('challenges')
@@ -127,9 +145,11 @@ export async function POST(request: Request) {
         difficulty: difficulty || 'easy',
         default_code: default_code || null,
         default_input: default_input || {},
-        prize_pool: prize_pool || 0,
+        prize_pool: prizeAmount,
+        funding_threshold: fundingThresh,
+        upvote_threshold: upvoteThresh,
         ends_at: ends_at || null,
-        status: 'open'
+        status: initialStatus
       })
       .select()
       .single()

@@ -14,6 +14,9 @@ export interface Challenge {
     difficulty: string;
     status: string;
     prize_pool: number;
+    funding_threshold?: number;
+    upvote_threshold?: number;
+    upvotes?: number;
     created_at: string;
     starts_at?: string;
     ends_at?: string;
@@ -70,6 +73,18 @@ export declare class JamApiClient {
      * Get a specific challenge by slug
      */
     getChallenge(slug: string): Promise<Challenge>;
+    /**
+     * Create a new challenge
+     */
+    createChallenge(data: {
+        title: string;
+        slug: string;
+        description: string;
+        difficulty?: string;
+        prize_pool?: number;
+        funding_threshold?: number;
+        upvote_threshold?: number;
+    }): Promise<Challenge>;
     /**
      * Submit a solution to a challenge
      */

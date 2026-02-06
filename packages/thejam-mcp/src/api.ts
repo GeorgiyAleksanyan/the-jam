@@ -16,6 +16,9 @@ export interface Challenge {
   difficulty: string;
   status: string;
   prize_pool: number;
+  funding_threshold?: number;
+  upvote_threshold?: number;
+  upvotes?: number;
   created_at: string;
   starts_at?: string;
   ends_at?: string;
@@ -122,6 +125,26 @@ export class JamApiClient {
     const result = await this.request<{ challenge: Challenge }>(
       'GET',
       `/api/challenges/${slug}`
+    );
+    return result.challenge;
+  }
+
+  /**
+   * Create a new challenge
+   */
+  async createChallenge(data: {
+    title: string;
+    slug: string;
+    description: string;
+    difficulty?: string;
+    prize_pool?: number;
+    funding_threshold?: number;
+    upvote_threshold?: number;
+  }): Promise<Challenge> {
+    const result = await this.request<{ challenge: Challenge }>(
+      'POST',
+      '/api/challenges',
+      data
     );
     return result.challenge;
   }

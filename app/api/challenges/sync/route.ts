@@ -60,6 +60,15 @@ function extractFundingThreshold(body: string | null): number {
   return match ? parseFloat(match[1]) : 0;
 }
 
+// Extract upvote threshold from issue body (default 20 for free challenges)
+function extractUpvoteThreshold(body: string | null): number {
+  if (!body) return 20;
+  
+  // Match patterns like: **Upvote Threshold:** 20 or Upvotes Required: 15
+  const match = body.match(/(?:Upvote Threshold|Upvotes Required)[^0-9]*(\d+)/i);
+  return match ? parseInt(match[1], 10) : 20;
+}
+
 // Generate slug from title
 function generateSlug(title: string, issueNumber: number): string {
   const baseSlug = title
@@ -71,7 +80,13 @@ function generateSlug(title: string, issueNumber: number): string {
 }
 
 // Determine challenge status from issue state and labels
-function determineStatus(issue: GitHubIssue, currentPrizePool: number, fundingThreshold: number): string {
+function determineStatus(
+  issue: GitHubIssue, 
+  currentPrizePool: number, 
+  fundingThreshold: number,
+  currentUpvotes: number = 0,
+  upvoteThreshold: number = 20
+): string {
   const labelNames = issue.labels.map(l => l.name.toLowerCase());
   
   // Explicit status labels take precedence
@@ -85,12 +100,21 @@ function determineStatus(issue: GitHubIssue, currentPrizePool: number, fundingTh
     return 'closed';
   }
   
-  // Open issues - check funding
-  if (fundingThreshold > 0 && currentPrizePool < fundingThreshold) {
-    return currentPrizePool > 0 ? 'funding' : 'proposed';
+  // Funded challenges - check funding threshold
+  const isFunded = fundingThreshold > 0 || currentPrizePool > 0;
+  if (isFunded) {
+    if (fundingThreshold > 0 && currentPrizePool < fundingThreshold) {
+      return currentPrizePool > 0 ? 'funding' : 'proposed';
+    }
+    return 'open';
   }
   
-  return 'open';
+  // Free challenges - check upvote threshold
+  if (currentUpvotes >= upvoteThreshold) {
+    return 'open';
+  }
+  
+  return 'proposed';
 }
 
 // Fetch issues from a GitHub repo
@@ -125,17 +149,19 @@ async function syncIssue(issue: GitHubIssue, repo: SourceRepo): Promise<{ action
   const bounty = extractBounty(issue.body);
   const difficulty = extractDifficulty(issue.labels);
   const fundingThreshold = extractFundingThreshold(issue.body);
+  const upvoteThreshold = extractUpvoteThreshold(issue.body);
   
   // Check if challenge exists
   const { data: existing } = await supabaseAdmin
     .from('challenges')
-    .select('id, prize_pool, status')
+    .select('id, prize_pool, status, upvotes')
     .eq('source_repo_id', repo.id)
     .eq('github_issue_number', issue.number)
     .single();
   
   const currentPrizePool = existing?.prize_pool || bounty;
-  const status = determineStatus(issue, currentPrizePool, fundingThreshold);
+  const currentUpvotes = existing?.upvotes || 0;
+  const status = determineStatus(issue, currentPrizePool, fundingThreshold, currentUpvotes, upvoteThreshold);
   
   const challengeData = {
     slug,
@@ -145,6 +171,7 @@ async function syncIssue(issue: GitHubIssue, repo: SourceRepo): Promise<{ action
     status,
     prize_pool: existing ? existing.prize_pool : bounty, // Don't overwrite existing prize pool
     funding_threshold: fundingThreshold,
+    upvote_threshold: upvoteThreshold,
     source_repo_id: repo.id,
     github_issue_number: issue.number,
     github_issue_url: issue.html_url,

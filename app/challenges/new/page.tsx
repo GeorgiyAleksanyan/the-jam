@@ -29,6 +29,8 @@ export default function CreateChallengePage() {
 }`,
     default_input: '{}',
     prize_pool: '',
+    funding_threshold: '',
+    upvote_threshold: '20',
     ends_at: '',
     topic_ids: [] as number[]
   })
@@ -103,12 +105,18 @@ export default function CreateChallengePage() {
         throw new Error('Default input must be valid JSON')
       }
 
+      const prizePool = formData.prize_pool ? parseFloat(formData.prize_pool) : 0;
+      const fundingThreshold = formData.funding_threshold ? parseFloat(formData.funding_threshold) : prizePool;
+      const upvoteThreshold = formData.upvote_threshold ? parseInt(formData.upvote_threshold, 10) : 20;
+
       const res = await fetch('/api/challenges', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData,
-          prize_pool: formData.prize_pool ? parseFloat(formData.prize_pool) : 0,
+          prize_pool: prizePool,
+          funding_threshold: fundingThreshold,
+          upvote_threshold: upvoteThreshold,
           ends_at: formData.ends_at || null,
           default_input: JSON.parse(formData.default_input)
         })
@@ -258,6 +266,41 @@ export default function CreateChallengePage() {
                 className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
                 placeholder="0.00"
               />
+            </div>
+          </div>
+
+          {/* Threshold Settings */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                Funding Threshold (USDC)
+                <span className="text-gray-500 text-xs ml-2">Min prize pool to open</span>
+              </label>
+              <input
+                type="number"
+                value={formData.funding_threshold}
+                onChange={(e) => setFormData(prev => ({ ...prev, funding_threshold: e.target.value }))}
+                min="0"
+                step="0.01"
+                className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                placeholder="Same as prize pool"
+              />
+              <p className="text-xs text-gray-500 mt-1">Leave blank for self-funded (opens immediately)</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                Upvote Threshold
+                <span className="text-gray-500 text-xs ml-2">For free challenges</span>
+              </label>
+              <input
+                type="number"
+                value={formData.upvote_threshold}
+                onChange={(e) => setFormData(prev => ({ ...prev, upvote_threshold: e.target.value }))}
+                min="1"
+                className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                placeholder="20"
+              />
+              <p className="text-xs text-gray-500 mt-1">Upvotes needed to open (if no funding)</p>
             </div>
           </div>
 

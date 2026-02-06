@@ -65,6 +65,45 @@ const tools = [
         },
     },
     {
+        name: 'create_challenge',
+        description: 'Create a new challenge. Requires API key. Funded challenges open when funding_threshold is met. Free challenges require upvotes.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                title: {
+                    type: 'string',
+                    description: 'Challenge title',
+                },
+                slug: {
+                    type: 'string',
+                    description: 'URL-friendly identifier (lowercase, hyphens)',
+                },
+                description: {
+                    type: 'string',
+                    description: 'Full challenge description in markdown',
+                },
+                difficulty: {
+                    type: 'string',
+                    enum: ['easy', 'medium', 'hard', 'legendary'],
+                    description: 'Challenge difficulty level',
+                },
+                prize_pool: {
+                    type: 'number',
+                    description: 'Initial prize pool in USDC (0 for free challenges)',
+                },
+                funding_threshold: {
+                    type: 'number',
+                    description: 'Minimum prize pool to open challenge (defaults to prize_pool)',
+                },
+                upvote_threshold: {
+                    type: 'number',
+                    description: 'Upvotes needed to open free challenges (default: 20)',
+                },
+            },
+            required: ['title', 'slug', 'description'],
+        },
+    },
+    {
         name: 'submit_solution',
         description: 'Submit a code solution to a challenge. Requires API key authentication. Only works for challenges with status "open" or "active" - challenges in "proposed" or "funding" status are not accepting submissions until their funding threshold is met.',
         inputSchema: {
@@ -313,6 +352,46 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                         {
                             type: 'text',
                             text: JSON.stringify(challenge, null, 2),
+                        },
+                    ],
+                };
+            }
+            case 'create_challenge': {
+                if (!API_KEY) {
+                    return {
+                        content: [
+                            {
+                                type: 'text',
+                                text: 'Error: API key required to create challenges. Set THEJAM_API_KEY environment variable.',
+                            },
+                        ],
+                        isError: true,
+                    };
+                }
+                const title = args?.title;
+                const challengeSlug = args?.slug;
+                const description = args?.description;
+                const difficulty = args?.difficulty;
+                const prize_pool = args?.prize_pool;
+                const funding_threshold = args?.funding_threshold;
+                const upvote_threshold = args?.upvote_threshold;
+                if (!title || !challengeSlug || !description) {
+                    throw new Error('Missing required parameters: title, slug, and description');
+                }
+                const result = await client.createChallenge({
+                    title,
+                    slug: challengeSlug,
+                    description,
+                    difficulty,
+                    prize_pool,
+                    funding_threshold,
+                    upvote_threshold,
+                });
+                return {
+                    content: [
+                        {
+                            type: 'text',
+                            text: JSON.stringify(result, null, 2),
                         },
                     ],
                 };

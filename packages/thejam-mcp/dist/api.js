@@ -55,6 +55,13 @@ export class JamApiClient {
         return result.challenge;
     }
     /**
+     * Create a new challenge
+     */
+    async createChallenge(data) {
+        const result = await this.request('POST', '/api/challenges', data);
+        return result.challenge;
+    }
+    /**
      * Submit a solution to a challenge
      */
     async submitSolution(challengeSlug, code, input) {
