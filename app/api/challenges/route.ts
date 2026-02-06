@@ -18,7 +18,7 @@ export async function GET(request: Request) {
       .from('challenges')
       .select(`
         id, slug, title, short_description, description, difficulty, status,
-        prize_pool, upvotes, submission_count, view_count,
+        prize_pool, funding_threshold, upvote_threshold, upvotes, submission_count, view_count,
         starts_at, ends_at, created_at
       `)
       .order('prize_pool', { ascending: false })
