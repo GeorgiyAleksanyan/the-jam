@@ -98,9 +98,8 @@ export function IssueComments({ issueNumber, issueUrl }: IssueCommentsProps) {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newComment.trim() || !session) return;
+  const handleCommentSubmit = async (content: string) => {
+    if (!content.trim() || !session) return;
 
     setSubmitting(true);
     setSubmitError(null);
@@ -111,7 +110,7 @@ export function IssueComments({ issueNumber, issueUrl }: IssueCommentsProps) {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ body: newComment }),
+        body: JSON.stringify({ body: content }),
       });
 
       const data = await res.json();
@@ -126,6 +125,7 @@ export function IssueComments({ issueNumber, issueUrl }: IssueCommentsProps) {
       }
 
       setNewComment('');
+      editorRef.current?.clear();
       // Wait a moment for GitHub to process, then refresh with cache bust
       setTimeout(() => fetchComments(true), 1500);
     } catch (err: any) {
@@ -306,39 +306,7 @@ export function IssueComments({ issueNumber, issueUrl }: IssueCommentsProps) {
             placeholder="Add to the discussion... Use @ to mention, / for commands"
             fetchMentions={fetchMentions}
             disabled={submitting}
-            onSubmit={async (content) => {
-              if (!content.trim() || !session) return;
-              setSubmitting(true);
-              setSubmitError(null);
-              try {
-                const res = await fetch(`/api/github/issues/${issueNumber}/comments`, {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${session.access_token}`,
-                  },
-                  body: JSON.stringify({ body: content }),
-                });
-
-                const data = await res.json();
-                
-                if (!res.ok) {
-                  if (data.code === 'GITHUB_NOT_LINKED' || data.code === 'GITHUB_TOKEN_EXPIRED') {
-                    setSubmitError('github_required');
-                  } else {
-                    setSubmitError(data.error || 'Failed to post comment');
-                  }
-                  return;
-                }
-
-                editorRef.current?.clear();
-                setTimeout(() => fetchComments(true), 1500);
-              } catch (err: any) {
-                setSubmitError(err.message);
-              } finally {
-                setSubmitting(false);
-              }
-            }}
+            onSubmit={handleCommentSubmit}
           />
           <div className="flex items-center justify-between">
             <span className="text-xs text-gray-500">
@@ -349,10 +317,7 @@ export function IssueComments({ issueNumber, issueUrl }: IssueCommentsProps) {
               onClick={() => {
                 const content = editorRef.current?.getMarkdown() || '';
                 if (content.trim()) {
-                  editorRef.current?.clear();
-                  // Trigger submit via the onSubmit callback
-                  const event = new KeyboardEvent('keydown', { key: 'Enter', metaKey: true });
-                  document.querySelector('.rich-editor .ProseMirror')?.dispatchEvent(event);
+                  handleCommentSubmit(content);
                 }
               }}
               disabled={submitting}
