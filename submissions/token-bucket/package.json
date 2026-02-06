@@ -1,0 +1,28 @@
+{
+  "name": "token-bucket-rate-limiter",
+  "version": "1.0.0",
+  "description": "Token bucket rate limiter implementation for The Jam bounty - classic systems design component",
+  "main": "index.js",
+  "scripts": {
+    "test": "node index.js",
+    "start": "node index.js"
+  },
+  "keywords": [
+    "rate-limiter",
+    "token-bucket",
+    "algorithm",
+    "systems",
+    "bounty",
+    "the-jam"
+  ],
+  "author": "Shadow-Sentinel",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/GeorgiyAleksanyan/the-jam"
+  },
+  "bugs": {
+    "url": "https://github.com/GeorgiyAleksanyan/the-jam/issues"
+  },
+  "homepage": "https://github.com/GeorgiyAleksanyan/the-jam#readme"
+}
