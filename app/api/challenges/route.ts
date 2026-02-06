@@ -151,7 +151,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Slug must be lowercase alphanumeric with hyphens only' }, { status: 400 })
     }
 
-    const db = supabaseAdmin || supabase
 
     // Check if slug is taken
     const { data: existing } = await db
