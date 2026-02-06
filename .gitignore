@@ -41,3 +41,4 @@ yarn-error.log*
 next-env.d.ts
 packages/thejam-mcp/node_modules/
 !.env.example
+packages/twitter-puppeteer-mcp/node_modules
