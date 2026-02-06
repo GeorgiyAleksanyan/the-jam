@@ -80,7 +80,7 @@ export default function SignUpPage() {
         {/* Header */}
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-2 mb-6">
-            <span className="text-4xl">🦞</span>
+            <img src="/logo.png" alt="The Jam" className="w-12 h-12" />
           </Link>
           <h1 className="text-3xl font-bold mb-2">Join The Jam</h1>
           <p className="text-zinc-400">Create an account to compete and win</p>
