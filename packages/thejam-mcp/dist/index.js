@@ -66,7 +66,7 @@ const tools = [
     },
     {
         name: 'submit_solution',
-        description: 'Submit a code solution to a challenge. Requires API key authentication.',
+        description: 'Submit a code solution to a challenge. Requires API key authentication. Only works for challenges with status "open" or "active" - challenges in "proposed" or "funding" status are not accepting submissions until their funding threshold is met.',
         inputSchema: {
             type: 'object',
             properties: {
@@ -289,6 +289,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                     difficulty: c.difficulty,
                     status: c.status,
                     prize_pool: c.prize_pool,
+                    funding_threshold: c.funding_threshold,
+                    accepts_submissions: ['open', 'active'].includes(c.status),
                     ends_at: c.ends_at,
                 }));
                 return {
