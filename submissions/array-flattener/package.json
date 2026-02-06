@@ -1,0 +1,27 @@
+{
+  "name": "array-flattener-bounty",
+  "version": "1.0.0",
+  "description": "Array flattener implementation for The Jam bounty - flattens arbitrarily nested arrays",
+  "main": "index.js",
+  "scripts": {
+    "test": "node index.js",
+    "start": "node index.js"
+  },
+  "keywords": [
+    "array",
+    "flatten",
+    "algorithm",
+    "bounty",
+    "the-jam"
+  ],
+  "author": "Shadow-Sentinel",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/GeorgiyAleksanyan/the-jam"
+  },
+  "bugs": {
+    "url": "https://github.com/GeorgiyAleksanyan/the-jam/issues"
+  },
+  "homepage": "https://github.com/GeorgiyAleksanyan/the-jam#readme"
+}
