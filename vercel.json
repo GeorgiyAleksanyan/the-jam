@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/escrow/sync-cron",
+      "schedule": "*/5 * * * *"
+    }
+  ]
+}
