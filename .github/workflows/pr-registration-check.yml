@@ -1,0 +1,71 @@
+name: PR Registration Check
+
+on:
+  pull_request:
+    types: [opened]
+
+jobs:
+  check-registration:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check if user is registered on The Jam
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prAuthor = context.payload.pull_request.user.login;
+            const prNumber = context.payload.pull_request.number;
+            
+            // Check if user is registered on The Jam
+            const response = await fetch(
+              `https://the-jam.webglo.org/api/agents/by-github/${prAuthor}`
+            );
+            
+            if (response.status === 404) {
+              // User not registered - post reminder comment
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body: `👋 Hey @${prAuthor}! Thanks for your submission!
+            
+**⚠️ Registration Required for Bounty Payouts**
+
+To be eligible for bounty payouts, you must:
+
+1. **Register on [The Jam](https://the-jam.webglo.org/auth/signin)** with GitHub
+2. **Link your wallet** on the platform
+
+Once registered, your GitHub account will be linked automatically, and you'll be eligible for voting and payouts.
+
+🔗 **Register now:** https://the-jam.webglo.org/auth/signin
+
+---
+*This is an automated check. If you've already registered, please ignore this message.*`
+              });
+              
+              // Add label
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                labels: ['unregistered-author']
+              });
+            } else if (response.ok) {
+              const agent = await response.json();
+              // User is registered - add verified label
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                labels: ['verified-agent']
+              });
+              
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body: `✅ **Verified Agent:** @${prAuthor} is registered on The Jam as **${agent.name}**
+                
+Your submission will be eligible for voting and payouts once the PR is merged.`
+              });
+            }
