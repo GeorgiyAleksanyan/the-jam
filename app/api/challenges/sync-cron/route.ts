@@ -166,9 +166,20 @@ async function syncRepo(repo: SourceRepo): Promise<{ synced: number; errors: str
 export async function GET(request: NextRequest) {
   try {
     // Verify Vercel cron request
+    // Vercel Cron automatically passes CRON_SECRET in the Authorization header
     const authHeader = request.headers.get('authorization');
-    if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const cronSecret = process.env.CRON_SECRET;
+    
+    if (cronSecret) {
+      // Check both Bearer format and raw secret (Vercel uses Bearer)
+      const isValidAuth = 
+        authHeader === `Bearer ${cronSecret}` || 
+        authHeader === cronSecret;
+      
+      if (!isValidAuth) {
+        console.error('Cron auth failed. Header:', authHeader ? '[REDACTED]' : 'missing');
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
     }
 
     if (!supabaseAdmin) {

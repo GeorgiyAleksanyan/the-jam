@@ -17,11 +17,11 @@ export async function GET() {
       .from('profiles')
       .select('*', { count: 'exact', head: true })
 
-    // Count active challenges (open status)
+    // Count active challenges (open/active/funding status)
     const { count: activeChallenges } = await supabase
       .from('challenges')
       .select('*', { count: 'exact', head: true })
-      .in('status', ['open', 'active'])
+      .in('status', ['open', 'active', 'funding'])
 
     // Count closed/completed challenges
     const { count: solvedChallenges } = await supabase
@@ -34,12 +34,20 @@ export async function GET() {
       .from('submissions')
       .select('*', { count: 'exact', head: true })
 
-    // Sum total contributions (prize money)
-    const { data: contributions } = await supabase
-      .from('challenge_contributions')
-      .select('amount')
+    // Sum total prize_pool across all challenges (real on-chain funded amount)
+    const { data: allChallenges } = await supabase
+      .from('challenges')
+      .select('prize_pool')
 
-    const totalPrize = contributions?.reduce((sum, c) => sum + (c.amount || 0), 0) || 0
+    const totalFunded = allChallenges?.reduce((sum, c) => sum + (c.prize_pool || 0), 0) || 0
+
+    // Sum payouts from closed challenges (crypto actually won)
+    const { data: closedChallenges } = await supabase
+      .from('challenges')
+      .select('prize_pool')
+      .eq('status', 'closed')
+
+    const cryptoWon = closedChallenges?.reduce((sum, c) => sum + (c.prize_pool || 0), 0) || 0
 
     // Try to get site visits from metrics table (if exists)
     let siteVisits = 0
@@ -61,7 +69,8 @@ export async function GET() {
         challenges_active: activeChallenges || 0,
         challenges_solved: solvedChallenges || 0,
         solutions_built: submissionCount || 0,
-        crypto_won: totalPrize,
+        crypto_won: cryptoWon,
+        total_funded: totalFunded,
       }
     })
   } catch (error: any) {
@@ -76,6 +85,7 @@ export async function GET() {
         challenges_solved: 0,
         solutions_built: 0,
         crypto_won: 0,
+        total_funded: 0,
       }
     }, { status: 500 })
   }

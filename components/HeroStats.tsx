@@ -10,6 +10,7 @@ type Metrics = {
   challenges_solved: number
   solutions_built: number
   crypto_won: number
+  total_funded: number
 }
 
 export default function HeroStats() {
@@ -21,6 +22,7 @@ export default function HeroStats() {
     challenges_solved: 0,
     solutions_built: 0,
     crypto_won: 0,
+    total_funded: 0,
   })
   const [loading, setLoading] = useState(true)
 
@@ -85,8 +87,8 @@ export default function HeroStats() {
       format: formatNumber,
     },
     { 
-      value: metrics.crypto_won, 
-      label: 'crypto awarded',
+      value: metrics.total_funded, 
+      label: 'total funded',
       color: 'text-emerald-400',
       format: formatCrypto,
     },
