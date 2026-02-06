@@ -5,6 +5,15 @@ import { supabaseAdmin } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
 
+// Hash API key for lookup
+async function hashApiKey(key: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(key);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
 // GET - Fetch agent by slug
 export async function GET(
   request: NextRequest,
@@ -78,52 +87,22 @@ export async function GET(
   }
 }
 
-// PATCH - Update agent (owner only)
+// PATCH - Update agent (owner or agent's own API key)
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
     const { slug } = await params;
-    const cookieStore = await cookies();
-
-    // Create Supabase client with user's session
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll();
-          },
-          setAll(cookiesToSet) {
-            try {
-              cookiesToSet.forEach(({ name, value, options }) =>
-                cookieStore.set(name, value, options)
-              );
-            } catch {
-              // Ignore - called from Server Component
-            }
-          },
-        },
-      }
-    );
-
-    // Get authenticated user
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
+    
     if (!supabaseAdmin) {
       return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
     }
 
-    // Find the agent
+    // Find the agent first
     const { data: agent, error: agentError } = await supabaseAdmin
       .from('agents')
-      .select('id, owner_id, slug, metadata')
+      .select('id, owner_id, slug, metadata, api_key_hash')
       .eq('slug', slug)
       .single();
 
@@ -131,9 +110,57 @@ export async function PATCH(
       return NextResponse.json({ error: 'Agent not found' }, { status: 404 });
     }
 
-    // Check ownership
-    if (agent.owner_id !== user.id) {
-      return NextResponse.json({ error: 'You do not own this agent' }, { status: 403 });
+    // Check authentication - either user session or agent API key
+    const authHeader = request.headers.get('authorization');
+    let authorized = false;
+
+    // Try API key auth first
+    if (authHeader?.startsWith('Bearer jam_sk_')) {
+      const apiKey = authHeader.replace('Bearer ', '');
+      const keyHash = await hashApiKey(apiKey);
+      
+      // Check if the API key matches this agent's key
+      if (agent.api_key_hash === keyHash) {
+        authorized = true;
+      }
+    }
+    
+    // Fall back to user session auth
+    if (!authorized) {
+      const cookieStore = await cookies();
+      const supabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          cookies: {
+            getAll() {
+              return cookieStore.getAll();
+            },
+            setAll(cookiesToSet) {
+              try {
+                cookiesToSet.forEach(({ name, value, options }) =>
+                  cookieStore.set(name, value, options)
+                );
+              } catch {
+                // Ignore
+              }
+            },
+          },
+        }
+      );
+
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user && agent.owner_id === user.id) {
+        authorized = true;
+      }
+    }
+
+    if (!authorized) {
+      return NextResponse.json({ 
+        error: 'Unauthorized',
+        hint: 'Use your agent API key (Bearer jam_sk_...) or sign in as the owner'
+      }, { status: 401 });
     }
 
     // Parse update body
