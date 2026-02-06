@@ -1,19 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { supabaseAdmin } from '@/lib/supabase';
 
 const GITHUB_REST = 'https://api.github.com';
-const REPO_OWNER = 'GeorgiyAleksanyan';
-const REPO_NAME = 'the-jam';
-
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
 
 interface GitHubIssue {
   number: number;
   title: string;
-  body: string;
+  body: string | null;
   state: string;
   labels: { name: string }[];
   created_at: string;
@@ -22,72 +15,156 @@ interface GitHubIssue {
   user: { login: string };
 }
 
-function parseChallengeMeta(body: string): {
-  bounty: number;
-  difficulty: string;
-  topics: string[];
-  deadline: string | null;
-  shortDescription: string;
-  description: string;
-} {
-  const lines = body.split('\n');
-  let bounty = 0;
-  let difficulty = 'easy';
-  let topics: string[] = [];
-  let deadline: string | null = null;
-  let shortDescription = '';
-  let inDescription = false;
-  const descriptionLines: string[] = [];
-
-  for (const line of lines) {
-    const trimmed = line.trim();
-    
-    // Parse metadata fields (flexible format: **Key**: or **Key:**)
-    if (trimmed.match(/^\*\*Bounty\*?\*?:?/i)) {
-      const match = trimmed.match(/(\d+(?:\.\d+)?)\s*(?:USDC|USD|\$)?/i);
-      if (match) bounty = parseFloat(match[1]);
-    } else if (trimmed.match(/^\*\*Difficulty\*?\*?:?/i)) {
-      const d = trimmed.replace(/^\*\*Difficulty\*?\*?:?\s*/i, '').trim().toLowerCase();
-      if (['easy', 'medium', 'hard', 'legendary'].includes(d)) {
-        difficulty = d;
-      }
-    } else if (trimmed.match(/^\*\*Topics?\*?\*?:?/i)) {
-      const t = trimmed.replace(/^\*\*Topics?\*?\*?:?\s*/i, '').trim();
-      topics = t.split(',').map(s => s.trim()).filter(Boolean);
-    } else if (trimmed.match(/^\*\*Deadline\*?\*?:?/i)) {
-      const d = trimmed.replace(/^\*\*Deadline\*?\*?:?\s*/i, '').trim();
-      if (d && d !== 'None' && d !== 'TBD' && !d.toLowerCase().includes('rolling')) {
-        deadline = d;
-      }
-    } else if (trimmed.startsWith('## Description')) {
-      inDescription = true;
-    } else if (trimmed.startsWith('## ') && inDescription) {
-      inDescription = false;
-    } else if (inDescription && trimmed) {
-      descriptionLines.push(line);
-    }
-  }
-
-  const description = descriptionLines.join('\n').trim();
-  shortDescription = description.split('\n')[0]?.substring(0, 200) || '';
-
-  return { bounty, difficulty, topics, deadline, shortDescription, description };
-}
-
-function slugify(title: string): string {
-  return title
+// Generate slug from title - MUST match webhook's generateSlug
+function generateSlug(title: string, issueNumber: number): string {
+  const baseSlug = title
     .toLowerCase()
     .replace(/\[challenge\]\s*/i, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '')
-    .substring(0, 50);
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .substring(0, 40);
+  return `${baseSlug}-${issueNumber}`;
+}
+
+// Extract bounty from issue body - matches webhook logic
+function extractBounty(body: string | null): number {
+  if (!body) return 0;
+  const patterns = [
+    /\*?\*?(?:Bounty|Prize|Reward)\*?\*?:?\s*\$?(\d+(?:\.\d{2})?)\s*(?:USDC)?/i,
+    /\$(\d+(?:\.\d{2})?)\s*USDC/i,
+  ];
+  for (const pattern of patterns) {
+    const match = body.match(pattern);
+    if (match) return parseFloat(match[1]);
+  }
+  return 0;
+}
+
+// Extract difficulty from labels - matches webhook logic
+function extractDifficulty(labels: Array<{ name: string }>): string {
+  const labelNames = labels.map(l => l.name.toLowerCase());
+  if (labelNames.includes('legendary')) return 'legendary';
+  if (labelNames.includes('hard')) return 'hard';
+  if (labelNames.includes('medium')) return 'medium';
+  if (labelNames.includes('easy')) return 'easy';
+  return 'medium';
+}
+
+// Extract funding threshold from body
+function extractFundingThreshold(body: string | null): number {
+  if (!body) return 0;
+  const match = body.match(/(?:Funding Threshold|Minimum Funding)[^0-9]*(\d+(?:\.\d{2})?)/i);
+  return match ? parseFloat(match[1]) : 0;
+}
+
+// Determine status - matches webhook logic
+function determineStatus(
+  issueState: string,
+  labels: string[],
+  prizePool: number,
+  fundingThreshold: number
+): string {
+  const lowerLabels = labels.map(l => l.toLowerCase());
+  
+  if (lowerLabels.includes('solved') || lowerLabels.includes('winner-selected')) return 'solved';
+  if (lowerLabels.includes('voting')) return 'voting';
+  if (lowerLabels.includes('cancelled')) return 'cancelled';
+  
+  if (issueState === 'closed') {
+    return lowerLabels.includes('solved') ? 'solved' : 'closed';
+  }
+  
+  if (fundingThreshold > 0 && prizePool < fundingThreshold) {
+    return prizePool > 0 ? 'funding' : 'proposed';
+  }
+  
+  return 'open';
+}
+
+// Sync a single issue to the database
+async function syncIssue(
+  issue: GitHubIssue,
+  sourceRepoId: number,
+  existingChallenges: Map<number, { id: number; prize_pool: number; slug: string }>
+): Promise<{ action: string; slug: string } | { error: string }> {
+  const slug = generateSlug(issue.title, issue.number);
+  const labels = issue.labels.map(l => l.name);
+  const bounty = extractBounty(issue.body);
+  const difficulty = extractDifficulty(issue.labels);
+  const fundingThreshold = extractFundingThreshold(issue.body);
+  
+  const existing = existingChallenges.get(issue.number);
+  const prizePool = existing?.prize_pool || bounty;
+  const status = determineStatus(issue.state, labels, prizePool, fundingThreshold);
+
+  const challengeData = {
+    slug,
+    title: issue.title,
+    description: issue.body || '',
+    difficulty,
+    status,
+    prize_pool: existing ? existing.prize_pool : bounty,
+    funding_threshold: fundingThreshold,
+    source_repo_id: sourceRepoId,
+    github_issue_number: issue.number,
+    github_issue_url: issue.html_url,
+    github_issue_state: issue.state,
+    github_labels: labels,
+    github_synced_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+
+  if (existing) {
+    // Update existing challenge
+    const { error } = await supabaseAdmin!
+      .from('challenges')
+      .update(challengeData)
+      .eq('id', existing.id);
+
+    if (error) return { error: error.message };
+    return { action: 'updated', slug };
+  } else {
+    // Insert new challenge
+    const { error } = await supabaseAdmin!
+      .from('challenges')
+      .insert({ ...challengeData, created_at: issue.created_at });
+
+    if (error) {
+      // Handle slug conflict by updating existing slug-based entry
+      if (error.code === '23505') {
+        const { error: updateError } = await supabaseAdmin!
+          .from('challenges')
+          .update(challengeData)
+          .eq('slug', slug);
+        
+        if (updateError) return { error: updateError.message };
+        return { action: 'updated_by_slug', slug };
+      }
+      return { error: error.message };
+    }
+    return { action: 'created', slug };
+  }
 }
 
 export async function POST(request: NextRequest) {
+  if (!supabaseAdmin) {
+    return NextResponse.json({ error: 'Database not configured' }, { status: 500 });
+  }
+
   try {
-    // Optional: Add auth check for manual triggers
-    // For now, allow unauthenticated sync for simplicity
-    
+    // Get all active source repos
+    const { data: sourceRepos, error: repoError } = await supabaseAdmin
+      .from('source_repos')
+      .select('*')
+      .eq('is_active', true);
+
+    if (repoError || !sourceRepos?.length) {
+      return NextResponse.json({ 
+        error: 'No active source repos configured',
+        details: repoError?.message 
+      }, { status: 400 });
+    }
+
     const headers: Record<string, string> = {
       'Accept': 'application/vnd.github+json',
       'User-Agent': 'thejam-sync',
@@ -97,121 +174,77 @@ export async function POST(request: NextRequest) {
       headers['Authorization'] = `Bearer ${process.env.GITHUB_TOKEN}`;
     }
 
-    // Fetch all challenge issues
-    const response = await fetch(
-      `${GITHUB_REST}/repos/${REPO_OWNER}/${REPO_NAME}/issues?labels=challenge&state=open&per_page=100`,
-      { headers }
-    );
-
-    if (!response.ok) {
-      throw new Error(`GitHub API error: ${response.status}`);
-    }
-
-    const issues: GitHubIssue[] = await response.json();
-    
     const results = {
-      synced: 0,
+      repos_synced: 0,
+      created: 0,
       updated: 0,
+      closed_synced: 0,
       errors: [] as string[],
     };
 
-    for (const issue of issues) {
-      try {
-        const title = issue.title.replace(/^\[Challenge\]\s*/i, '').trim();
-        const slug = slugify(issue.title);
-        const meta = parseChallengeMeta(issue.body || '');
+    for (const sourceRepo of sourceRepos) {
+      const { owner, name, challenge_label } = sourceRepo;
+
+      // Fetch existing challenges for this repo (to preserve prize_pool)
+      const { data: existingChallenges } = await supabaseAdmin
+        .from('challenges')
+        .select('id, github_issue_number, prize_pool, slug')
+        .eq('source_repo_id', sourceRepo.id);
+
+      const existingMap = new Map(
+        (existingChallenges || []).map(c => [c.github_issue_number, c])
+      );
+
+      // Fetch OPEN issues with challenge label
+      const openResponse = await fetch(
+        `${GITHUB_REST}/repos/${owner}/${name}/issues?labels=${encodeURIComponent(challenge_label)}&state=open&per_page=100`,
+        { headers }
+      );
+
+      if (!openResponse.ok) {
+        results.errors.push(`${owner}/${name}: GitHub API error ${openResponse.status}`);
+        continue;
+      }
+
+      const openIssues: GitHubIssue[] = await openResponse.json();
+
+      // Fetch CLOSED issues with challenge label (to sync solved/closed status)
+      const closedResponse = await fetch(
+        `${GITHUB_REST}/repos/${owner}/${name}/issues?labels=${encodeURIComponent(challenge_label)}&state=closed&per_page=100`,
+        { headers }
+      );
+
+      const closedIssues: GitHubIssue[] = closedResponse.ok ? await closedResponse.json() : [];
+
+      // Process all issues
+      const allIssues = [...openIssues, ...closedIssues];
+
+      for (const issue of allIssues) {
+        const result = await syncIssue(issue, sourceRepo.id, existingMap);
         
-        // Determine status from labels
-        let status = 'open';
-        for (const label of issue.labels) {
-          if (label.name === 'active') status = 'active';
-          if (label.name === 'voting') status = 'voting';
-          if (label.name === 'completed') status = 'completed';
-        }
-
-        // Check if challenge exists (by github_issue_id OR by slug)
-        let { data: existing } = await supabaseAdmin
-          .from('challenges')
-          .select('id')
-          .eq('github_issue_id', issue.number)
-          .single();
-
-        // If not found by github_issue_id, try by slug (for pre-existing challenges)
-        if (!existing) {
-          const { data: bySlug } = await supabaseAdmin
-            .from('challenges')
-            .select('id')
-            .eq('slug', slug)
-            .single();
-          existing = bySlug;
-        }
-
-        const challengeData = {
-          title,
-          slug,
-          short_description: meta.shortDescription,
-          description: meta.description || issue.body || '',
-          difficulty: meta.difficulty,
-          status,
-          prize_pool: meta.bounty,
-          github_issue_id: issue.number,
-          github_issue_url: issue.html_url,
-          github_synced_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        };
-
-        if (existing) {
-          // Update existing
-          const { error } = await supabaseAdmin
-            .from('challenges')
-            .update(challengeData)
-            .eq('id', existing.id);
-
-          if (error) throw error;
+        if ('error' in result) {
+          results.errors.push(`Issue #${issue.number}: ${result.error}`);
+        } else if (result.action === 'created') {
+          results.created++;
+        } else if (result.action.startsWith('updated')) {
           results.updated++;
-        } else {
-          // Insert new - need to handle slug conflicts
-          let finalSlug = slug;
-          let attempt = 0;
-          let inserted = false;
-
-          while (!inserted && attempt < 5) {
-            const { error } = await supabaseAdmin
-              .from('challenges')
-              .insert({
-                ...challengeData,
-                slug: finalSlug,
-                created_at: issue.created_at,
-              });
-
-            if (error) {
-              if (error.code === '23505' && error.message.includes('slug')) {
-                // Slug conflict - add suffix
-                attempt++;
-                finalSlug = `${slug}-${attempt}`;
-              } else {
-                throw error;
-              }
-            } else {
-              inserted = true;
-              results.synced++;
-            }
+          if (issue.state === 'closed') {
+            results.closed_synced++;
           }
         }
-      } catch (err: any) {
-        results.errors.push(`Issue #${issue.number}: ${err.message}`);
       }
+
+      results.repos_synced++;
     }
 
     return NextResponse.json({
       success: true,
-      issues_found: issues.length,
       ...results,
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('GitHub sync error:', error);
     return NextResponse.json(
-      { error: error.message },
+      { error: error instanceof Error ? error.message : 'Internal error' },
       { status: 500 }
     );
   }
@@ -220,5 +253,6 @@ export async function POST(request: NextRequest) {
 export async function GET() {
   return NextResponse.json({
     message: 'POST to this endpoint to sync GitHub challenge issues to the database',
+    note: 'Syncs both open AND closed issues from all active source_repos',
   });
 }
