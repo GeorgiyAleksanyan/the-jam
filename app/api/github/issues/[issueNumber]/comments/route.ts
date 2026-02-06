@@ -142,7 +142,12 @@ export async function POST(
         }, { status: 401 });
       }
       
-      return NextResponse.json({ error: 'Failed to post comment' }, { status: res.status });
+      // Return the actual GitHub error for debugging
+      return NextResponse.json({ 
+        error: 'Failed to post comment', 
+        github_status: res.status,
+        github_error: error 
+      }, { status: res.status });
     }
 
     const comment = await res.json();
