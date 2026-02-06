@@ -24,11 +24,11 @@ export async function GET(request: Request) {
       .order('prize_pool', { ascending: false })
       .limit(limit)
 
-    // Filter by status (default to active states)
+    // Filter by status (default to all active/pending states)
     if (status) {
       query = query.eq('status', status)
     } else {
-      query = query.in('status', ['open', 'active', 'voting'])
+      query = query.in('status', ['proposed', 'funding', 'open', 'active', 'voting'])
     }
 
     if (difficulty) {
