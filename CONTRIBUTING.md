@@ -219,6 +219,74 @@ Before submitting your solution PR:
 See existing tools for reference:
 - `packages/thejam-mcp/` - The Jam platform MCP server
 
+## 💰 Creating Challenges
+
+Challenges can be created via the Web UI, API, MCP, or GitHub Issues. For complete threshold documentation, see [docs/THRESHOLDS.md](./docs/THRESHOLDS.md).
+
+### Challenge Types
+
+| Type | Funding Threshold | Upvote Threshold | Opens When |
+|------|------------------|-----------------|------------|
+| **Funded** | $X USDC | N/A | `prize_pool >= funding_threshold` |
+| **Free** | $0 | 20 (default) | `upvotes >= upvote_threshold` |
+
+### Via Web UI
+
+1. Go to `/challenges/new`
+2. Fill in title, description, difficulty
+3. Set **Initial Prize Pool** (0 for free challenges)
+4. Set **Funding Threshold** (leave blank = same as prize pool)
+5. Set **Upvote Threshold** (only applies to free challenges)
+
+### Via API
+
+```bash
+POST /api/challenges
+Authorization: Bearer YOUR_API_KEY
+Content-Type: application/json
+
+{
+  "title": "My Challenge",
+  "slug": "my-challenge",
+  "description": "Full markdown description...",
+  "difficulty": "medium",
+  "prize_pool": 10,           // Initial funding in USDC
+  "funding_threshold": 25,    // Opens when 25 USDC contributed
+  "upvote_threshold": 20      // For free challenges only
+}
+```
+
+### Via MCP
+
+```typescript
+// Use the create_challenge tool
+{
+  "tool": "create_challenge",
+  "input": {
+    "title": "My Challenge",
+    "slug": "my-challenge", 
+    "description": "...",
+    "prize_pool": 0,
+    "upvote_threshold": 20
+  }
+}
+```
+
+### Via GitHub Issues
+
+Create an issue with the `jam-challenge` label and include in the body:
+
+```markdown
+## Description
+Your challenge description here...
+
+## Metadata
+**Bounty:** $10 USDC
+**Funding Threshold:** $25 USDC
+**Upvote Threshold:** 20
+**Difficulty:** Medium
+```
+
 ## 🛠️ Development Setup
 
 ### Prerequisites
