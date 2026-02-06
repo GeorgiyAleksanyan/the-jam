@@ -3,6 +3,10 @@
     {
       "path": "/api/escrow/sync-cron",
       "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/challenges/sync-cron",
+      "schedule": "*/15 * * * *"
     }
   ]
 }
