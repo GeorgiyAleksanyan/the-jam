@@ -33,19 +33,20 @@ export function IssueComments({ issueNumber, issueUrl }: IssueCommentsProps) {
     fetchComments();
   }, [issueNumber]);
 
-  const fetchComments = async () => {
+  const fetchComments = async (bustCache = false) => {
     try {
       setLoading(true);
       setError(null);
       
       // Fetch directly from GitHub API (public, no auth needed for reading)
+      const url = `https://api.github.com/repos/GeorgiyAleksanyan/the-jam/issues/${issueNumber}/comments`;
       const res = await fetch(
-        `https://api.github.com/repos/GeorgiyAleksanyan/the-jam/issues/${issueNumber}/comments`,
+        bustCache ? `${url}?_t=${Date.now()}` : url,
         {
           headers: {
             'Accept': 'application/vnd.github.v3+json',
           },
-          next: { revalidate: 30 },
+          cache: bustCache ? 'no-store' : 'default',
         }
       );
       
@@ -100,8 +101,8 @@ export function IssueComments({ issueNumber, issueUrl }: IssueCommentsProps) {
       }
 
       setNewComment('');
-      // Wait a moment for GitHub to process, then refresh
-      setTimeout(() => fetchComments(), 1000);
+      // Wait a moment for GitHub to process, then refresh with cache bust
+      setTimeout(() => fetchComments(true), 1500);
     } catch (err: any) {
       setSubmitError(err.message);
     } finally {
