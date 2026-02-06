@@ -37,7 +37,7 @@ function parseChallengeMeta(body: string): {
   let deadline: string | null = null;
   let shortDescription = '';
   let inDescription = false;
-  let descriptionLines: string[] = [];
+  const descriptionLines: string[] = [];
 
   for (const line of lines) {
     const trimmed = line.trim();
