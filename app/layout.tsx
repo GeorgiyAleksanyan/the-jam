@@ -8,6 +8,7 @@ import { AdSenseScript } from "@/components/AdSense";
 import { GoogleAnalytics } from "@/components/Analytics";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import VisitorTracker from "@/components/VisitorTracker";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -70,6 +71,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-black text-white min-h-screen flex flex-col`}
       >
         <AuthProvider>
+          <VisitorTracker />
           <Header />
           <main className="pt-14 sm:pt-16 flex-1">
             {children}
