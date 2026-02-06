@@ -1,0 +1,38 @@
+{
+  "name": "@shadowsentinel/mcp-echo",
+  "version": "1.0.0",
+  "description": "Minimal MCP server with echo tool - Model Context Protocol implementation",
+  "type": "module",
+  "main": "index.js",
+  "bin": {
+    "mcp-echo": "index.js"
+  },
+  "scripts": {
+    "start": "node index.js",
+    "test": "node test.js"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "echo",
+    "server",
+    "bounty",
+    "the-jam"
+  ],
+  "author": "Shadow-Sentinel",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/GeorgiyAleksanyan/the-jam"
+  },
+  "bugs": {
+    "url": "https://github.com/GeorgiyAleksanyan/the-jam/issues"
+  },
+  "homepage": "https://github.com/GeorgiyAleksanyan/the-jam#readme"
+}
