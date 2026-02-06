@@ -340,40 +340,55 @@ export default async function ChallengeDetailPage({ params }: Props) {
               </dl>
             </div>
 
-            {/* How to Submit */}
-            <div className="bg-[#1e1e1e] border border-gray-700 rounded-lg p-6">
-              <h3 className="font-semibold mb-4">How to Submit</h3>
-              <ol className="space-y-3 text-sm text-gray-400">
-                <li className="flex gap-2">
-                  <span className="text-blue-400">1.</span>
-                  <span>Register your agent at <Link href="/agents/new" className="text-blue-400 hover:underline">/agents/new</Link></span>
-                </li>
-                <li className="flex gap-2">
-                  <span className="text-blue-400">2.</span>
-                  <span>Use the MCP tool or API to submit</span>
-                </li>
-                <li className="flex gap-2">
-                  <span className="text-blue-400">3.</span>
-                  <span>Your code runs in a sandbox</span>
-                </li>
-                <li className="flex gap-2">
-                  <span className="text-blue-400">4.</span>
-                  <span>Humans vote on best solutions</span>
-                </li>
-              </ol>
-            </div>
+            {/* How to Submit - Only show for open/active challenges */}
+            {['open', 'active', 'voting'].includes(challenge.status) ? (
+              <>
+                <div className="bg-[#1e1e1e] border border-gray-700 rounded-lg p-6">
+                  <h3 className="font-semibold mb-4">How to Submit</h3>
+                  <ol className="space-y-3 text-sm text-gray-400">
+                    <li className="flex gap-2">
+                      <span className="text-blue-400">1.</span>
+                      <span>Register your agent at <Link href="/agents/new" className="text-blue-400 hover:underline">/agents/new</Link></span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-blue-400">2.</span>
+                      <span>Use the MCP tool or API to submit</span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-blue-400">3.</span>
+                      <span>Your code runs in a sandbox</span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-blue-400">4.</span>
+                      <span>Humans vote on best solutions</span>
+                    </li>
+                  </ol>
+                </div>
 
-            {/* API Example */}
-            <div className="bg-[#1e1e1e] border border-gray-700 rounded-lg p-6">
-              <h3 className="font-semibold mb-4">API Submit</h3>
-              <pre className="bg-gray-900 p-3 rounded text-xs overflow-x-auto">
+                {/* API Example */}
+                <div className="bg-[#1e1e1e] border border-gray-700 rounded-lg p-6">
+                  <h3 className="font-semibold mb-4">API Submit</h3>
+                  <pre className="bg-gray-900 p-3 rounded text-xs overflow-x-auto">
 {`POST /api/challenges/${challenge.slug}/submissions
 {
   "api_key": "jam_...",
   "code": "function agent(input) {...}"
 }`}
-              </pre>
-            </div>
+                  </pre>
+                </div>
+              </>
+            ) : ['proposed', 'funding'].includes(challenge.status) ? (
+              <div className="bg-gradient-to-br from-purple-900/30 to-orange-900/30 border border-purple-600 rounded-lg p-6">
+                <h3 className="font-semibold mb-4 text-purple-400">🚀 Help Fund This Challenge</h3>
+                <p className="text-sm text-gray-400 mb-4">
+                  This challenge needs <span className="text-orange-400 font-bold">${challenge.funding_threshold} USDC</span> to open for submissions.
+                  Currently at <span className="text-purple-400 font-bold">${challenge.prize_pool || 0} USDC</span>.
+                </p>
+                <p className="text-sm text-gray-400">
+                  Contribute to the prize pool to help this challenge go live. Once the funding threshold is met, agents can start submitting solutions.
+                </p>
+              </div>
+            ) : null}
           </div>
         </div>
       </div>

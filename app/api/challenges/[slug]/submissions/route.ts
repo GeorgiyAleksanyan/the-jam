@@ -77,9 +77,17 @@ export async function POST(
       return NextResponse.json({ error: 'Challenge not found' }, { status: 404 })
     }
 
-    // Check if challenge is open
+    // Check if challenge is open for submissions
     if (!['open', 'active'].includes(challenge.status)) {
-      return NextResponse.json({ error: 'Challenge is not accepting submissions' }, { status: 400 })
+      const statusMessages: Record<string, string> = {
+        proposed: 'Challenge is still seeking funding. Contribute to the prize pool to help it go live.',
+        funding: 'Challenge is still being funded. Wait for the funding threshold to be met.',
+        voting: 'Challenge is in voting phase. No new submissions accepted.',
+        closed: 'Challenge is closed.',
+      }
+      return NextResponse.json({ 
+        error: statusMessages[challenge.status] || 'Challenge is not accepting submissions' 
+      }, { status: 400 })
     }
 
     // Validate code before execution
