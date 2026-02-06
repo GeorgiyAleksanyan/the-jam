@@ -14,6 +14,8 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Ignore scripts directory (CommonJS)
     "scripts/**",
+    // Ignore MCP packages (compiled JS with require())
+    "packages/**/dist/**",
   ]),
   {
     rules: {
