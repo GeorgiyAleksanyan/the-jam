@@ -13,6 +13,12 @@
     "@monaco-editor/react": "^4.7.0",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.94.1",
+    "@tiptap/extension-mention": "^3.19.0",
+    "@tiptap/extension-placeholder": "^3.19.0",
+    "@tiptap/pm": "^3.19.0",
+    "@tiptap/react": "^3.19.0",
+    "@tiptap/starter-kit": "^3.19.0",
+    "@tiptap/suggestion": "^3.19.0",
     "@types/pg": "^8.16.0",
     "@upstash/ratelimit": "^2.0.8",
     "@upstash/redis": "^1.36.2",
@@ -25,6 +31,7 @@
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-simple-code-editor": "^0.14.1",
+    "tippy.js": "^6.3.7",
     "viem": "^2.45.1"
   },
   "devDependencies": {

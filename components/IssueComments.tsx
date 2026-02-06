@@ -1,7 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/lib/auth-context';
+import dynamic from 'next/dynamic';
+import type { RichEditorRef, MentionItem } from './RichEditor';
+
+// Dynamically import RichEditor to avoid SSR issues
+const RichEditor = dynamic(() => import('./RichEditor'), { 
+  ssr: false,
+  loading: () => <div className="h-[120px] bg-zinc-900 border border-zinc-700 rounded-lg animate-pulse" />
+});
 
 interface Comment {
   id: number;
@@ -28,6 +36,23 @@ export function IssueComments({ issueNumber, issueUrl }: IssueCommentsProps) {
   const [newComment, setNewComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const editorRef = useRef<RichEditorRef>(null);
+
+  // Fetch mentionable users (agents + GitHub contributors)
+  const fetchMentions = async (query: string): Promise<MentionItem[]> => {
+    try {
+      const res = await fetch(`/api/mentions?q=${encodeURIComponent(query)}`);
+      if (!res.ok) return [];
+      const data = await res.json();
+      return data.map((item: any) => ({
+        id: item.username || item.github_username,
+        label: item.name || item.username || item.github_username,
+        avatar: item.avatar_url,
+      }));
+    } catch {
+      return [];
+    }
+  };
 
   useEffect(() => {
     fetchComments();
@@ -275,30 +300,68 @@ export function IssueComments({ issueNumber, issueUrl }: IssueCommentsProps) {
 
       {/* New comment form */}
       {user ? (
-        <form onSubmit={handleSubmit} className="space-y-3">
-          <textarea
-            value={newComment}
-            onChange={(e) => {
-              setNewComment(e.target.value);
+        <div className="space-y-3">
+          <RichEditor
+            ref={editorRef}
+            placeholder="Add to the discussion... Use @ to mention, / for commands"
+            fetchMentions={fetchMentions}
+            disabled={submitting}
+            onSubmit={async (content) => {
+              if (!content.trim() || !session) return;
+              setSubmitting(true);
               setSubmitError(null);
+              try {
+                const res = await fetch(`/api/github/issues/${issueNumber}/comments`, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session.access_token}`,
+                  },
+                  body: JSON.stringify({ body: content }),
+                });
+
+                const data = await res.json();
+                
+                if (!res.ok) {
+                  if (data.code === 'GITHUB_NOT_LINKED' || data.code === 'GITHUB_TOKEN_EXPIRED') {
+                    setSubmitError('github_required');
+                  } else {
+                    setSubmitError(data.error || 'Failed to post comment');
+                  }
+                  return;
+                }
+
+                editorRef.current?.clear();
+                setTimeout(() => fetchComments(true), 1500);
+              } catch (err: any) {
+                setSubmitError(err.message);
+              } finally {
+                setSubmitting(false);
+              }
             }}
-            placeholder="Add to the discussion... (Markdown supported)"
-            className="w-full bg-[#2a2a2a] border border-gray-600 rounded-lg px-4 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 resize-none"
-            rows={3}
           />
           <div className="flex items-center justify-between">
             <span className="text-xs text-gray-500">
               💡 Comments posted via your GitHub account
             </span>
             <button
-              type="submit"
-              disabled={submitting || !newComment.trim()}
+              type="button"
+              onClick={() => {
+                const content = editorRef.current?.getMarkdown() || '';
+                if (content.trim()) {
+                  editorRef.current?.clear();
+                  // Trigger submit via the onSubmit callback
+                  const event = new KeyboardEvent('keydown', { key: 'Enter', metaKey: true });
+                  document.querySelector('.rich-editor .ProseMirror')?.dispatchEvent(event);
+                }
+              }}
+              disabled={submitting}
               className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
             >
               {submitting ? 'Posting...' : 'Comment'}
             </button>
           </div>
-        </form>
+        </div>
       ) : (
         <div className="text-center py-4 bg-[#2a2a2a] rounded-lg">
           <span className="text-gray-400 text-sm">
