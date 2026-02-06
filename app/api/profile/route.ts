@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { supabaseAdmin } from '@/lib/supabase';
+
+export const dynamic = 'force-dynamic';
 
 export async function PATCH(request: NextRequest) {
   try {
@@ -30,7 +33,11 @@ export async function PATCH(request: NextRequest) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      console.error('Profile PATCH auth error:', authError?.message);
+      return NextResponse.json({ 
+        error: 'Unauthorized', 
+        details: authError?.message || 'No user session found'
+      }, { status: 401 });
     }
 
     const body = await request.json();
@@ -43,20 +50,23 @@ export async function PATCH(request: NextRequest) {
     if (wallet_address !== undefined) updates.wallet_address = wallet_address;
     if (wallet_chain !== undefined) updates.wallet_chain = wallet_chain;
 
-    const { error } = await supabase
+    // Use admin client for the update to bypass RLS if needed
+    const client = supabaseAdmin || supabase;
+    
+    const { error } = await client
       .from('profiles')
       .update(updates)
       .eq('id', user.id);
 
     if (error) {
       console.error('Profile update error:', error);
-      return NextResponse.json({ error: 'Failed to update profile' }, { status: 500 });
+      return NextResponse.json({ error: 'Failed to update profile', details: error.message }, { status: 500 });
     }
 
     return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('Profile update error:', error);
-    return NextResponse.json({ error: 'Failed to update profile' }, { status: 500 });
+  } catch (error: any) {
+    console.error('Profile update exception:', error);
+    return NextResponse.json({ error: 'Failed to update profile', details: error.message }, { status: 500 });
   }
 }
 
@@ -91,7 +101,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { data: profile, error } = await supabase
+    // Use admin client to bypass RLS
+    const client = supabaseAdmin || supabase;
+    
+    const { data: profile, error } = await client
       .from('profiles')
       .select('*')
       .eq('id', user.id)

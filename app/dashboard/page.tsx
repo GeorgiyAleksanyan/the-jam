@@ -5,24 +5,31 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
+type Agent = {
+  id: number;
+  name: string;
+  slug: string;
+  avatar_url: string | null;
+  total_wins: number;
+  total_earnings: number;
+  total_submissions: number;
+  is_verified: boolean;
+};
+
 export default function DashboardPage() {
-  console.log('DashboardPage: Component rendering');
   const { user, profile, loading, signOut } = useAuth();
   const router = useRouter();
-  const [agents, setAgents] = useState<any[]>([]);
+  const [agents, setAgents] = useState<Agent[]>([]);
   const [loadingAgents, setLoadingAgents] = useState(true);
 
   useEffect(() => {
-    console.log('Dashboard auth check:', { loading, user: !!user, userId: user?.id });
     if (!loading && !user) {
-      console.log('No user, redirecting to signin');
       router.push('/auth/signin?redirect=/dashboard');
     }
   }, [user, loading, router]);
 
   useEffect(() => {
     if (user) {
-      // Fetch user's agents
       fetch('/api/agents?owner=' + user.id)
         .then(res => res.json())
         .then(data => {
@@ -36,7 +43,7 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-500"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
       </div>
     );
   }
@@ -45,18 +52,25 @@ export default function DashboardPage() {
     return null;
   }
 
+  const totalWins = agents.reduce((sum, a) => sum + (a.total_wins || 0), 0);
+  const totalEarnings = agents.reduce((sum, a) => sum + (a.total_earnings || 0), 0);
+
   return (
     <div className="min-h-screen py-12 px-4">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
-            {profile?.avatar_url && (
+            {profile?.avatar_url ? (
               <img
                 src={profile.avatar_url}
                 alt={profile.display_name || 'User'}
                 className="w-16 h-16 rounded-full"
               />
+            ) : (
+              <div className="w-16 h-16 rounded-full bg-blue-600 flex items-center justify-center text-white text-2xl font-bold">
+                {(profile?.display_name || user.email)?.[0]?.toUpperCase()}
+              </div>
             )}
             <div>
               <h1 className="text-2xl font-bold text-white">
@@ -65,15 +79,23 @@ export default function DashboardPage() {
               <p className="text-zinc-400">{user.email}</p>
             </div>
           </div>
-          <button
-            onClick={async () => {
-              await signOut()
-              window.location.href = '/'
-            }}
-            className="text-zinc-400 hover:text-white transition"
-          >
-            Sign Out
-          </button>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/profile"
+              className="text-zinc-400 hover:text-white transition text-sm"
+            >
+              Settings
+            </Link>
+            <button
+              onClick={async () => {
+                await signOut();
+                window.location.href = '/';
+              }}
+              className="text-zinc-400 hover:text-white transition text-sm"
+            >
+              Sign Out
+            </button>
+          </div>
         </div>
 
         {/* Stats Grid */}
@@ -83,11 +105,11 @@ export default function DashboardPage() {
             <div className="text-zinc-400">My Agents</div>
           </div>
           <div className="bg-zinc-900 rounded-lg p-6 border border-zinc-800">
-            <div className="text-3xl font-bold text-white">0</div>
-            <div className="text-zinc-400">Challenges Created</div>
+            <div className="text-3xl font-bold text-green-400">{totalWins}</div>
+            <div className="text-zinc-400">Total Wins</div>
           </div>
           <div className="bg-zinc-900 rounded-lg p-6 border border-zinc-800">
-            <div className="text-3xl font-bold text-white">$0</div>
+            <div className="text-3xl font-bold text-yellow-400">${totalEarnings.toFixed(2)}</div>
             <div className="text-zinc-400">Total Earnings</div>
           </div>
         </div>
@@ -98,12 +120,12 @@ export default function DashboardPage() {
             <h2 className="text-xl font-bold text-white">My Agents</h2>
             <Link
               href="/agents/new"
-              className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm py-2 px-4 rounded-lg transition"
+              className="bg-blue-600 hover:bg-blue-500 text-white text-sm py-2 px-4 rounded-lg transition"
             >
               + Register Agent
             </Link>
           </div>
-          
+
           {loadingAgents ? (
             <div className="text-zinc-400">Loading agents...</div>
           ) : agents.length === 0 ? (
@@ -112,42 +134,55 @@ export default function DashboardPage() {
               <p className="text-zinc-400 mb-4">No agents yet</p>
               <Link
                 href="/agents/new"
-                className="text-indigo-400 hover:text-indigo-300"
+                className="text-blue-400 hover:text-blue-300"
               >
                 Register your first agent →
               </Link>
             </div>
           ) : (
             <div className="space-y-3">
-              {agents.map((agent: any) => (
+              {agents.map((agent) => (
                 <div
                   key={agent.id}
-                  className="flex items-center justify-between p-4 bg-zinc-800 rounded-lg"
+                  className="flex items-center justify-between p-4 bg-zinc-800 rounded-lg hover:bg-zinc-750 transition"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center">
+                    <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center overflow-hidden">
                       {agent.avatar_url ? (
-                        <img src={agent.avatar_url} alt={agent.name} className="w-10 h-10 rounded-full" />
+                        <img src={agent.avatar_url} alt={agent.name} className="w-12 h-12 object-cover" />
                       ) : (
-                        <span className="text-white font-bold">{agent.name[0]}</span>
+                        <span className="text-white font-bold text-lg">{agent.name[0]}</span>
                       )}
                     </div>
                     <div>
-                      <div className="text-white font-medium">{agent.name}</div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-white font-medium">{agent.name}</span>
+                        {agent.is_verified && (
+                          <span className="text-blue-400 text-xs">✓</span>
+                        )}
+                      </div>
                       <div className="text-zinc-400 text-sm">@{agent.slug}</div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-6">
                     <div className="text-right">
-                      <div className="text-white">{agent.total_wins || 0} wins</div>
-                      <div className="text-zinc-400 text-sm">${agent.total_earnings || 0}</div>
+                      <div className="text-white font-medium">{agent.total_wins || 0} wins</div>
+                      <div className="text-zinc-400 text-sm">${(agent.total_earnings || 0).toFixed(2)}</div>
                     </div>
-                    <Link
-                      href={`/agents/${agent.slug}`}
-                      className="text-indigo-400 hover:text-indigo-300"
-                    >
-                      View →
-                    </Link>
+                    <div className="flex items-center gap-2">
+                      <Link
+                        href={`/agents/${agent.slug}/edit`}
+                        className="bg-zinc-700 hover:bg-zinc-600 text-white text-sm px-3 py-1.5 rounded-lg transition"
+                      >
+                        Edit
+                      </Link>
+                      <Link
+                        href={`/agents/${agent.slug}`}
+                        className="bg-blue-600 hover:bg-blue-500 text-white text-sm px-3 py-1.5 rounded-lg transition"
+                      >
+                        View
+                      </Link>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -159,17 +194,21 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Link
             href="/challenges"
-            className="bg-zinc-900 hover:bg-zinc-800 rounded-lg p-6 border border-zinc-800 transition"
+            className="bg-zinc-900 hover:bg-zinc-800 rounded-lg p-6 border border-zinc-800 transition group"
           >
-            <div className="text-xl font-bold text-white mb-1">Browse Challenges</div>
+            <div className="text-xl font-bold text-white mb-1 group-hover:text-blue-400 transition">
+              🎯 Browse Challenges
+            </div>
             <div className="text-zinc-400">Find competitions to enter</div>
           </Link>
           <Link
-            href="/challenges/new"
-            className="bg-zinc-900 hover:bg-zinc-800 rounded-lg p-6 border border-zinc-800 transition"
+            href="/leaderboard"
+            className="bg-zinc-900 hover:bg-zinc-800 rounded-lg p-6 border border-zinc-800 transition group"
           >
-            <div className="text-xl font-bold text-white mb-1">Create Challenge</div>
-            <div className="text-zinc-400">Host your own competition</div>
+            <div className="text-xl font-bold text-white mb-1 group-hover:text-yellow-400 transition">
+              🏆 Leaderboard
+            </div>
+            <div className="text-zinc-400">See top performing agents</div>
           </Link>
         </div>
       </div>
