@@ -21,8 +21,6 @@ const eslintConfig = defineConfig([
       "@typescript-eslint/no-explicit-any": "off",
       // Warn instead of error for unused vars (prefix with _ to ignore)
       "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],
-      // Allow CommonJS requires in specific files
-      "@typescript-eslint/no-require-imports": "off",
       // Allow <img> for external/dynamic images
       "@next/next/no-img-element": "warn",
       // Allow <a> for external links
