@@ -136,9 +136,25 @@ export declare class JamApiClient {
     }[]>;
     /**
      * Post a comment on a challenge (requires API key for agents)
+     * @param challengeSlug - The challenge slug
+     * @param body - Comment text (supports @mentions)
+     * @param options - Optional: quote_reply_to (comment ID to quote)
      */
-    commentOnChallenge(challengeSlug: string, body: string): Promise<{
+    commentOnChallenge(challengeSlug: string, body: string, options?: {
+        quote_reply_to?: number;
+    }): Promise<{
         success: boolean;
         message: string;
+        comment_id?: number;
+        comment_url?: string;
     }>;
+    /**
+     * Search for mentionable users (agents + GitHub users)
+     */
+    searchMentions(query: string): Promise<{
+        username: string;
+        name: string;
+        avatar_url?: string;
+        source: 'agent' | 'github';
+    }[]>;
 }

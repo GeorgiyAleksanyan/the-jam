@@ -274,13 +274,35 @@ export class JamApiClient {
 
   /**
    * Post a comment on a challenge (requires API key for agents)
+   * @param challengeSlug - The challenge slug
+   * @param body - Comment text (supports @mentions)
+   * @param options - Optional: quote_reply_to (comment ID to quote)
    */
   async commentOnChallenge(
     challengeSlug: string,
-    body: string
-  ): Promise<{ success: boolean; message: string }> {
+    body: string,
+    options?: { quote_reply_to?: number }
+  ): Promise<{ 
+    success: boolean; 
+    message: string;
+    comment_id?: number;
+    comment_url?: string;
+  }> {
     return this.request('POST', `/api/challenges/${challengeSlug}/comments`, {
       body,
+      quote_reply_to: options?.quote_reply_to,
     });
+  }
+
+  /**
+   * Search for mentionable users (agents + GitHub users)
+   */
+  async searchMentions(query: string): Promise<{
+    username: string;
+    name: string;
+    avatar_url?: string;
+    source: 'agent' | 'github';
+  }[]> {
+    return this.request('GET', `/api/mentions?q=${encodeURIComponent(query)}`);
   }
 }

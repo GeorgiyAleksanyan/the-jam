@@ -1,17 +1,16 @@
 /**
  * Challenge Comments API for Agents
- * GET: Fetch comments for a challenge (from GitHub Discussions via Giscus)
+ * GET: Fetch comments for a challenge (from GitHub Issues)
  * POST: Add a comment (agents use API key, humans use session)
+ * 
+ * Agents can use @mentions in comments - they will be rendered as GitHub mentions
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { supabaseAdmin } from '@/lib/supabase';
 
-const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const GITHUB_REPO = 'GeorgiyAleksanyan/the-jam';
-const GITHUB_REPO_ID = 'R_kgDORImCvA';
-const DISCUSSION_CATEGORY_ID = 'DIC_kwDORImCvM4C16w3'; // General
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -30,6 +29,7 @@ async function authenticate(authHeader: string | null): Promise<{
   type: 'user' | 'agent';
   id: string;
   name: string;
+  github_token?: string;
 } | null> {
   if (!authHeader?.startsWith('Bearer ')) {
     return null;
@@ -62,125 +62,20 @@ async function authenticate(authHeader: string | null): Promise<{
   if (user) {
     const { data: profile } = await supabaseAdmin!
       .from('profiles')
-      .select('username, display_name')
+      .select('username, display_name, github_access_token')
       .eq('id', user.id)
       .single();
     
     const name = profile?.display_name || profile?.username || 'Anonymous';
-    return { type: 'user', id: user.id, name };
+    return { 
+      type: 'user', 
+      id: user.id, 
+      name,
+      github_token: profile?.github_access_token 
+    };
   }
 
   return null;
-}
-
-// Find or create a discussion for a challenge
-async function findOrCreateDiscussion(challengeSlug: string): Promise<string | null> {
-  if (!GITHUB_TOKEN) return null;
-
-  // First, search for existing discussion
-  const searchQuery = `
-    query {
-      repository(owner: "GeorgiyAleksanyan", name: "the-jam") {
-        discussions(first: 10, categoryId: "${DISCUSSION_CATEGORY_ID}") {
-          nodes {
-            id
-            title
-            body
-          }
-        }
-      }
-    }
-  `;
-
-  try {
-    const searchRes = await fetch('https://api.github.com/graphql', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${GITHUB_TOKEN}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ query: searchQuery }),
-    });
-
-    const searchData = await searchRes.json();
-    const discussions = searchData.data?.repository?.discussions?.nodes || [];
-    
-    // Look for matching discussion
-    const existing = discussions.find((d: any) => 
-      d.body?.includes(`challenge-slug: ${challengeSlug}`) ||
-      d.title?.toLowerCase().includes(challengeSlug.toLowerCase())
-    );
-
-    if (existing) {
-      return existing.id;
-    }
-
-    // Create new discussion
-    const createMutation = `
-      mutation {
-        createDiscussion(input: {
-          repositoryId: "${GITHUB_REPO_ID}"
-          categoryId: "${DISCUSSION_CATEGORY_ID}"
-          title: "Challenge: ${challengeSlug}"
-          body: "Discussion thread for challenge: ${challengeSlug}\\n\\n<!-- challenge-slug: ${challengeSlug} -->"
-        }) {
-          discussion {
-            id
-          }
-        }
-      }
-    `;
-
-    const createRes = await fetch('https://api.github.com/graphql', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${GITHUB_TOKEN}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ query: createMutation }),
-    });
-
-    const createData = await createRes.json();
-    return createData.data?.createDiscussion?.discussion?.id || null;
-  } catch (err) {
-    console.error('Error with GitHub Discussions:', err);
-    return null;
-  }
-}
-
-// Add a comment to a discussion
-async function addDiscussionComment(discussionId: string, body: string): Promise<boolean> {
-  if (!GITHUB_TOKEN) return false;
-
-  const mutation = `
-    mutation {
-      addDiscussionComment(input: {
-        discussionId: "${discussionId}"
-        body: "${body.replace(/"/g, '\\"').replace(/\n/g, '\\n')}"
-      }) {
-        comment {
-          id
-        }
-      }
-    }
-  `;
-
-  try {
-    const res = await fetch('https://api.github.com/graphql', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${GITHUB_TOKEN}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ query: mutation }),
-    });
-
-    const data = await res.json();
-    return !!data.data?.addDiscussionComment?.comment?.id;
-  } catch (err) {
-    console.error('Error adding comment:', err);
-    return false;
-  }
 }
 
 // GET: Fetch comments for a challenge
@@ -190,60 +85,58 @@ export async function GET(
 ) {
   const { slug } = await params;
 
-  if (!GITHUB_TOKEN) {
-    return NextResponse.json({ error: 'GitHub not configured' }, { status: 500 });
+  if (!supabaseAdmin) {
+    return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
   }
 
-  // Find discussion for this challenge
-  const discussionId = await findOrCreateDiscussion(slug);
-  if (!discussionId) {
-    return NextResponse.json({ comments: [], message: 'No discussion found' });
+  // Get challenge to find GitHub issue number
+  const { data: challenge, error: challengeError } = await supabaseAdmin
+    .from('challenges')
+    .select('id, title, github_issue_id')
+    .eq('slug', slug)
+    .single();
+
+  if (challengeError || !challenge) {
+    return NextResponse.json({ error: 'Challenge not found' }, { status: 404 });
   }
 
-  // Fetch comments from discussion
-  const query = `
-    query {
-      node(id: "${discussionId}") {
-        ... on Discussion {
-          comments(first: 50) {
-            nodes {
-              id
-              body
-              createdAt
-              author {
-                login
-                avatarUrl
-                url
-              }
-            }
-          }
-        }
-      }
-    }
-  `;
-
-  try {
-    const res = await fetch('https://api.github.com/graphql', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${GITHUB_TOKEN}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ query }),
+  if (!challenge.github_issue_id) {
+    return NextResponse.json({ 
+      comments: [], 
+      message: 'No GitHub issue linked to this challenge' 
     });
+  }
+
+  // Fetch comments from GitHub Issue
+  try {
+    const res = await fetch(
+      `https://api.github.com/repos/${GITHUB_REPO}/issues/${challenge.github_issue_id}/comments`,
+      {
+        headers: {
+          'Accept': 'application/vnd.github.v3+json',
+        },
+      }
+    );
+
+    if (!res.ok) {
+      throw new Error('Failed to fetch from GitHub');
+    }
 
     const data = await res.json();
-    const comments = data.data?.node?.comments?.nodes || [];
 
     return NextResponse.json({
-      comments: comments.map((c: any) => ({
+      challenge_id: challenge.id,
+      challenge_title: challenge.title,
+      github_issue: challenge.github_issue_id,
+      comments: data.map((c: any) => ({
         id: c.id,
         body: c.body,
-        created_at: c.createdAt,
+        html_url: c.html_url,
+        created_at: c.created_at,
         author: {
-          login: c.author?.login || 'Unknown',
-          avatar_url: c.author?.avatarUrl,
-          url: c.author?.url,
+          login: c.user?.login || 'Unknown',
+          avatar_url: c.user?.avatar_url,
+          html_url: c.user?.html_url,
         },
       })),
     });
@@ -253,7 +146,7 @@ export async function GET(
   }
 }
 
-// POST: Add a comment to a challenge discussion
+// POST: Add a comment to a challenge's GitHub Issue
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ slug: string }> }
@@ -267,36 +160,115 @@ export async function POST(
 
   const auth = await authenticate(authHeader);
   if (!auth) {
-    return NextResponse.json({ error: 'Unauthorized. Use Bearer token (user session or agent API key)' }, { status: 401 });
+    return NextResponse.json({ 
+      error: 'Unauthorized. Use Bearer token (user session or agent API key)',
+      hint: 'For agents: use your API key (jam_sk_...). For users: use Supabase access token.'
+    }, { status: 401 });
   }
 
   // Parse request body
-  const { body: commentBody } = await request.json();
+  const { body: commentBody, quote_reply_to } = await request.json();
   if (!commentBody?.trim()) {
     return NextResponse.json({ error: 'Comment body required' }, { status: 400 });
   }
 
-  // Find or create discussion
-  const discussionId = await findOrCreateDiscussion(slug);
-  if (!discussionId) {
-    return NextResponse.json({ error: 'Could not find or create discussion' }, { status: 500 });
+  // Get challenge to find GitHub issue number
+  const { data: challenge, error: challengeError } = await supabaseAdmin
+    .from('challenges')
+    .select('id, title, github_issue_id')
+    .eq('slug', slug)
+    .single();
+
+  if (challengeError || !challenge) {
+    return NextResponse.json({ error: 'Challenge not found' }, { status: 404 });
   }
 
-  // Format comment with attribution
-  const formattedBody = auth.type === 'agent'
-    ? `🤖 **${auth.name}** (Agent):\n\n${commentBody}`
-    : `👤 **${auth.name}** via The Jam:\n\n${commentBody}`;
+  if (!challenge.github_issue_id) {
+    return NextResponse.json({ 
+      error: 'No GitHub issue linked to this challenge' 
+    }, { status: 400 });
+  }
 
-  // Add comment
-  const success = await addDiscussionComment(discussionId, formattedBody);
-  if (!success) {
+  // Format comment with attribution for agents
+  let formattedBody = commentBody;
+  
+  // If agent, add attribution header
+  if (auth.type === 'agent') {
+    formattedBody = `🤖 **${auth.name}** (Agent) commented:\n\n${commentBody}`;
+  }
+
+  // If quoting a previous comment, add blockquote
+  if (quote_reply_to) {
+    try {
+      // Fetch the original comment to quote
+      const quoteRes = await fetch(
+        `https://api.github.com/repos/${GITHUB_REPO}/issues/comments/${quote_reply_to}`,
+        {
+          headers: { 'Accept': 'application/vnd.github.v3+json' },
+        }
+      );
+      
+      if (quoteRes.ok) {
+        const quotedComment = await quoteRes.json();
+        const quotedText = quotedComment.body.split('\n').slice(0, 3).map((line: string) => `> ${line}`).join('\n');
+        formattedBody = `${quotedText}\n\n@${quotedComment.user.login} ${formattedBody}`;
+      }
+    } catch (err) {
+      console.error('Failed to fetch quoted comment:', err);
+    }
+  }
+
+  // Determine which token to use
+  // - For users: use their GitHub token if available
+  // - For agents: use the platform's GitHub token (posts as platform account)
+  const githubToken = auth.type === 'user' && auth.github_token 
+    ? auth.github_token 
+    : process.env.GITHUB_TOKEN;
+
+  if (!githubToken) {
+    return NextResponse.json({ 
+      error: auth.type === 'user' 
+        ? 'GitHub account not linked. Please sign in with GitHub.' 
+        : 'GitHub token not configured for agent comments'
+    }, { status: 403 });
+  }
+
+  // Post comment to GitHub
+  try {
+    const res = await fetch(
+      `https://api.github.com/repos/${GITHUB_REPO}/issues/${challenge.github_issue_id}/comments`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${githubToken}`,
+          'Accept': 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ body: formattedBody }),
+      }
+    );
+
+    if (!res.ok) {
+      const error = await res.text();
+      console.error('GitHub API error:', res.status, error);
+      return NextResponse.json({ 
+        error: 'Failed to post comment to GitHub',
+        github_status: res.status,
+      }, { status: res.status });
+    }
+
+    const comment = await res.json();
+
+    return NextResponse.json({
+      success: true,
+      message: 'Comment posted to GitHub Issue',
+      comment_id: comment.id,
+      comment_url: comment.html_url,
+      author: auth.name,
+      author_type: auth.type,
+    });
+  } catch (err: any) {
+    console.error('Error posting comment:', err);
     return NextResponse.json({ error: 'Failed to post comment' }, { status: 500 });
   }
-
-  return NextResponse.json({
-    success: true,
-    message: 'Comment posted to GitHub Discussion',
-    author: auth.name,
-    author_type: auth.type,
-  });
 }

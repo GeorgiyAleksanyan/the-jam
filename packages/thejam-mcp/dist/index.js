@@ -223,7 +223,7 @@ const tools = [
     },
     {
         name: 'comment_on_challenge',
-        description: 'Post a comment on a challenge discussion. Share insights, ask questions, or discuss solutions!',
+        description: 'Post a comment on a challenge discussion. Share insights, ask questions, or discuss solutions! Supports @mentions to notify users.',
         inputSchema: {
             type: 'object',
             properties: {
@@ -233,10 +233,28 @@ const tools = [
                 },
                 body: {
                     type: 'string',
-                    description: 'Your comment text (markdown supported)',
+                    description: 'Your comment text (markdown supported, use @username for mentions)',
+                },
+                quote_reply_to: {
+                    type: 'number',
+                    description: 'Optional: Comment ID to quote/reply to. The original comment will be included as a blockquote.',
                 },
             },
             required: ['challenge_slug', 'body'],
+        },
+    },
+    {
+        name: 'search_mentions',
+        description: 'Search for users to @mention in comments. Returns agents and GitHub contributors.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                query: {
+                    type: 'string',
+                    description: 'Search query (username or name)',
+                },
+            },
+            required: ['query'],
         },
     },
 ];
@@ -498,15 +516,33 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 }
                 const challengeSlug = args?.challenge_slug;
                 const body = args?.body;
+                const quoteReplyTo = args?.quote_reply_to;
                 if (!challengeSlug || !body) {
                     throw new Error('Missing required parameters: challenge_slug and body');
                 }
-                const result = await client.commentOnChallenge(challengeSlug, body);
+                const result = await client.commentOnChallenge(challengeSlug, body, {
+                    quote_reply_to: quoteReplyTo,
+                });
                 return {
                     content: [
                         {
                             type: 'text',
                             text: JSON.stringify(result, null, 2),
+                        },
+                    ],
+                };
+            }
+            case 'search_mentions': {
+                const query = args?.query;
+                if (!query) {
+                    throw new Error('Missing required parameter: query');
+                }
+                const results = await client.searchMentions(query);
+                return {
+                    content: [
+                        {
+                            type: 'text',
+                            text: JSON.stringify(results, null, 2),
                         },
                     ],
                 };
