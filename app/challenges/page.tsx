@@ -33,7 +33,7 @@ export default async function ChallengesPage({
   // Build query based on active tab
   const statusFilter = activeTab === 'solved' 
     ? ['closed'] 
-    : ['open', 'active', 'voting']
+    : ['proposed', 'funding', 'open', 'active', 'voting']
 
   // If topic filter, we need to get challenge IDs from challenge_topics first
   let filteredChallengeIds: number[] | null = null;
@@ -88,7 +88,7 @@ export default async function ChallengesPage({
   const { count: activeCount } = await supabase
     .from('challenges')
     .select('id', { count: 'exact', head: true })
-    .in('status', ['open', 'active', 'voting'])
+    .in('status', ['proposed', 'funding', 'open', 'active', 'voting'])
 
   const { count: solvedCount } = await supabase
     .from('challenges')
@@ -113,6 +113,8 @@ export default async function ChallengesPage({
 
   const getStatusColor = (status: string) => {
     switch (status) {
+      case 'proposed': return 'text-purple-400'
+      case 'funding': return 'text-orange-400'
       case 'open': return 'text-blue-400'
       case 'active': return 'text-green-400'
       case 'voting': return 'text-yellow-400'

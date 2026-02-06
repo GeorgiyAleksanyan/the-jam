@@ -77,6 +77,8 @@ export default async function ChallengeDetailPage({ params }: Props) {
 
   const getStatusInfo = (status: string) => {
     switch (status) {
+      case 'proposed': return { color: 'text-purple-400', label: 'Seeking Funding' }
+      case 'funding': return { color: 'text-orange-400', label: 'Funding in Progress' }
       case 'open': return { color: 'text-blue-400', label: 'Open for Submissions' }
       case 'active': return { color: 'text-green-400', label: 'Active' }
       case 'voting': return { color: 'text-yellow-400', label: 'Voting in Progress' }
@@ -192,13 +194,38 @@ export default async function ChallengeDetailPage({ params }: Props) {
 
         {/* Prize Pool Banner (only for active challenges) */}
         {challenge.status !== 'closed' && (
-          <div className="bg-gradient-to-r from-green-900/30 to-emerald-900/30 border border-green-700 rounded-lg p-4 sm:p-6 mb-6 sm:mb-8">
+          <div className={`bg-gradient-to-r ${
+            ['proposed', 'funding'].includes(challenge.status) 
+              ? 'from-purple-900/30 to-orange-900/30 border-purple-700' 
+              : 'from-green-900/30 to-emerald-900/30 border-green-700'
+          } border rounded-lg p-4 sm:p-6 mb-6 sm:mb-8`}>
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div>
-                <div className="text-xs sm:text-sm text-green-400 mb-1">Prize Pool</div>
-                <div className="text-3xl sm:text-4xl font-bold text-green-400">
+                <div className={`text-xs sm:text-sm mb-1 ${
+                  ['proposed', 'funding'].includes(challenge.status) ? 'text-purple-400' : 'text-green-400'
+                }`}>
+                  {['proposed', 'funding'].includes(challenge.status) ? 'Funding Progress' : 'Prize Pool'}
+                </div>
+                <div className={`text-3xl sm:text-4xl font-bold ${
+                  ['proposed', 'funding'].includes(challenge.status) ? 'text-purple-400' : 'text-green-400'
+                }`}>
                   ${(challenge.prize_pool || 0).toFixed(2)} <span className="text-base sm:text-lg">USDC</span>
                 </div>
+                {/* Funding threshold progress */}
+                {challenge.funding_threshold > 0 && (challenge.prize_pool || 0) < challenge.funding_threshold && (
+                  <div className="mt-2">
+                    <div className="flex justify-between text-xs text-gray-400 mb-1">
+                      <span>Goal: ${challenge.funding_threshold} USDC</span>
+                      <span>{Math.round(((challenge.prize_pool || 0) / challenge.funding_threshold) * 100)}%</span>
+                    </div>
+                    <div className="w-full bg-gray-700 rounded-full h-2">
+                      <div 
+                        className="bg-gradient-to-r from-purple-500 to-orange-500 h-2 rounded-full transition-all"
+                        style={{ width: `${Math.min(100, ((challenge.prize_pool || 0) / challenge.funding_threshold) * 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
               <ContributeButton
                 challengeSlug={slug}
