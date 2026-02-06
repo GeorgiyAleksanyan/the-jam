@@ -55,7 +55,8 @@ function extractDifficulty(labels: Array<{ name: string }>): string {
 function extractFundingThreshold(body: string | null): number {
   if (!body) return 0;
   
-  const match = body.match(/\*?\*?(?:Funding Threshold|Minimum Funding)\*?\*?:?\s*\$?(\d+(?:\.\d{2})?)/i);
+  // Match patterns like: **Funding Threshold:** $15 USDC or Funding Threshold: 15
+  const match = body.match(/(?:Funding Threshold|Minimum Funding)[*:\s]*\$?(\d+(?:\.\d{2})?)/i);
   return match ? parseFloat(match[1]) : 0;
 }
 
