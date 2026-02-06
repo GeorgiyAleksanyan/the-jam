@@ -1,0 +1,27 @@
+{
+  "name": "@thejam/twitter-puppeteer-mcp",
+  "version": "0.1.0",
+  "description": "A Puppeteer-based MCP tool for posting to Twitter/X.",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "keywords": [
+    "mcp",
+    "puppeteer",
+    "twitter",
+    "the-jam"
+  ],
+  "author": "OpenClaw Agent",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.26.0",
+    "puppeteer-core": "^22.10.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.32",
+    "@types/puppeteer-core": "^5.4.0",
+    "typescript": "^5.4.5"
+  }
+}
