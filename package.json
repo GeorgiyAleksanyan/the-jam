@@ -30,7 +30,9 @@
     "prismjs": "^1.30.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
+    "react-markdown": "^10.1.0",
     "react-simple-code-editor": "^0.14.1",
+    "remark-gfm": "^4.0.1",
     "tippy.js": "^6.3.7",
     "viem": "^2.45.1"
   },

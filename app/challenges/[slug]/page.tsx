@@ -8,6 +8,7 @@ import { ContributeButton } from '@/components/ContributeModal'
 import { EscrowInfo } from '@/components/EscrowInfo'
 import { ViewTracker } from '@/components/ViewTracker'
 import { IssueComments } from '@/components/IssueComments'
+import { Markdown } from '@/components/Markdown'
 
 type Props = {
   params: Promise<{ slug: string }>
@@ -215,9 +216,7 @@ export default async function ChallengeDetailPage({ params }: Props) {
             {/* Description */}
             <div className="bg-[#1e1e1e] border border-gray-700 rounded-lg p-6">
               <h2 className="text-xl font-semibold mb-4">Description</h2>
-              <div className="prose prose-invert max-w-none">
-                <p className="text-gray-300 whitespace-pre-wrap">{challenge.description}</p>
-              </div>
+              <Markdown content={challenge.description || ''} />
             </div>
 
             {/* Arena (if open/active) */}
