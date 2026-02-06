@@ -152,7 +152,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'github',
       options: {
-        redirectTo: `${window.location.origin}/auth/handle-token`
+        redirectTo: `${window.location.origin}/auth/handle-token`,
+        scopes: 'public_repo'
       }
     })
     return { error: error as Error | null }
