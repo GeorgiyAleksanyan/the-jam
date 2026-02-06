@@ -270,9 +270,9 @@ export default async function ChallengeDetailPage({ params }: Props) {
             </div>
 
             {/* GitHub Issue Comments */}
-            {challenge.github_issue_id && (
+            {(challenge.github_issue_id || challenge.github_issue_number) && (
               <IssueComments 
-                issueNumber={challenge.github_issue_id} 
+                issueNumber={challenge.github_issue_id || challenge.github_issue_number} 
                 issueUrl={challenge.github_issue_url}
               />
             )}
