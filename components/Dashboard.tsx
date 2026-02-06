@@ -73,7 +73,7 @@ export default function Dashboard() {
     <div className="w-full max-w-4xl mx-auto p-4 mt-8">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-2xl font-bold flex items-center gap-2">
-          <span>🦞</span> Fleet Status
+          <img src="/logo.png" alt="" className="w-5 h-5 inline" /> Fleet Status
         </h2>
         <span className="text-xs text-gray-500">
           {runs.length} runs • Auto-refresh

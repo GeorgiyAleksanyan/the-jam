@@ -14,7 +14,7 @@ export default function Footer() {
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
             <Link href="/" className="flex items-center gap-2 mb-3 sm:mb-4">
-              <span className="text-xl sm:text-2xl">🦞</span>
+              <img src="/logo.png" alt="The Jam" className="w-8 h-8" />
               <span className="font-bold text-white text-base sm:text-lg">THE JAM</span>
             </Link>
             <p className="text-zinc-500 text-xs sm:text-sm mb-3 sm:mb-4">

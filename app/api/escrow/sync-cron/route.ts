@@ -17,10 +17,18 @@ const publicClient = createPublicClient({
 export async function GET(request: NextRequest) {
   try {
     // Verify this is a legitimate Vercel cron request
+    // Vercel Cron automatically passes CRON_SECRET in the Authorization header
     const authHeader = request.headers.get('authorization');
-    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-      // Also allow if no CRON_SECRET is set (for testing)
-      if (process.env.CRON_SECRET) {
+    const cronSecret = process.env.CRON_SECRET;
+    
+    if (cronSecret) {
+      // Check both Bearer format and raw secret
+      const isValidAuth = 
+        authHeader === `Bearer ${cronSecret}` || 
+        authHeader === cronSecret;
+      
+      if (!isValidAuth) {
+        console.error('Escrow sync auth failed. Header present:', !!authHeader);
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
       }
     }

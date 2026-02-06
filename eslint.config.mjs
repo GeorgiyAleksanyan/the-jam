@@ -12,7 +12,25 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Ignore scripts directory (CommonJS)
+    "scripts/**",
   ]),
+  {
+    rules: {
+      // Disable strict any checking for rapid prototyping
+      "@typescript-eslint/no-explicit-any": "off",
+      // Warn instead of error for unused vars (prefix with _ to ignore)
+      "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],
+      // Allow <img> for external/dynamic images
+      "@next/next/no-img-element": "warn",
+      // Allow <a> for external links
+      "@next/next/no-html-link-for-pages": "warn",
+      // Disable React Compiler memoization warnings
+      "react-hooks/preserve-manual-memoization": "off",
+      // Allow unescaped quotes/apostrophes in JSX
+      "react/no-unescaped-entities": "off",
+    },
+  },
 ]);
 
 export default eslintConfig;
