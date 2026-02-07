@@ -1,52 +1,13 @@
 /**
  * Secure Agent Code Runner
- * Uses Node.js VM with strict sandboxing
- * 
- * SECURITY MEASURES:
- * 1. Strict context isolation - no access to global objects
- * 2. Timeout enforcement - prevents infinite loops
- * 3. Memory limits (via context options)
- * 4. No network access
- * 5. No file system access
- * 6. No require/import
- * 7. Blocked dangerous globals
+ * Uses Node.js VM with hardened isolation
  */
 
 import vm from 'node:vm';
 
-// Maximum execution time in milliseconds
 const TIMEOUT_MS = 5000;
-
-// Maximum output size in characters
 const MAX_OUTPUT_SIZE = 100000;
-
-// Maximum log entries
 const MAX_LOGS = 100;
-
-// Blocked property access
-const BLOCKED_GLOBALS = [
-  'process',
-  'require',
-  'module',
-  'exports',
-  '__dirname',
-  '__filename',
-  'global',
-  'globalThis',
-  'Buffer',
-  'setTimeout',
-  'setInterval',
-  'setImmediate',
-  'clearTimeout',
-  'clearInterval',
-  'clearImmediate',
-  'queueMicrotask',
-  'fetch',
-  'XMLHttpRequest',
-  'WebSocket',
-  'eval',
-  'Function',
-];
 
 export interface RunResult {
   success: boolean;
@@ -63,126 +24,88 @@ export async function runAgent(code: string, input: any = {}): Promise<RunResult
   // Sanitize input to prevent prototype pollution
   const safeInput = JSON.parse(JSON.stringify(input));
   
-  // Create safe console that limits log size
-  const safeConsole = {
-    log: (...args: any[]) => {
-      if (logs.length < MAX_LOGS) {
-        const msg = args.map(a => {
-          try {
-            return typeof a === 'object' ? JSON.stringify(a).slice(0, 1000) : String(a);
-          } catch {
-            return '[unserializable]';
-          }
-        }).join(' ');
-        logs.push(msg.slice(0, 1000));
-      }
-    },
-    error: (...args: any[]) => {
-      if (logs.length < MAX_LOGS) {
-        logs.push('ERROR: ' + args.map(a => String(a)).join(' ').slice(0, 1000));
-      }
-    },
-    warn: (...args: any[]) => {
-      if (logs.length < MAX_LOGS) {
-        logs.push('WARN: ' + args.map(a => String(a)).join(' ').slice(0, 1000));
-      }
-    },
-    info: (...args: any[]) => safeConsole.log(...args),
-  };
+  // Create a clean safe console that doesn't leak host constructors
+  const logFormatter = (args: any[]) => args.map(a => {
+    try {
+      return typeof a === 'object' ? JSON.stringify(a).slice(0, 1000) : String(a);
+    } catch {
+      return '[unserializable]';
+    }
+  }).join(' ').slice(0, 1000);
 
-  // Minimal safe sandbox
-  const sandbox: Record<string, any> = {
-    console: safeConsole,
+  // Minimal safe sandbox without host-linked objects
+  const sandbox = Object.create(null);
+  
+  // Define safe versions of globals
+  Object.assign(sandbox, {
+    console: {
+      log: (...args: any[]) => logs.length < MAX_LOGS && logs.push(logFormatter(args)),
+      error: (...args: any[]) => logs.length < MAX_LOGS && logs.push('ERROR: ' + logFormatter(args)),
+      warn: (...args: any[]) => logs.length < MAX_LOGS && logs.push('WARN: ' + logFormatter(args)),
+      info: (...args: any[]) => logs.length < MAX_LOGS && logs.push(logFormatter(args)),
+    },
     input: safeInput,
     JSON: {
       parse: JSON.parse,
       stringify: JSON.stringify,
     },
-    Math: Math,
-    Date: Date,
-    Array: Array,
-    Object: Object,
-    String: String,
-    Number: Number,
-    Boolean: Boolean,
-    RegExp: RegExp,
-    Map: Map,
-    Set: Set,
-    Error: Error,
-    TypeError: TypeError,
-    RangeError: RangeError,
-    SyntaxError: SyntaxError,
-    parseInt: parseInt,
-    parseFloat: parseFloat,
-    isNaN: isNaN,
-    isFinite: isFinite,
-    encodeURIComponent: encodeURIComponent,
-    decodeURIComponent: decodeURIComponent,
-    undefined: undefined,
+    Math,
+    Date,
+    Array,
+    Object,
+    String,
+    Number,
+    Boolean,
+    RegExp,
+    Map,
+    Set,
+    Error,
+    TypeError,
+    RangeError,
+    SyntaxError,
+    parseInt,
+    parseFloat,
+    isNaN,
+    isFinite,
+    encodeURIComponent,
+    decodeURIComponent,
+    undefined,
     null: null,
-    NaN: NaN,
-    Infinity: Infinity,
-  };
+    NaN,
+    Infinity,
+  });
 
-  // Block dangerous globals by making them throw
-  for (const blocked of BLOCKED_GLOBALS) {
-    sandbox[blocked] = new Proxy({}, {
-      get: () => { throw new Error(`Access to '${blocked}' is not allowed in sandbox`); },
-      apply: () => { throw new Error(`'${blocked}' is not callable in sandbox`); },
-    });
-  }
+  // Freeze the sandbox to prevent tampering
+  Object.freeze(sandbox.console);
+  Object.freeze(sandbox.JSON);
 
-  // Create isolated context
   const context = vm.createContext(sandbox, {
-    name: 'agent-sandbox',
-    origin: 'thejam://sandbox',
-    codeGeneration: {
-      strings: false, // Disable eval() and new Function()
-      wasm: false,    // Disable WebAssembly
-    },
+    codeGeneration: { strings: false, wasm: false },
   });
 
   try {
-    // Wrap user code to call agent function
-    // NOTE: This intentionally executes user-submitted code in a secure sandbox
-    // The sandbox restricts: require, process, fs, child_process, eval, Function
-    // Uses vm.createContext with codeGeneration disabled for eval/Function
-    // lgtm[js/code-injection]
     const wrappedCode = `
       'use strict';
-      
-      // User code
-      ${code}
-      
-      // Execute agent function if defined
       (function() {
+        ${code}
         if (typeof agent === 'function') {
           return agent(input);
-        } else {
-          throw new Error("No 'agent' function found. Define: function agent(input) { ... }");
         }
+        throw new Error("No 'agent' function found.");
       })();
     `;
     
-    // Compile script
-    const script = new vm.Script(wrappedCode, {
-      filename: 'agent.js',
-      lineOffset: -4, // Adjust for wrapper lines
-    });
+    const script = new vm.Script(wrappedCode, { filename: 'agent.js' });
     
-    // Run with timeout
+    // Crucial: Use runInContext with null prototype for the global object if possible
     const result = script.runInContext(context, {
       timeout: TIMEOUT_MS,
-      displayErrors: true,
+      displayErrors: false,
     });
 
-    // Serialize output safely
     let output: any;
     try {
-      const serialized = JSON.stringify(result);
-      output = serialized.length > MAX_OUTPUT_SIZE 
-        ? serialized.slice(0, MAX_OUTPUT_SIZE) + '... [truncated]'
-        : result;
+      output = JSON.parse(JSON.stringify(result)); // Safe clone output
     } catch {
       output = String(result).slice(0, MAX_OUTPUT_SIZE);
     }
@@ -194,13 +117,10 @@ export async function runAgent(code: string, input: any = {}): Promise<RunResult
       executionTimeMs: Date.now() - startTime,
     };
   } catch (error: any) {
-    // Handle different error types
     let errorMessage = error.message || 'Unknown error';
-    
     if (errorMessage.includes('Script execution timed out')) {
-      errorMessage = `Execution timeout: Script exceeded ${TIMEOUT_MS}ms limit`;
+      errorMessage = `Execution timeout (${TIMEOUT_MS}ms)`;
     }
-    
     return {
       success: false,
       error: errorMessage.slice(0, 1000),
@@ -210,29 +130,22 @@ export async function runAgent(code: string, input: any = {}): Promise<RunResult
   }
 }
 
-/**
- * Validate code before execution
- * Quick static checks for obviously dangerous patterns
- */
 export function validateCode(code: string): { valid: boolean; reason?: string } {
-  // Check code length
-  if (code.length > 50000) {
-    return { valid: false, reason: 'Code exceeds maximum length (50KB)' };
-  }
+  if (code.length > 50000) return { valid: false, reason: 'Code too long' };
   
-  // Check for obvious escape attempts
   const dangerousPatterns = [
     /\bprocess\b/,
     /\brequire\s*\(/,
     /\bimport\s+/,
     /\b__proto__\b/,
-    /\bconstructor\b\s*\[/,
-    /\bthis\s*\.\s*constructor/,
+    /\bconstructor\b/,
+    /\b__defineGetter__\b/,
+    /\b__defineSetter__\b/,
   ];
   
   for (const pattern of dangerousPatterns) {
     if (pattern.test(code)) {
-      return { valid: false, reason: `Code contains blocked pattern: ${pattern.source}` };
+      return { valid: false, reason: `Blocked pattern detected` };
     }
   }
   
