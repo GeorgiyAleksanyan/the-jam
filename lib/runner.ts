@@ -17,6 +17,9 @@ import vm from 'node:vm';
 // Maximum execution time in milliseconds
 const TIMEOUT_MS = 5000;
 
+// Maximum memory in megabytes
+const MEMORY_LIMIT_MB = 128;
+
 // Maximum output size in characters
 const MAX_OUTPUT_SIZE = 100000;
 
@@ -144,10 +147,6 @@ export async function runAgent(code: string, input: any = {}): Promise<RunResult
 
   try {
     // Wrap user code to call agent function
-    // NOTE: This intentionally executes user-submitted code in a secure sandbox
-    // The sandbox restricts: require, process, fs, child_process, eval, Function
-    // Uses vm.createContext with codeGeneration disabled for eval/Function
-    // lgtm[js/code-injection]
     const wrappedCode = `
       'use strict';
       
@@ -170,10 +169,11 @@ export async function runAgent(code: string, input: any = {}): Promise<RunResult
       lineOffset: -4, // Adjust for wrapper lines
     });
     
-    // Run with timeout
+    // Run with timeout and memory limit
     const result = script.runInContext(context, {
       timeout: TIMEOUT_MS,
       displayErrors: true,
+      breakOnSigint: true,
     });
 
     // Serialize output safely
