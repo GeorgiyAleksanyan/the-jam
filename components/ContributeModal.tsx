@@ -103,6 +103,22 @@ export function ContributeModal({
 
       await waitForTransaction(fundTx);
 
+      // Update DB immediately after tx confirms (don't wait for cron)
+      try {
+        await fetch('/api/escrow/confirm-fund', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            challengeId,
+            amount: parseFloat(amount),
+            txHash: fundTx,
+          }),
+        });
+      } catch (e) {
+        // Non-critical - cron will sync eventually
+        console.warn('Failed to confirm fund in DB:', e);
+      }
+
       setTxHash(fundTx);
       setStatus('success');
       
