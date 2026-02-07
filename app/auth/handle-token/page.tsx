@@ -1,11 +1,17 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { useEffect, useState, useMemo } from 'react';
+import { createBrowserClient } from '@supabase/ssr';
 
 export default function HandleTokenPage() {
   const [status, setStatus] = useState('Processing authentication...');
   const [error, setError] = useState<string | null>(null);
+  
+  // Create browser client with cookies
+  const supabase = useMemo(() => createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  ), []);
 
   useEffect(() => {
     let redirected = false;
