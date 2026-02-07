@@ -392,7 +392,7 @@ export async function POST(request: NextRequest) {
       processed: false,
     });
 
-    let result: any = { handled: false };
+    let result: any;
 
     switch (event) {
       case 'issues':
@@ -409,6 +409,7 @@ export async function POST(request: NextRequest) {
         break;
       default:
         result = { handled: false, reason: `Unhandled event: ${event}` };
+        break;
     }
 
     // Mark as processed

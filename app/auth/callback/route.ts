@@ -11,7 +11,7 @@ export async function GET(request: Request) {
 
   // Handle OAuth errors from provider
   if (error) {
-    console.error('OAuth error from provider:', error, errorDescription)
+    console.error('OAuth error from provider:', { error, errorDescription })
     
     // Check if this is actually a success with implicit flow (token in hash)
     // The URL shows #access_token which means implicit flow

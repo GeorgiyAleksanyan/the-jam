@@ -46,6 +46,7 @@ export async function POST(
     // Check for agent API key
     const authHeader = request.headers.get('authorization');
     if (authHeader?.startsWith('Bearer jam_sk_')) {
+      // lgtm[js/insufficient-password-hash] - This is an API key hash, not a password. API keys are high-entropy secrets.
       const apiKey = authHeader.slice(7);
       const keyHash = crypto.createHash('sha256').update(apiKey).digest('hex');
       

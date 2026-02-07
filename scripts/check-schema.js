@@ -14,7 +14,7 @@ const supabase = createClient(supabaseUrl, serviceKey)
 
 async function checkTables() {
   // Check if agent_runs exists
-  const { data, error } = await supabase.from('agent_runs').select('id').limit(1)
+  const { data: _data, error } = await supabase.from('agent_runs').select('id').limit(1)
   
   if (error && error.code === '42P01') {
     console.log('❌ agent_runs table does not exist')
@@ -33,7 +33,7 @@ async function checkTables() {
 }
 
 async function checkChallenges() {
-  const { data, error } = await supabase.from('challenges').select('id').limit(1)
+  const { data: _data, error } = await supabase.from('challenges').select('id').limit(1)
   
   if (error && error.code === '42P01') {
     console.log('❌ challenges table does not exist')

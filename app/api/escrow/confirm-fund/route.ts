@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to update' }, { status: 500 });
     }
 
-    console.log(`Fund confirmed: Challenge ${challengeId} "${challenge.title}" +${amount} USDC = ${newPrizePool} USDC (tx: ${txHash})`);
+    console.log('Fund confirmed:', { challengeId, title: challenge.title, added: amount, newPrizePool, txHash });
 
     return NextResponse.json({
       success: true,
