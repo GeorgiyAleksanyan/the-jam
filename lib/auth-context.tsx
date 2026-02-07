@@ -1,16 +1,8 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState, ReactNode, useMemo } from 'react'
-import { User, Session, SupabaseClient } from '@supabase/supabase-js'
-import { createBrowserClient } from '@supabase/ssr'
-
-// Create a singleton browser client that uses cookies
-function getSupabaseBrowserClient(): SupabaseClient {
-  return createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
-}
+import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
+import { User, Session } from '@supabase/supabase-js'
+import { supabase } from './supabase'
 
 type Profile = {
   id: string
@@ -44,9 +36,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
-  
-  // Create a stable supabase client instance
-  const supabase = useMemo(() => getSupabaseBrowserClient(), [])
 
   const fetchProfile = async (userId: string) => {
     const { data, error } = await supabase

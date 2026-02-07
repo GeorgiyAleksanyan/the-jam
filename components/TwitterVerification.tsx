@@ -59,7 +59,6 @@ export default function TwitterVerification() {
       const res = await fetch('/api/auth/twitter/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({ handle: handle.replace('@', '') }),
       });
 
@@ -98,7 +97,6 @@ export default function TwitterVerification() {
       const res = await fetch('/api/auth/twitter/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({ 
           handle: handle.replace('@', ''),
           code: verificationCode,

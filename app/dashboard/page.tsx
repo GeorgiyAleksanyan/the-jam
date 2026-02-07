@@ -30,7 +30,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (user) {
-      fetch('/api/agents?owner=' + user.id, { credentials: 'include' })
+      fetch('/api/agents?owner=' + user.id)
         .then(res => res.json())
         .then(data => {
           setAgents(data.agents || []);

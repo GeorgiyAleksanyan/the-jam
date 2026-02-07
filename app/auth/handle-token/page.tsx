@@ -1,17 +1,11 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
-import { createBrowserClient } from '@supabase/ssr';
+import { useEffect, useState } from 'react';
+import { supabase } from '@/lib/supabase';
 
 export default function HandleTokenPage() {
   const [status, setStatus] = useState('Processing authentication...');
   const [error, setError] = useState<string | null>(null);
-  
-  // Create browser client with cookies
-  const supabase = useMemo(() => createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  ), []);
 
   useEffect(() => {
     let redirected = false;
@@ -118,7 +112,6 @@ export default function HandleTokenPage() {
         console.log('storeGitHubToken: Calling API for user', userId);
         const res = await fetch('/api/auth/store-github-token', {
           method: 'POST',
-          credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ userId, token }),
         });

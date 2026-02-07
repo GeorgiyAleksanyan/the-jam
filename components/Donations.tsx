@@ -148,7 +148,6 @@ export function DonateModal({ isOpen, onClose }: DonateModalProps) {
       const token = localStorage.getItem('supabase_access_token');
       const res = await fetch('/api/donations', {
         method: 'POST',
-        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
