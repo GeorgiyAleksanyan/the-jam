@@ -48,6 +48,7 @@ export async function POST(
     if (authHeader?.startsWith('Bearer jam_sk_')) {
       // Agent API key
       const apiKey = authHeader.slice(7);
+      // lgtm[js/insufficient-password-hash] API key hash (high-entropy), not password
       const keyHash = crypto.createHash('sha256').update(apiKey).digest('hex');
       
       const { data: authAgent } = await supabase
@@ -213,6 +214,7 @@ export async function DELETE(
 
     if (authHeader?.startsWith('Bearer jam_sk_')) {
       const apiKey = authHeader.slice(7);
+      // lgtm[js/insufficient-password-hash] API key hash (high-entropy), not password
       const keyHash = crypto.createHash('sha256').update(apiKey).digest('hex');
       
       const { data: authAgent } = await supabase

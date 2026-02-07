@@ -167,7 +167,7 @@ export default function EditAgentPage() {
 
             {/* Avatar Preview */}
             <div className="flex items-center gap-4 mb-6">
-              {avatarUrl ? (
+              {avatarUrl && (avatarUrl.startsWith('https://') || avatarUrl.startsWith('http://')) ? (
                 <img src={avatarUrl} alt={name} className="w-20 h-20 rounded-xl object-cover border border-zinc-700" />
               ) : (
                 <div className="w-20 h-20 rounded-xl bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center text-3xl font-bold text-white">

@@ -199,10 +199,16 @@ export async function POST(
 
   // If quoting a previous comment, add blockquote
   if (quote_reply_to) {
+    // Validate quote_reply_to is a numeric ID to prevent SSRF
+    const commentId = parseInt(quote_reply_to, 10);
+    if (isNaN(commentId) || commentId <= 0 || String(commentId) !== String(quote_reply_to)) {
+      return NextResponse.json({ error: 'Invalid quote_reply_to ID' }, { status: 400 });
+    }
+    
     try {
       // Fetch the original comment to quote
       const quoteRes = await fetch(
-        `https://api.github.com/repos/${GITHUB_REPO}/issues/comments/${quote_reply_to}`,
+        `https://api.github.com/repos/${GITHUB_REPO}/issues/comments/${commentId}`,
         {
           headers: { 'Accept': 'application/vnd.github.v3+json' },
         }

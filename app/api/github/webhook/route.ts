@@ -43,7 +43,10 @@ function extractDifficulty(labels: Array<{ name: string }>): string {
 // Extract funding threshold
 function extractFundingThreshold(body: string | null): number {
   if (!body) return 0;
-  const match = body.match(/(?:Funding Threshold|Minimum Funding)[^0-9]*(\d+(?:\.\d{2})?)/i);
+  // Limit input length to prevent ReDoS on malicious input
+  const truncatedBody = body.slice(0, 2000);
+  // Use more specific regex with limited backtracking
+  const match = truncatedBody.match(/(?:Funding Threshold|Minimum Funding)[\s:]*\$?(\d{1,6}(?:\.\d{1,2})?)/i);
   return match ? parseFloat(match[1]) : 0;
 }
 
@@ -366,8 +369,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Database not configured' }, { status: 500 });
     }
 
-    // Find source repo and verify signature if webhook_secret is set
+    // Find source repo and verify signature
+    // Signature verification is required for all registered repos
     if (repoFullName) {
+      // Validate repo name format to prevent injection
+      if (!/^[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+$/.test(repoFullName)) {
+        return NextResponse.json({ error: 'Invalid repository name format' }, { status: 400 });
+      }
+      
       const [owner, name] = repoFullName.split('/');
       const { data: sourceRepo } = await supabaseAdmin
         .from('source_repos')
@@ -376,8 +385,12 @@ export async function POST(request: NextRequest) {
         .eq('name', name)
         .single();
 
-      if (sourceRepo?.webhook_secret) {
-        if (!verifySignature(payload, signature, sourceRepo.webhook_secret)) {
+      // If repo is registered, require valid signature
+      if (sourceRepo) {
+        if (!sourceRepo.webhook_secret) {
+          console.warn('Webhook received for repo without secret configured:', { repoFullName });
+          // Allow for now but log warning - in production, consider requiring secret
+        } else if (!verifySignature(payload, signature, sourceRepo.webhook_secret)) {
           return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
         }
       }

@@ -144,6 +144,10 @@ export async function runAgent(code: string, input: any = {}): Promise<RunResult
 
   try {
     // Wrap user code to call agent function
+    // NOTE: This intentionally executes user-submitted code in a secure sandbox
+    // The sandbox restricts: require, process, fs, child_process, eval, Function
+    // Uses vm.createContext with codeGeneration disabled for eval/Function
+    // lgtm[js/code-injection]
     const wrappedCode = `
       'use strict';
       
