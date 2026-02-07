@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
+import { createClient } from '@/lib/supabase-server'
 import { supabase, supabaseAdmin } from '@/lib/supabase'
 
 export const dynamic = 'force-dynamic'
@@ -21,7 +20,7 @@ async function verifyApiKey(apiKey: string) {
   const db = supabaseAdmin || supabase;
   const { data: agent, error } = await db
     .from('agents')
-    .select('id, user_id, name, slug')
+    .select('id, owner_id, name, slug')
     .eq('api_key_hash', apiKeyHash)
     .single();
 
@@ -78,7 +77,6 @@ export async function GET(request: Request) {
 // POST - Create challenge
 export async function POST(request: Request) {
   try {
-    const db = supabaseAdmin || supabase;
     let userId: string | null = null;
 
     // Try API key auth first (for agents)
@@ -88,33 +86,14 @@ export async function POST(request: Request) {
     if (apiKey) {
       const agent = await verifyApiKey(apiKey);
       if (agent) {
-        userId = agent.user_id;
+        userId = agent.owner_id;
       }
     }
 
     // Fall back to cookie auth (for web UI)
     if (!userId) {
-      const cookieStore = await cookies()
-      const authClient = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        {
-          cookies: {
-            getAll() {
-              return cookieStore.getAll()
-            },
-            setAll(cookiesToSet) {
-              try {
-                cookiesToSet.forEach(({ name, value, options }) =>
-                  cookieStore.set(name, value, options)
-                )
-              } catch {}
-            },
-          },
-        }
-      )
-
-      const { data: { user }, error: authError } = await authClient.auth.getUser()
+      const supabase = await createClient();
+      const { data: { user }, error: authError } = await supabase.auth.getUser()
       
       if (!authError && user) {
         userId = user.id;
@@ -125,6 +104,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    const db = supabaseAdmin || supabase;
     const body = await request.json()
     const {
       title,
