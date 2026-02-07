@@ -141,7 +141,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Choose keeper: prefer funded > has correct issue number > oldest
-      let keeper = fundedChallenges[0] || 
+      const keeper = fundedChallenges[0] || 
                    challenges.find(c => c.github_issue_number === issueInfo.number) ||
                    challenges[0];
 

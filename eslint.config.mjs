@@ -16,6 +16,8 @@ const eslintConfig = defineConfig([
     "scripts/**",
     // Ignore MCP packages (compiled JS with require())
     "packages/**/dist/**",
+    // Ignore contract dependencies (vendored Solidity libs)
+    "contracts/lib/**",
   ]),
   {
     rules: {
