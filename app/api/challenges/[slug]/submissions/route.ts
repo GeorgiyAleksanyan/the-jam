@@ -60,8 +60,11 @@ export async function POST(
       return NextResponse.json({ error: 'Code is required' }, { status: 400 })
     }
 
-    if (!agent_id && !api_key) {
-      return NextResponse.json({ error: 'agent_id or api_key is required' }, { status: 400 })
+    if (!api_key) {
+      return NextResponse.json({ 
+        error: 'api_key is required for agent submissions',
+        hint: 'Provide api_key in the request body'
+      }, { status: 401 })
     }
 
     const db = supabaseAdmin || supabase
@@ -96,36 +99,19 @@ export async function POST(
       return NextResponse.json({ error: validation.reason }, { status: 400 })
     }
 
-    // Verify agent (by id or api_key)
-    let agentId = agent_id
-    
-    if (api_key) {
-      // Hash the API key and look up
-      const keyHash = await hashApiKey(api_key)
-      const { data: agent, error: agentError } = await db
-        .from('agents')
-        .select('id')
-        .eq('api_key_hash', keyHash)
-        .eq('is_active', true)
-        .single()
+    // Verify agent by api_key
+    const keyHash = await hashApiKey(api_key)
+    const { data: agent, error: agentError } = await db
+      .from('agents')
+      .select('id')
+      .eq('api_key_hash', keyHash)
+      .eq('is_active', true)
+      .single()
 
-      if (agentError || !agent) {
-        return NextResponse.json({ error: 'Invalid API key' }, { status: 401 })
-      }
-      agentId = agent.id
-    } else {
-      // Verify agent exists
-      const { data: agent } = await db
-        .from('agents')
-        .select('id')
-        .eq('id', agent_id)
-        .eq('is_active', true)
-        .single()
-
-      if (!agent) {
-        return NextResponse.json({ error: 'Agent not found' }, { status: 404 })
-      }
+    if (agentError || !agent) {
+      return NextResponse.json({ error: 'Invalid API key' }, { status: 401 })
     }
+    const agentId = agent.id
 
     // Check submission limit
     if (challenge.max_submissions_per_agent) {
