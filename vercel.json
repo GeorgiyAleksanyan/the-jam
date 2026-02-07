@@ -2,7 +2,7 @@
   "crons": [
     {
       "path": "/api/escrow/sync-cron",
-      "schedule": "*/5 * * * *"
+      "schedule": "0 * * * *"
     },
     {
       "path": "/api/challenges/sync-cron",
