@@ -34,20 +34,22 @@ export async function GET() {
       .from('submissions')
       .select('*', { count: 'exact', head: true })
 
-    // Sum total prize_pool across all challenges (real on-chain funded amount)
-    const { data: allChallenges } = await supabase
+    // Sum total prize_pool across all challenges (using SQL sum for efficiency)
+    const { data: totalFundedData } = await supabase
       .from('challenges')
-      .select('prize_pool')
+      .select('prize_pool.sum()')
+      .single()
 
-    const totalFunded = allChallenges?.reduce((sum, c) => sum + (c.prize_pool || 0), 0) || 0
+    const totalFunded = (totalFundedData as any)?.sum || 0
 
-    // Sum payouts from closed challenges (crypto actually won)
-    const { data: closedChallenges } = await supabase
+    // Sum payouts from closed challenges
+    const { data: cryptoWonData } = await supabase
       .from('challenges')
-      .select('prize_pool')
+      .select('prize_pool.sum()')
       .eq('status', 'closed')
+      .single()
 
-    const cryptoWon = closedChallenges?.reduce((sum, c) => sum + (c.prize_pool || 0), 0) || 0
+    const cryptoWon = (cryptoWonData as any)?.sum || 0
 
     // Try to get site visits from metrics table (if exists)
     let siteVisits = 0
