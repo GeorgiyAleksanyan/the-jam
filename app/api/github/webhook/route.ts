@@ -83,7 +83,7 @@ function determineStatus(
 }
 
 // Handle issue events
-async function handleIssueEvent(action: string, issue: any, _repository: any) {
+async function handleIssueEvent(action: string, issue: any, repository: any) {
   if (!supabaseAdmin) {
     return { handled: false, error: 'Database not configured' };
   }
@@ -206,7 +206,7 @@ async function handleIssueEvent(action: string, issue: any, _repository: any) {
 }
 
 // Handle PR events
-async function handlePullRequestEvent(action: string, pr: any, _repository: any) {
+async function handlePullRequestEvent(action: string, pr: any, repository: any) {
   if (!supabaseAdmin) {
     return { handled: false, error: 'Database not configured' };
   }
