@@ -6,10 +6,10 @@ import Editor from '@monaco-editor/react'
 type Props = {
   challengeSlug: string
   defaultCode: string
-  defaultInput: string
+  defaultInput?: string
 }
 
-export default function ChallengeArena({ challengeSlug, defaultCode, defaultInput }: Props) {
+export default function ChallengeArena({ challengeSlug, defaultCode, defaultInput: _defaultInput }: Props) {
   const [code, setCode] = useState(defaultCode || `function agent(input) {
   // Your solution here
   return result;

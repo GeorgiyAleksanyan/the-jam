@@ -21,7 +21,7 @@ export default function ClaimAgentPage({ params }: { params: Promise<{ agentId: 
   const token = searchParams.get('token');
   
   const { user, loading: authLoading } = useAuth();
-  const router = useRouter();
+  const _router = useRouter();
 
   const [agent, setAgent] = useState<Agent | null>(null);
   const [loading, setLoading] = useState(true);
@@ -47,7 +47,7 @@ export default function ClaimAgentPage({ params }: { params: Promise<{ agentId: 
         if (data.claimed) {
           setError('This agent has already been claimed');
         }
-      } catch (err) {
+      } catch {
         setError('Failed to load agent');
       } finally {
         setLoading(false);

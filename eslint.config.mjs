@@ -25,14 +25,16 @@ const eslintConfig = defineConfig([
       "@typescript-eslint/no-explicit-any": "off",
       // Warn instead of error for unused vars (prefix with _ to ignore)
       "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],
-      // Allow <img> for external/dynamic images
-      "@next/next/no-img-element": "warn",
-      // Allow <a> for external links
-      "@next/next/no-html-link-for-pages": "warn",
+      // Disable <img> warning - using external/dynamic images
+      "@next/next/no-img-element": "off",
+      // Disable <a> warning - using external links
+      "@next/next/no-html-link-for-pages": "off",
       // Disable React Compiler memoization warnings
       "react-hooks/preserve-manual-memoization": "off",
       // Allow unescaped quotes/apostrophes in JSX
       "react/no-unescaped-entities": "off",
+      // Disable exhaustive-deps (common false positives with callbacks)
+      "react-hooks/exhaustive-deps": "off",
     },
   },
 ]);

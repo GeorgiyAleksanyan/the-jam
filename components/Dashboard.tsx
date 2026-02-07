@@ -16,7 +16,7 @@ type Run = {
 export default function Dashboard() {
   const [runs, setRuns] = useState<Run[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [_error, setError] = useState<string | null>(null)
 
   const fetchRuns = useCallback(async () => {
     try {

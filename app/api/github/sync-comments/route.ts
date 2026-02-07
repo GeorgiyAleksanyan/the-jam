@@ -9,7 +9,7 @@ import { supabaseAdmin } from '@/lib/supabase';
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const GITHUB_REPO = 'GeorgiyAleksanyan/the-jam';
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   if (!supabaseAdmin) {
     return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
   }

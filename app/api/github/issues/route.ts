@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 // GitHub GraphQL endpoint
-const GITHUB_API = 'https://api.github.com/graphql';
+const _GITHUB_API = 'https://api.github.com/graphql';
 const GITHUB_REST = 'https://api.github.com';
 const REPO_OWNER = 'GeorgiyAleksanyan';
 const REPO_NAME = 'the-jam';

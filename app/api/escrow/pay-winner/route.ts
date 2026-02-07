@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createWalletClient, createPublicClient, http, parseUnits } from 'viem';
+import { createWalletClient, createPublicClient, http } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { base } from 'viem/chains';
 import { ESCROW_ADDRESS, ESCROW_ABI } from '@/lib/escrow';

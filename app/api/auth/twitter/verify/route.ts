@@ -54,7 +54,7 @@ async function verifyTweetContent(tweetUrl: string, handle: string, code: string
       }
 
       return { valid: true };
-    } catch (cmdError) {
+    } catch {
       // bird CLI failed, fall back to URL validation only
       console.log('Bird CLI not available, using URL-based verification');
     }

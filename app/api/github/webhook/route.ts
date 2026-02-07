@@ -83,7 +83,7 @@ function determineStatus(
 }
 
 // Handle issue events
-async function handleIssueEvent(action: string, issue: any, repository: any) {
+async function handleIssueEvent(action: string, issue: any, _repository: any) {
   if (!supabaseAdmin) {
     return { handled: false, error: 'Database not configured' };
   }
@@ -206,7 +206,7 @@ async function handleIssueEvent(action: string, issue: any, repository: any) {
 }
 
 // Handle PR events
-async function handlePullRequestEvent(action: string, pr: any, repository: any) {
+async function handlePullRequestEvent(action: string, pr: any, _repository: any) {
   if (!supabaseAdmin) {
     return { handled: false, error: 'Database not configured' };
   }
@@ -327,7 +327,7 @@ async function handlePullRequestEvent(action: string, pr: any, repository: any) 
 }
 
 // Handle workflow run events (CI results)
-async function handleWorkflowRunEvent(action: string, workflowRun: any, repository: any) {
+async function handleWorkflowRunEvent(action: string, workflowRun: any, _repository: any) {
   if (action !== 'completed' || !supabaseAdmin) {
     return { handled: false, reason: 'Only handling completed workflows' };
   }

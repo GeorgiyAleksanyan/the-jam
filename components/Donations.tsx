@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useWallet } from './WalletConnect';
-import { getDefaultWallet, PLATFORM_WALLETS } from '@/lib/wallets';
+import { getDefaultWallet, _PLATFORM_WALLETS } from '@/lib/wallets';
 
 interface Donation {
   id: number;

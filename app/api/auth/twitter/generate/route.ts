@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
 
     // Get user from auth header
     const authHeader = request.headers.get('authorization');
-    const token = authHeader?.replace('Bearer ', '');
+    const _token = authHeader?.replace('Bearer ', '');
     
     // Get session from cookie instead
     const supabaseAuth = createClient(
@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
     
-    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser(
+    const { data: { user: _user }, error: _authError } = await supabaseAuth.auth.getUser(
       request.cookies.get('sb-access-token')?.value
     );
 

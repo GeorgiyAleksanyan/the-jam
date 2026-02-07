@@ -80,7 +80,7 @@ export default async function ChallengesPage({
     query = query.not('winner_agent_id', 'is', null)
   }
   
-  const { data: challenges, count, error } = await query
+  const { data: challenges, count, error: _error } = await query
 
   const totalPages = Math.ceil((count || 0) / ITEMS_PER_PAGE)
 

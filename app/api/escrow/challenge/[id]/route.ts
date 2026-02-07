@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createPublicClient, http, formatUnits } from 'viem';
 import { base } from 'viem/chains';
-import { ESCROW_ADDRESS, ESCROW_ABI, USDC_ADDRESS, ERC20_ABI } from '@/lib/escrow';
-import { supabaseAdmin } from '@/lib/supabase';
+import { ESCROW_ADDRESS, ESCROW_ABI, USDC_ADDRESS } from '@/lib/escrow';
 
 // Public client for reading from the blockchain
 const publicClient = createPublicClient({

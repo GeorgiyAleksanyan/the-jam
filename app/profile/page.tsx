@@ -50,7 +50,7 @@ export default function ProfilePage() {
         const data = await res.json();
         setMessage({ type: 'error', text: data.error || 'Failed to update profile' });
       }
-    } catch (err) {
+    } catch {
       setMessage({ type: 'error', text: 'Failed to update profile' });
     } finally {
       setSaving(false);

@@ -112,7 +112,7 @@ export function useWallet() {
       // Try to switch to Base
       try {
         await switchToBase(provider);
-      } catch (e) {
+      } catch {
         console.log('Could not switch to Base, staying on current chain');
       }
 
@@ -173,7 +173,7 @@ export function useWallet() {
       // Try to switch to Base
       try {
         await switchToBase(provider);
-      } catch (e) {
+      } catch {
         console.log('Could not switch to Base');
       }
 
@@ -210,7 +210,7 @@ export function useWallet() {
       // Try to switch to Base
       try {
         await switchToBase(provider);
-      } catch (e) {
+      } catch {
         console.log('Could not switch to Base');
       }
 

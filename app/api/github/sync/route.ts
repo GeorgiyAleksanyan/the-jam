@@ -146,7 +146,7 @@ async function syncIssue(
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   if (!supabaseAdmin) {
     return NextResponse.json({ error: 'Database not configured' }, { status: 500 });
   }

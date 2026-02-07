@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
 const GITHUB_GRAPHQL = 'https://api.github.com/graphql';
-const REPO_OWNER = 'GeorgiyAleksanyan';
-const REPO_NAME = 'the-jam';
+const _REPO_OWNER = 'GeorgiyAleksanyan';
+const _REPO_NAME = 'the-jam';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,

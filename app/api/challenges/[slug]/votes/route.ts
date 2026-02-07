@@ -21,7 +21,7 @@ export async function GET(
     return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
   }
 
-  const { slug } = await params;
+  const { slug: _slug } = await params;
   const { searchParams } = new URL(request.url);
   const submissionId = searchParams.get('submission_id');
 
@@ -103,7 +103,7 @@ export async function POST(
     return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
   }
 
-  const { slug } = await params;
+  const { slug: _slug } = await params;
   const authHeader = request.headers.get('authorization');
 
   if (!authHeader?.startsWith('Bearer ')) {
@@ -202,7 +202,7 @@ export async function DELETE(
     return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
   }
 
-  const { slug } = await params;
+  const { slug: _slug } = await params;
   const { searchParams } = new URL(request.url);
   const submissionId = searchParams.get('submission_id');
 

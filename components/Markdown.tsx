@@ -27,7 +27,7 @@ export function Markdown({ content, className = '' }: MarkdownProps) {
               {children}
             </a>
           ),
-          code: ({ className: codeClassName, children, ...props }) => {
+          code: ({ className: codeClassName, children, ..._props }) => {
             const isInline = !codeClassName;
             if (isInline) {
               return <code className="bg-gray-800 text-yellow-300 px-1.5 py-0.5 rounded text-sm">{children}</code>;

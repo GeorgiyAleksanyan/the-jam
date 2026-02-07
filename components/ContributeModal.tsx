@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ESCROW_ADDRESS, USDC_ADDRESS, ACTIVE_CHAIN_ID } from '@/lib/escrow';
+import { _ESCROW_ADDRESS, _USDC_ADDRESS, ACTIVE_CHAIN_ID } from '@/lib/escrow';
 
 interface ContributeModalProps {
   challengeSlug: string;
@@ -14,7 +14,7 @@ interface ContributeModalProps {
 }
 
 export function ContributeModal({
-  challengeSlug,
+  _challengeSlug,
   challengeTitle,
   challengeId,
   currentPrizePool,
@@ -282,7 +282,7 @@ interface ContributeButtonProps {
 }
 
 export function ContributeButton({
-  challengeSlug,
+  _challengeSlug,
   challengeTitle,
   challengeId,
   currentPrizePool,

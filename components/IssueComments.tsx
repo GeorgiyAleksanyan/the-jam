@@ -33,7 +33,7 @@ export function IssueComments({ issueNumber, issueUrl }: IssueCommentsProps) {
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [newComment, setNewComment] = useState('');
+  const [_newComment, setNewComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const editorRef = useRef<RichEditorRef>(null);

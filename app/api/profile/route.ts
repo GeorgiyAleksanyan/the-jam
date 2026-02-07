@@ -70,7 +70,7 @@ export async function PATCH(request: NextRequest) {
   }
 }
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const cookieStore = await cookies();
     
@@ -115,7 +115,7 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json({ profile });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Failed to fetch profile' }, { status: 500 });
   }
 }
