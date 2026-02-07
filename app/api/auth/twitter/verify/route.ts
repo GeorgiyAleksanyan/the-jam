@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 
 const supabase = createClient(
@@ -96,39 +97,36 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get current user from session
+    // Get current user from session using SSR client
     const cookieStore = await cookies();
-    const authCookie = cookieStore.get('sb-ayxzfezfzvnrgkdnhqsp-auth-token');
-
-    if (!authCookie) {
-      return NextResponse.json(
-        { error: 'Not authenticated' },
-        { status: 401 }
-      );
-    }
-
-    // Parse the auth token to get user
-    const authClient = createClient(
+    
+    const authClient = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll();
+          },
+          setAll(cookiesToSet) {
+            try {
+              cookiesToSet.forEach(({ name, value, options }) =>
+                cookieStore.set(name, value, options)
+              );
+            } catch {
+              // Ignore - called from Server Component
+            }
+          },
+        },
+      }
     );
 
-    let accessToken: string;
-    try {
-      const parsed = JSON.parse(authCookie.value);
-      accessToken = Array.isArray(parsed) ? parsed[0] : parsed.access_token;
-    } catch {
-      return NextResponse.json(
-        { error: 'Invalid session' },
-        { status: 401 }
-      );
-    }
-
-    const { data: { user }, error: authError } = await authClient.auth.getUser(accessToken);
+    const { data: { user }, error: authError } = await authClient.auth.getUser();
 
     if (authError || !user) {
+      console.error('Twitter verify auth error:', authError?.message);
       return NextResponse.json(
-        { error: 'Invalid session' },
+        { error: 'Not authenticated', details: authError?.message },
         { status: 401 }
       );
     }
