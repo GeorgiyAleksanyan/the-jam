@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 import { Metadata } from 'next'
+import SearchInput from '@/components/SearchInput'
 
 export const dynamic = 'force-dynamic'
 
@@ -14,12 +15,13 @@ const ITEMS_PER_PAGE = 12
 export default async function ChallengesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; topic?: string; tab?: string }>
+  searchParams: Promise<{ page?: string; topic?: string; tab?: string; q?: string }>
 }) {
   const params = await searchParams
   const page = Math.max(1, parseInt(params.page || '1'))
   const topicFilter = params.topic
   const activeTab = params.tab || 'active'
+  const searchQuery = params.q
 
   // Get featured challenges (high prize pool, active)
   const { data: featured } = await supabase
@@ -64,6 +66,11 @@ export default async function ChallengesPage({
     .in('status', statusFilter)
     .order('created_at', { ascending: false })
     .range((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE - 1)
+
+  // Apply search query
+  if (searchQuery) {
+    query = query.or(`title.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`)
+  }
 
   // Apply topic filter if we have challenge IDs
   if (filteredChallengeIds !== null) {
@@ -137,18 +144,21 @@ export default async function ChallengesPage({
             <h1 className="text-2xl sm:text-3xl font-bold mb-2">Challenges</h1>
             <p className="text-gray-500 text-sm sm:text-base">Compete for crypto prizes</p>
           </div>
-          <Link 
-            href="/challenges/new"
-            className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg transition-colors text-center text-sm sm:text-base"
-          >
-            Create Challenge
-          </Link>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            <SearchInput />
+            <Link 
+              href="/challenges/new"
+              className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg transition-colors text-center text-sm sm:text-base whitespace-nowrap"
+            >
+              Create Challenge
+            </Link>
+          </div>
         </div>
 
         {/* Tabs */}
         <div className="flex gap-4 mb-6 border-b border-gray-700">
           <Link
-            href="/challenges?tab=active"
+            href={`/challenges?tab=active${searchQuery ? `&q=${searchQuery}` : ''}`}
             className={`pb-3 px-1 border-b-2 transition-colors ${
               activeTab === 'active' 
                 ? 'border-blue-500 text-white' 
@@ -158,7 +168,7 @@ export default async function ChallengesPage({
             Active <span className="text-gray-500">({activeCount || 0})</span>
           </Link>
           <Link
-            href="/challenges?tab=solved"
+            href={`/challenges?tab=solved${searchQuery ? `&q=${searchQuery}` : ''}`}
             className={`pb-3 px-1 border-b-2 transition-colors ${
               activeTab === 'solved' 
                 ? 'border-green-500 text-white' 
@@ -173,7 +183,7 @@ export default async function ChallengesPage({
         {topics && topics.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-8">
             <Link
-              href={`/challenges?tab=${activeTab}`}
+              href={`/challenges?tab=${activeTab}${searchQuery ? `&q=${searchQuery}` : ''}`}
               className={`px-3 py-1 rounded-full text-sm transition-colors ${
                 !topicFilter ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-400 hover:text-white'
               }`}
@@ -183,7 +193,7 @@ export default async function ChallengesPage({
             {topics.map((topic: any) => (
               <Link
                 key={topic.id}
-                href={`/challenges?tab=${activeTab}&topic=${topic.slug}`}
+                href={`/challenges?tab=${activeTab}&topic=${topic.slug}${searchQuery ? `&q=${searchQuery}` : ''}`}
                 className={`px-3 py-1 rounded-full text-sm transition-colors ${
                   topicFilter === topic.slug ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-400 hover:text-white'
                 }`}
@@ -194,8 +204,8 @@ export default async function ChallengesPage({
           </div>
         )}
 
-        {/* Featured Challenges (only on active tab) */}
-        {activeTab === 'active' && featured && featured.length > 0 && (
+        {/* Featured Challenges (only on active tab and when not searching) */}
+        {activeTab === 'active' && !searchQuery && featured && featured.length > 0 && (
           <div className="mb-12">
             <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
               🔥 Featured Challenges
@@ -229,7 +239,7 @@ export default async function ChallengesPage({
         {/* Regular Challenges */}
         <div>
           <h2 className="text-xl font-semibold mb-4">
-            {activeTab === 'solved' ? '🏆 Solved Challenges' : 'All Challenges'}
+            {activeTab === 'solved' ? '🏆 Solved Challenges' : searchQuery ? `Search results for "${searchQuery}"` : 'All Challenges'}
           </h2>
 
           {regularChallenges.length === 0 ? (
@@ -298,7 +308,7 @@ export default async function ChallengesPage({
           <div className="flex justify-center gap-2 mt-8">
             {page > 1 && (
               <Link
-                href={`/challenges?tab=${activeTab}&page=${page - 1}${topicFilter ? `&topic=${topicFilter}` : ''}`}
+                href={`/challenges?tab=${activeTab}&page=${page - 1}${topicFilter ? `&topic=${topicFilter}` : ''}${searchQuery ? `&q=${searchQuery}` : ''}`}
                 className="px-4 py-2 bg-gray-800 rounded hover:bg-gray-700 transition-colors"
               >
                 ← Previous
@@ -309,7 +319,7 @@ export default async function ChallengesPage({
             </span>
             {page < totalPages && (
               <Link
-                href={`/challenges?tab=${activeTab}&page=${page + 1}${topicFilter ? `&topic=${topicFilter}` : ''}`}
+                href={`/challenges?tab=${activeTab}&page=${page + 1}${topicFilter ? `&topic=${topicFilter}` : ''}${searchQuery ? `&q=${searchQuery}` : ''}`}
                 className="px-4 py-2 bg-gray-800 rounded hover:bg-gray-700 transition-colors"
               >
                 Next →
