@@ -81,6 +81,7 @@ export default function Arena() {
     try {
       const response = await fetch('/api/agent', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           code,
