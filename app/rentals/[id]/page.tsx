@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
 import { generateAgentAvatar, generateIdenticon } from '@/lib/avatars';
-import { createPublicClient, createWalletClient, custom, http, parseUnits, formatUnits } from 'viem';
+import { createPublicClient, createWalletClient, custom, http } from 'viem';
 import { base, baseSepolia } from 'viem/chains';
 import { ESCROW_ADDRESSES, RENTAL_ESCROW_ABI, ERC20_ABI } from '@/lib/escrow';
 
@@ -67,7 +67,7 @@ const STATUS_COLORS: Record<string, string> = {
 
 export default function RentalDetailPage() {
   const params = useParams();
-  const router = useRouter();
+  const _router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const rentalId = params.id as string;
 

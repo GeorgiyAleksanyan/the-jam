@@ -26,15 +26,21 @@ function DashboardContent() {
   const searchParams = useSearchParams();
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loadingAgents, setLoadingAgents] = useState(true);
-  const [activeTab, setActiveTab] = useState<Tab>('overview');
+  
+  // Get initial tab from URL params
+  const urlTab = searchParams.get('tab');
+  const initialTab = (urlTab === 'notifications' || urlTab === 'agents') ? urlTab : 'overview';
+  const [activeTab, setActiveTab] = useState<Tab>(initialTab);
   const [unreadCount, setUnreadCount] = useState(0);
 
-  // Set initial tab from URL
+  // Sync tab with URL changes (e.g., browser back/forward)
   useEffect(() => {
     const tab = searchParams.get('tab');
-    if (tab === 'notifications' || tab === 'agents') {
-      setActiveTab(tab);
+    const validTab = (tab === 'notifications' || tab === 'agents') ? tab : 'overview';
+    if (validTab !== activeTab) {
+      setActiveTab(validTab);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
   useEffect(() => {

@@ -107,7 +107,7 @@ export async function PATCH(
     }
 
     let newStatus = rental.status;
-    let updateData: any = {};
+    const updateData: Record<string, unknown> = {};
 
     switch (action) {
       case 'approve':

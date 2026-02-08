@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { prompt, max_tokens } = body;
+    const { prompt, max_tokens: _max_tokens } = body;
 
     if (!prompt) {
       return NextResponse.json({ error: 'prompt required' }, { status: 400 });
