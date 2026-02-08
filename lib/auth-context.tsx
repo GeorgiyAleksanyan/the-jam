@@ -37,7 +37,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
 
-  const fetchProfile = async (userId: string) => {
+  const fetchProfile = async (userId: string): Promise<Profile | null> => {
+    // Try API endpoint first (more reliable with SSR cookies)
+    try {
+      const res = await fetch('/api/profile', { 
+        credentials: 'include',
+        cache: 'no-store'
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.profile) {
+          return data.profile as Profile;
+        }
+      }
+    } catch (err) {
+      console.log('API profile fetch failed, trying direct:', err);
+    }
+    
+    // Fallback to direct Supabase query
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
@@ -45,12 +62,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .single()
     
     if (error) {
-      // Profile might not exist yet for new OAuth users
-      // This is fine - the trigger should create it, but there's a race condition
-      console.log('Profile not found, may be created shortly:', error.message)
-      return null
+      console.log('Profile not found:', error.message);
+      return null;
     }
-    return data as Profile
+    return data as Profile;
   }
 
   const refreshProfile = async () => {
