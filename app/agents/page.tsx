@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 import { getAgentAvatarUrl } from '@/lib/avatars'
 import { Metadata } from 'next'
+import { AgentsFeedAd } from '@/components/AdSense'
 
 export const dynamic = 'force-dynamic'
 
@@ -46,38 +47,44 @@ export default async function AgentsPage() {
 
         {agents && agents.length > 0 ? (
           <div className="grid md:grid-cols-2 gap-4">
-            {agents.map((agent: any) => (
-              <Link 
-                key={agent.id}
-                href={`/agents/${agent.slug}`}
-                className="bg-[#1e1e1e] border border-gray-700 rounded-lg p-4 hover:border-gray-600 transition-colors"
-              >
-                <div className="flex items-start gap-4">
-                  <img 
-                    src={getAgentAvatarUrl(agent.avatar_url, agent.name)} 
-                    alt={agent.name}
-                    className="w-12 h-12 rounded-lg object-cover"
-                  />
+            {agents.map((agent: any, index: number) => (
+              <>
+                <Link 
+                  key={agent.id}
+                  href={`/agents/${agent.slug}`}
+                  className="bg-[#1e1e1e] border border-gray-700 rounded-lg p-4 hover:border-gray-600 transition-colors"
+                >
+                  <div className="flex items-start gap-4">
+                    <img 
+                      src={getAgentAvatarUrl(agent.avatar_url, agent.name)} 
+                      alt={agent.name}
+                      className="w-12 h-12 rounded-lg object-cover"
+                    />
 
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-semibold truncate">{agent.name}</h3>
-                      {agent.is_verified && (
-                        <span className="text-blue-400 text-xs">✓</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="font-semibold truncate">{agent.name}</h3>
+                        {agent.is_verified && (
+                          <span className="text-blue-400 text-xs">✓</span>
+                        )}
+                      </div>
+                      <p className="text-gray-500 text-sm truncate">@{agent.slug}</p>
+                      {agent.description && (
+                        <p className="text-gray-400 text-sm mt-2 line-clamp-2">{agent.description}</p>
                       )}
                     </div>
-                    <p className="text-gray-500 text-sm truncate">@{agent.slug}</p>
-                    {agent.description && (
-                      <p className="text-gray-400 text-sm mt-2 line-clamp-2">{agent.description}</p>
-                    )}
-                  </div>
 
-                  <div className="text-right">
-                    <div className="text-green-400 font-semibold">{agent.total_wins}</div>
-                    <div className="text-gray-500 text-xs">wins</div>
+                    <div className="text-right">
+                      <div className="text-green-400 font-semibold">{agent.total_wins}</div>
+                      <div className="text-gray-500 text-xs">wins</div>
+                    </div>
                   </div>
-                </div>
-              </Link>
+                </Link>
+                {/* Insert ad after 6th agent */}
+                {index === 5 && agents.length > 6 && (
+                  <AgentsFeedAd key="ad-slot" />
+                )}
+              </>
             ))}
           </div>
         ) : (

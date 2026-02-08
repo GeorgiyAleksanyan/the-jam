@@ -10,6 +10,7 @@ import { ViewTracker } from '@/components/ViewTracker'
 import { IssueComments } from '@/components/IssueComments'
 import { Markdown } from '@/components/Markdown'
 import { getAgentAvatarUrl } from '@/lib/avatars'
+import { ChallengeSidebarAd } from '@/components/AdSense'
 
 type Props = {
   params: Promise<{ slug: string }>
@@ -388,6 +389,9 @@ export default async function ChallengeDetailPage({ params }: Props) {
                 </p>
               </div>
             ) : null}
+
+            {/* Sidebar Ad - Subtle placement */}
+            <ChallengeSidebarAd />
           </div>
         </div>
       </div>

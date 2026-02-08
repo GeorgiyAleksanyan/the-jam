@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { DonateButton } from './Donations';
 import { EmailSignup } from './EmailSignup';
+import { FooterAd } from './AdSense';
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
@@ -165,15 +166,9 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Ad Space - Hidden on small mobile */}
-          <div className="mt-6 sm:mt-8 hidden sm:flex justify-center">
-            <div 
-              id="footer-ad-container"
-              className="w-full max-w-[728px] h-[90px] bg-zinc-900/50 border border-zinc-800 rounded-lg flex items-center justify-center text-zinc-600 text-sm"
-              data-ad-slot="footer-banner"
-            >
-              <span className="opacity-50">Advertisement</span>
-            </div>
+          {/* Footer Ad - Subtle, hidden on mobile */}
+          <div className="mt-6 sm:mt-8 hidden sm:block">
+            <FooterAd />
           </div>
         </div>
       </div>

@@ -79,71 +79,41 @@ export function AdSenseScript() {
 /**
  * Strategic Ad Placements for The Jam
  * 
- * Recommended slots:
+ * Philosophy: Ads should blend with content, not interrupt.
  * 
- * 1. HEADER_LEADERBOARD (728x90)
- *    - Below header, above main content
- *    - High visibility, premium placement
+ * ACTIVE PLACEMENTS:
+ * - IN_FEED: Blends with challenge/agent cards
+ * - CHALLENGE_SIDEBAR: On challenge detail pages
+ * - DOCS_SIDEBAR: On documentation pages
+ * - FOOTER_BANNER: Subtle footer placement
  * 
- * 2. SIDEBAR_RECTANGLE (300x250)
- *    - Sidebar on challenge/agent pages
- *    - Good for desktop users
- * 
- * 3. IN_FEED (native)
- *    - Between challenge/agent listings
- *    - Blends with content
- * 
- * 4. FOOTER_BANNER (728x90)
- *    - Above footer
- *    - Lower value but consistent
- * 
- * 5. INTERSTITIAL (responsive)
- *    - Between major actions (after submission, etc.)
- *    - Use sparingly
+ * RESERVED (for future):
+ * - SOCIAL_FEED: When home feed is built
  */
 
 export const AD_SLOTS = {
-  HEADER_LEADERBOARD: 'your-slot-id-1',
-  SIDEBAR_RECTANGLE: 'your-slot-id-2',
-  IN_FEED: 'your-slot-id-3',
-  FOOTER_BANNER: 'your-slot-id-4',
-  CHALLENGE_SIDEBAR: 'your-slot-id-5',
+  // Active
+  IN_FEED_CHALLENGES: 'challenges-feed-1',
+  IN_FEED_AGENTS: 'agents-feed-1',
+  CHALLENGE_SIDEBAR: 'challenge-sidebar-1',
+  DOCS_SIDEBAR: 'docs-sidebar-1',
+  DONATE_PAGE: 'donate-page-1',
+  FOOTER_BANNER: 'footer-banner-1',
+  // Reserved for future
+  SOCIAL_FEED: 'social-feed-1',
 } as const;
 
 /**
  * Pre-configured ad components for common placements
+ * Designed to blend with existing UI components
  */
 
-export function HeaderAd() {
+// Blends with challenge cards in the grid
+export function ChallengesFeedAd() {
   return (
-    <div className="w-full flex justify-center py-2 bg-zinc-950">
+    <div className="bg-[#1e1e1e] border border-gray-700 rounded-lg p-4 flex items-center justify-center min-h-[200px]">
       <AdSlot 
-        slot={AD_SLOTS.HEADER_LEADERBOARD} 
-        format="horizontal"
-        style={{ width: 728, height: 90 }}
-        className="hidden md:block"
-      />
-    </div>
-  );
-}
-
-export function SidebarAd() {
-  return (
-    <div className="hidden lg:block">
-      <AdSlot 
-        slot={AD_SLOTS.SIDEBAR_RECTANGLE} 
-        format="rectangle"
-        style={{ width: 300, height: 250 }}
-      />
-    </div>
-  );
-}
-
-export function InFeedAd() {
-  return (
-    <div className="my-4">
-      <AdSlot 
-        slot={AD_SLOTS.IN_FEED} 
+        slot={AD_SLOTS.IN_FEED_CHALLENGES} 
         format="auto"
         className="w-full"
       />
@@ -151,13 +121,83 @@ export function InFeedAd() {
   );
 }
 
+// Blends with agent cards in the grid
+export function AgentsFeedAd() {
+  return (
+    <div className="bg-[#1e1e1e] border border-gray-700 rounded-lg p-4 flex items-center justify-center min-h-[120px]">
+      <AdSlot 
+        slot={AD_SLOTS.IN_FEED_AGENTS} 
+        format="auto"
+        className="w-full"
+      />
+    </div>
+  );
+}
+
+// Sidebar on challenge detail pages
+export function ChallengeSidebarAd() {
+  return (
+    <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
+      <div className="text-xs text-zinc-600 mb-2">Sponsored</div>
+      <AdSlot 
+        slot={AD_SLOTS.CHALLENGE_SIDEBAR} 
+        format="rectangle"
+        style={{ minHeight: 250 }}
+      />
+    </div>
+  );
+}
+
+// Sidebar on docs pages
+export function DocsSidebarAd() {
+  return (
+    <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 mt-6">
+      <div className="text-xs text-zinc-600 mb-2">Sponsored</div>
+      <AdSlot 
+        slot={AD_SLOTS.DOCS_SIDEBAR} 
+        format="rectangle"
+        style={{ minHeight: 200 }}
+      />
+    </div>
+  );
+}
+
+// For the donate page
+export function DonatePageAd() {
+  return (
+    <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 text-center">
+      <div className="text-xs text-zinc-600 mb-3">Our Sponsors</div>
+      <AdSlot 
+        slot={AD_SLOTS.DONATE_PAGE} 
+        format="auto"
+        style={{ minHeight: 100 }}
+      />
+    </div>
+  );
+}
+
+// Subtle footer ad
 export function FooterAd() {
   return (
-    <div className="w-full flex justify-center py-4">
+    <div className="w-full flex justify-center">
       <AdSlot 
         slot={AD_SLOTS.FOOTER_BANNER} 
         format="horizontal"
-        style={{ maxWidth: 728, height: 90 }}
+        style={{ maxWidth: 728, minHeight: 90 }}
+        className="w-full"
+      />
+    </div>
+  );
+}
+
+// For future social feed on homepage
+export function SocialFeedAd() {
+  return (
+    <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-4">
+      <AdSlot 
+        slot={AD_SLOTS.SOCIAL_FEED} 
+        format="auto"
+        className="w-full"
       />
     </div>
   );

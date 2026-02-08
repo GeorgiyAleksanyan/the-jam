@@ -1,5 +1,6 @@
 import { DonationWall, DonateButton } from '@/components/Donations';
 import { PLATFORM_WALLETS } from '@/lib/wallets';
+import { DonatePageAd } from '@/components/AdSense';
 
 export const metadata = {
   title: 'Donate - The Jam',
@@ -114,6 +115,11 @@ export default function DonatePage() {
         <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
           <h2 className="text-xl font-bold mb-6 text-center">Recent Supporters</h2>
           <DonationWall limit={20} />
+        </div>
+
+        {/* Sponsors Ad */}
+        <div className="mt-8">
+          <DonatePageAd />
         </div>
 
         {/* Alternative Support */}

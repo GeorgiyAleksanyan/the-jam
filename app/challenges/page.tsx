@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { Metadata } from 'next'
 import SearchInput from '@/components/SearchInput'
 import { getAgentAvatarUrl } from '@/lib/avatars'
+import { ChallengesFeedAd } from '@/components/AdSense'
 
 export const dynamic = 'force-dynamic'
 
@@ -255,52 +256,58 @@ export default async function ChallengesPage({
             </div>
           ) : (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {regularChallenges.map((challenge: any) => (
-                <Link
-                  key={challenge.id}
-                  href={`/challenges/${challenge.slug}`}
-                  className="bg-[#1e1e1e] border border-gray-700 rounded-lg p-5 hover:border-gray-500 transition-colors"
-                >
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className={`text-xs px-2 py-0.5 rounded ${getDifficultyColor(challenge.difficulty)}`}>
-                      {challenge.difficulty}
-                    </span>
-                    <span className={`text-xs ${getStatusColor(challenge.status)}`}>
-                      {challenge.status === 'closed' ? '✓ Solved' : `● ${challenge.status}`}
-                    </span>
-                  </div>
-                  <h3 className="font-semibold mb-2">{challenge.title}</h3>
-                  <p className="text-sm text-gray-400 mb-4 line-clamp-2">
-                    {challenge.short_description || challenge.description?.substring(0, 100)}
-                  </p>
-
-                  {/* Winner display for solved challenges */}
-                  {challenge.status === 'closed' && challenge.winner && (
-                    <div className="flex items-center gap-2 mb-3 p-2 bg-green-900/20 border border-green-800 rounded">
-                      <span className="text-yellow-400">🏆</span>
-                      <img 
-                        src={getAgentAvatarUrl(challenge.winner.avatar_url, challenge.winner.name)} 
-                        alt="" 
-                        className="w-5 h-5 rounded-full"
-                      />
-                      <span className="text-sm text-green-400">{challenge.winner.name}</span>
-                      {challenge.payout_tx && (
-                        <span className="text-xs text-blue-400 ml-auto">
-                          Paid ✓
-                        </span>
-                      )}
+              {regularChallenges.map((challenge: any, index: number) => (
+                <>
+                  <Link
+                    key={challenge.id}
+                    href={`/challenges/${challenge.slug}`}
+                    className="bg-[#1e1e1e] border border-gray-700 rounded-lg p-5 hover:border-gray-500 transition-colors"
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className={`text-xs px-2 py-0.5 rounded ${getDifficultyColor(challenge.difficulty)}`}>
+                        {challenge.difficulty}
+                      </span>
+                      <span className={`text-xs ${getStatusColor(challenge.status)}`}>
+                        {challenge.status === 'closed' ? '✓ Solved' : `● ${challenge.status}`}
+                      </span>
                     </div>
+                    <h3 className="font-semibold mb-2">{challenge.title}</h3>
+                    <p className="text-sm text-gray-400 mb-4 line-clamp-2">
+                      {challenge.short_description || challenge.description?.substring(0, 100)}
+                    </p>
+
+                    {/* Winner display for solved challenges */}
+                    {challenge.status === 'closed' && challenge.winner && (
+                      <div className="flex items-center gap-2 mb-3 p-2 bg-green-900/20 border border-green-800 rounded">
+                        <span className="text-yellow-400">🏆</span>
+                        <img 
+                          src={getAgentAvatarUrl(challenge.winner.avatar_url, challenge.winner.name)} 
+                          alt="" 
+                          className="w-5 h-5 rounded-full"
+                        />
+                        <span className="text-sm text-green-400">{challenge.winner.name}</span>
+                        {challenge.payout_tx && (
+                          <span className="text-xs text-blue-400 ml-auto">
+                            Paid ✓
+                          </span>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-green-400 font-bold">${challenge.prize_pool || 0} USDC</span>
+                      <div className="flex items-center gap-2 sm:gap-3 text-gray-500 text-xs sm:text-sm">
+                        <span title="Views" className="hidden sm:inline">👁 {challenge.view_count || 0}</span>
+                        <span title="Upvotes">❤️ {challenge.upvotes || 0}</span>
+                        <span title="Submissions">📝 {challenge.submission_count || 0}</span>
+                      </div>
+                    </div>
+                  </Link>
+                  {/* Insert ad after 6th item */}
+                  {index === 5 && regularChallenges.length > 6 && (
+                    <ChallengesFeedAd key="ad-slot" />
                   )}
-
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-green-400 font-bold">${challenge.prize_pool || 0} USDC</span>
-                    <div className="flex items-center gap-2 sm:gap-3 text-gray-500 text-xs sm:text-sm">
-                      <span title="Views" className="hidden sm:inline">👁 {challenge.view_count || 0}</span>
-                      <span title="Upvotes">❤️ {challenge.upvotes || 0}</span>
-                      <span title="Submissions">📝 {challenge.submission_count || 0}</span>
-                    </div>
-                  </div>
-                </Link>
+                </>
               ))}
             </div>
           )}
