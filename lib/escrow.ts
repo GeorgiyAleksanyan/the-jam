@@ -3,13 +3,13 @@ export const ESCROW_ADDRESSES = {
   // Base Mainnet
   8453: {
     escrow: '0x8fFEcDf8a26279d61CAa8e2D52C9A3335963A102',
-    rentalEscrow: '', // Deploy and add address
+    rentalEscrow: '', // Deploy and add address when mainnet funded
     usdc: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
   },
   // Base Sepolia (Testnet)
   84532: {
     escrow: '0x8fFEcDf8a26279d61CAa8e2D52C9A3335963A102',
-    rentalEscrow: '', // Deploy and add address
+    rentalEscrow: '0xB1469753fd0280c080aa4bB1b756a1E231a7d5ec',
     usdc: '0x036CbD53842c5426634e7929541eC2318f3dCF7e',
   },
 } as const;

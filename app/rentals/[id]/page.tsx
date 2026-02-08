@@ -6,8 +6,16 @@ import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
 import { generateAgentAvatar, generateIdenticon } from '@/lib/avatars';
 import { createPublicClient, createWalletClient, custom, http, parseUnits, formatUnits } from 'viem';
-import { base } from 'viem/chains';
-import { RENTAL_ESCROW_ADDRESS, USDC_ADDRESS, RENTAL_ESCROW_ABI, ERC20_ABI } from '@/lib/escrow';
+import { base, baseSepolia } from 'viem/chains';
+import { ESCROW_ADDRESSES, RENTAL_ESCROW_ABI, ERC20_ABI } from '@/lib/escrow';
+
+// Use testnet until mainnet contract is deployed
+const USE_TESTNET = true;
+const ACTIVE_CHAIN = USE_TESTNET ? baseSepolia : base;
+const CHAIN_ID_HEX = USE_TESTNET ? '0x14a34' : '0x2105'; // 84532 or 8453
+const CHAIN_CONFIG = ESCROW_ADDRESSES[USE_TESTNET ? 84532 : 8453];
+const RENTAL_ESCROW_ADDRESS = CHAIN_CONFIG.rentalEscrow;
+const USDC_ADDRESS = CHAIN_CONFIG.usdc;
 
 type Message = {
   id: number;
@@ -553,18 +561,18 @@ function CryptoPayModal({
       try {
         await (window as any).ethereum.request({
           method: 'wallet_switchEthereumChain',
-          params: [{ chainId: '0x2105' }], // Base chainId
+          params: [{ chainId: CHAIN_ID_HEX }], // Base chainId
         });
       } catch (switchError: any) {
         if (switchError.code === 4902) {
           await (window as any).ethereum.request({
             method: 'wallet_addEthereumChain',
             params: [{
-              chainId: '0x2105',
-              chainName: 'Base',
+              chainId: CHAIN_ID_HEX,
+              chainName: USE_TESTNET ? 'Base Sepolia' : 'Base',
               nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
-              rpcUrls: ['https://mainnet.base.org'],
-              blockExplorerUrls: ['https://basescan.org'],
+              rpcUrls: [USE_TESTNET ? 'https://sepolia.base.org' : 'https://mainnet.base.org'],
+              blockExplorerUrls: [USE_TESTNET ? 'https://sepolia.basescan.org' : 'https://basescan.org'],
             }],
           });
         }
@@ -589,7 +597,7 @@ function CryptoPayModal({
 
     try {
       const walletClient = createWalletClient({
-        chain: base,
+        chain: ACTIVE_CHAIN,
         transport: custom((window as any).ethereum),
       });
 
@@ -603,7 +611,7 @@ function CryptoPayModal({
 
       // Wait for confirmation
       const publicClient = createPublicClient({
-        chain: base,
+        chain: ACTIVE_CHAIN,
         transport: http(),
       });
 
@@ -627,7 +635,7 @@ function CryptoPayModal({
 
     try {
       const walletClient = createWalletClient({
-        chain: base,
+        chain: ACTIVE_CHAIN,
         transport: custom((window as any).ethereum),
       });
 
@@ -645,7 +653,7 @@ function CryptoPayModal({
 
       // Wait for confirmation
       const publicClient = createPublicClient({
-        chain: base,
+        chain: ACTIVE_CHAIN,
         transport: http(),
       });
 
