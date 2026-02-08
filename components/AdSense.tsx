@@ -8,7 +8,9 @@ const ADSENSE_CLIENT_ID = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID || 'ca-pub-9
 
 interface AdSlotProps {
   slot: string;
-  format?: 'auto' | 'rectangle' | 'horizontal' | 'vertical';
+  format?: 'auto' | 'rectangle' | 'horizontal' | 'vertical' | 'fluid';
+  layoutKey?: string;
+  layout?: string;
   style?: React.CSSProperties;
   className?: string;
 }
@@ -20,6 +22,8 @@ interface AdSlotProps {
 export function AdSlot({ 
   slot, 
   format = 'auto', 
+  layoutKey,
+  layout,
   style,
   className = '' 
 }: AdSlotProps) {
@@ -51,6 +55,8 @@ export function AdSlot({
       data-ad-client={ADSENSE_CLIENT_ID}
       data-ad-slot={slot}
       data-ad-format={format}
+      {...(layoutKey && { 'data-ad-layout-key': layoutKey })}
+      {...(layout && { 'data-ad-layout': layout })}
       data-full-width-responsive="true"
     />
   );
@@ -92,15 +98,21 @@ export function AdSenseScript() {
  */
 
 export const AD_SLOTS = {
-  // Active
-  IN_FEED_CHALLENGES: 'challenges-feed-1',
-  IN_FEED_AGENTS: 'agents-feed-1',
-  CHALLENGE_SIDEBAR: 'challenge-sidebar-1',
-  DOCS_SIDEBAR: 'docs-sidebar-1',
-  DONATE_PAGE: 'donate-page-1',
-  FOOTER_BANNER: 'footer-banner-1',
+  // Active - Real slot IDs from AdSense
+  IN_FEED_CHALLENGES: '3321826858',
+  IN_FEED_AGENTS: '5581158683',
+  CHALLENGE_SIDEBAR: '2869664620',
+  DOCS_SIDEBAR: '5655610065',
+  DONATE_PAGE: '4182746292',
+  FOOTER_BANNER: '9520403695',
   // Reserved for future
   SOCIAL_FEED: 'social-feed-1',
+} as const;
+
+// Layout keys for in-feed ads (affects styling)
+export const AD_LAYOUT_KEYS = {
+  CHALLENGES: '-6t+ed+2i-1n-4w',
+  AGENTS: '-fb+5w+4e-db+86',
 } as const;
 
 /**
@@ -114,7 +126,8 @@ export function ChallengesFeedAd() {
     <div className="bg-[#1e1e1e] border border-gray-700 rounded-lg p-4 flex items-center justify-center min-h-[200px]">
       <AdSlot 
         slot={AD_SLOTS.IN_FEED_CHALLENGES} 
-        format="auto"
+        format="fluid"
+        layoutKey={AD_LAYOUT_KEYS.CHALLENGES}
         className="w-full"
       />
     </div>
@@ -127,7 +140,8 @@ export function AgentsFeedAd() {
     <div className="bg-[#1e1e1e] border border-gray-700 rounded-lg p-4 flex items-center justify-center min-h-[120px]">
       <AdSlot 
         slot={AD_SLOTS.IN_FEED_AGENTS} 
-        format="auto"
+        format="fluid"
+        layoutKey={AD_LAYOUT_KEYS.AGENTS}
         className="w-full"
       />
     </div>
@@ -163,13 +177,15 @@ export function DocsSidebarAd() {
 }
 
 // For the donate page
+// For the donate page (in-article style)
 export function DonatePageAd() {
   return (
     <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 text-center">
       <div className="text-xs text-zinc-600 mb-3">Our Sponsors</div>
       <AdSlot 
         slot={AD_SLOTS.DONATE_PAGE} 
-        format="auto"
+        format="fluid"
+        layout="in-article"
         style={{ minHeight: 100 }}
       />
     </div>
@@ -182,7 +198,7 @@ export function FooterAd() {
     <div className="w-full flex justify-center">
       <AdSlot 
         slot={AD_SLOTS.FOOTER_BANNER} 
-        format="horizontal"
+        format="auto"
         style={{ maxWidth: 728, minHeight: 90 }}
         className="w-full"
       />
