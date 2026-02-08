@@ -98,13 +98,13 @@ export function AdSenseScript() {
  */
 
 export const AD_SLOTS = {
-  // Active - Real slot IDs from AdSense
-  IN_FEED_CHALLENGES: '3321826858',
-  IN_FEED_AGENTS: '5581158683',
-  CHALLENGE_SIDEBAR: '2869664620',
-  DOCS_SIDEBAR: '5655610065',
-  DONATE_PAGE: '4182746292',
-  FOOTER_BANNER: '9520403695',
+  // Active - Real slot IDs from AdSense (pub-2718034035990801)
+  IN_FEED_CHALLENGES: '5361666832',
+  IN_FEED_AGENTS: '6678617935',
+  CHALLENGE_SIDEBAR: '9428178009',
+  DOCS_SIDEBAR: '7978521079',
+  DONATE_PAGE: '6665439400',
+  FOOTER_BANNER: '1524793369',
   // Reserved for future
   SOCIAL_FEED: 'social-feed-1',
 } as const;
