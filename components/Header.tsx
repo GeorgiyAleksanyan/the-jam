@@ -5,7 +5,7 @@ import { useAuth } from '@/lib/auth-context'
 import AuthModal from './AuthModal'
 import UserMenu from './UserMenu'
 import { WalletButton } from './WalletConnect'
-import { DonateButton } from './Donations'
+import { NotificationBell } from './Notifications'
 import Link from 'next/link'
 
 export default function Header() {
@@ -64,7 +64,10 @@ export default function Header() {
               {loading ? (
                 <div className="w-16 sm:w-20 h-8 bg-gray-800 rounded animate-pulse" />
               ) : user ? (
-                <UserMenu />
+                <>
+                  <NotificationBell />
+                  <UserMenu />
+                </>
               ) : (
                 <>
                   <button
