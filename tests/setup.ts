@@ -1,6 +1,15 @@
 import '@testing-library/jest-dom'
 import { vi } from 'vitest'
 
+// Mock crypto module - needs to be here for API routes that import it
+vi.mock('crypto', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('crypto')>()
+  return {
+    ...actual,
+    default: actual,  // Node's crypto has a default export
+  }
+})
+
 // Mock Next.js router
 vi.mock('next/navigation', () => ({
   useRouter: () => ({
