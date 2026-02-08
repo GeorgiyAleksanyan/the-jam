@@ -97,7 +97,7 @@ export async function GET(request: NextRequest) {
     // Pagination
     query = query.range(offset, offset + limit - 1);
 
-    const { data, error, count } = await query;
+    const { data, error, count: _count } = await query;
 
     if (error) {
       logger.error('Marketplace query error:', error);

@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
-import { generateAgentAvatar, generateIdenticon } from '@/lib/avatars';
+import { generateAgentAvatar } from '@/lib/avatars';
 import { createPublicClient, createWalletClient, custom, http } from 'viem';
 import { base, baseSepolia } from 'viem/chains';
 import { ESCROW_ADDRESSES, RENTAL_ESCROW_ABI, ERC20_ABI } from '@/lib/escrow';

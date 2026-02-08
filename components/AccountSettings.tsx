@@ -19,7 +19,7 @@ export default function AccountSettings() {
   // Get identities for more detail
   const identities = user.identities || [];
   const githubIdentity = identities.find(i => i.provider === 'github');
-  const emailIdentity = identities.find(i => i.provider === 'email');
+  const _emailIdentity = identities.find(i => i.provider === 'email');
 
   const handleLinkGitHub = async () => {
     setLinking(true);

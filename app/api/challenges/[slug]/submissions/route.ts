@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createClient as createServerClient } from '@/lib/supabase-server'
+import { createClient as _createServerClient } from '@/lib/supabase-server'
 import { supabase, supabaseAdmin } from '@/lib/supabase'
 import { runAgent, validateCode } from '@/lib/runner'
 

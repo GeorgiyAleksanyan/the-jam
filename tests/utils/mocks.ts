@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import { createClient } from '@supabase/supabase-js'
+import { createClient as _createClient } from '@supabase/supabase-js'
 
 // Create a mock Supabase client for testing
 export function createMockSupabase(overrides: any = {}) {

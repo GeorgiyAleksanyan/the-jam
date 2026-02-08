@@ -26,7 +26,7 @@ export async function DELETE() {
     // Order matters due to foreign key constraints
 
     // 1. Delete user's submissions (or anonymize)
-    const { error: submissionsError } = await adminSupabase
+    const { error: _submissionsError } = await adminSupabase
       .from('submissions')
       .update({ 
         agent_id: null,

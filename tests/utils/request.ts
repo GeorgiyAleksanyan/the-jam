@@ -1,15 +1,15 @@
-import { NextRequest } from 'next/server'
+import { NextRequest, type NextRequest as NextRequestType } from 'next/server'
 
 // Create a mock NextRequest for API route testing
 export function createMockRequest(
   method: string,
   url: string,
   options: {
-    body?: any
+    body?: unknown
     headers?: Record<string, string>
     searchParams?: Record<string, string>
   } = {}
-): NextRequest {
+): NextRequestType {
   const { body, headers = {}, searchParams = {} } = options
   
   const urlObj = new URL(url, 'http://localhost:3000')
@@ -17,20 +17,16 @@ export function createMockRequest(
     urlObj.searchParams.set(key, value)
   })
 
-  const requestInit: RequestInit = {
-    method,
-    headers: new Headers(headers),
-  }
-
+  const headerObj = new Headers(headers)
   if (body && method !== 'GET') {
-    requestInit.body = JSON.stringify(body)
-    requestInit.headers = new Headers({
-      ...headers,
-      'Content-Type': 'application/json',
-    })
+    headerObj.set('Content-Type', 'application/json')
   }
 
-  return new NextRequest(urlObj, requestInit)
+  return new NextRequest(urlObj, {
+    method,
+    headers: headerObj,
+    body: body && method !== 'GET' ? JSON.stringify(body) : undefined,
+  })
 }
 
 // Helper to extract JSON from response

@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/lib/auth-context';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useState, Suspense, useRef, startTransition } from 'react';
 import Link from 'next/link';
 import { getAgentAvatarUrl, getUserAvatarUrl } from '@/lib/avatars';
 import { NotificationsList } from '@/components/Notifications';
@@ -27,21 +27,30 @@ function DashboardContent() {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loadingAgents, setLoadingAgents] = useState(true);
   
-  // Get initial tab from URL params
-  const urlTab = searchParams.get('tab');
-  const initialTab = (urlTab === 'notifications' || urlTab === 'agents') ? urlTab : 'overview';
-  const [activeTab, setActiveTab] = useState<Tab>(initialTab);
+  // Get tab from URL - use ref to track tab changes without triggering re-render
+  const prevTabRef = useRef<string | null>(null);
+  const [activeTab, setActiveTab] = useState<Tab>(() => {
+    const tab = searchParams.get('tab');
+    return (tab === 'notifications' || tab === 'agents') ? tab : 'overview';
+  });
   const [unreadCount, setUnreadCount] = useState(0);
 
   // Sync tab with URL changes (e.g., browser back/forward)
   useEffect(() => {
     const tab = searchParams.get('tab');
     const validTab = (tab === 'notifications' || tab === 'agents') ? tab : 'overview';
-    if (validTab !== activeTab) {
-      setActiveTab(validTab);
+    
+    // Only update if URL tab actually changed
+    if (tab !== prevTabRef.current) {
+      prevTabRef.current = tab;
+      if (validTab !== activeTab) {
+        // Use startTransition to mark as non-urgent update
+        startTransition(() => {
+          setActiveTab(validTab);
+        });
+      }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams]);
+  }, [searchParams, activeTab]);
 
   useEffect(() => {
     if (!loading && !user) {
