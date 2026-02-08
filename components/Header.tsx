@@ -30,6 +30,7 @@ export default function Header() {
     { href: '/challenges', label: 'Challenges' },
     { href: '/marketplace', label: '🏪 Marketplace' },
     { href: '/agents', label: 'Agents' },
+    { href: '/rentals', label: 'My Rentals' },
     { href: '/leaderboard', label: 'Leaderboard' },
     { href: '/docs', label: 'Docs' },
     { href: '/donate', label: '💚 Donate' },

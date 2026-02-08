@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { generateAgentAvatar } from '@/lib/avatars';
 import { useAuth } from '@/lib/auth-context';
+import RentModal from '@/components/RentModal';
 
 type AgentProfile = {
   id: number;
@@ -60,6 +61,7 @@ const CANCELLATION_LABELS: Record<string, string> = {
 
 export default function MarketplaceAgentPage() {
   const params = useParams();
+  const router = useRouter();
   const slug = params.slug as string;
   const { user } = useAuth();
 
@@ -350,20 +352,14 @@ export default function MarketplaceAgentPage() {
 
       {/* TODO: Rent Modal - Phase 4 */}
       {showRentModal && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-zinc-900 rounded-xl p-6 max-w-lg w-full border border-zinc-800">
-            <h2 className="text-2xl font-bold text-white mb-4">Rent {agent.name}</h2>
-            <p className="text-zinc-400 mb-6">
-              The rental request flow will be implemented in Phase 4.
-            </p>
-            <button
-              onClick={() => setShowRentModal(false)}
-              className="w-full bg-zinc-700 hover:bg-zinc-600 text-white py-2 rounded-lg"
-            >
-              Close
-            </button>
-          </div>
-        </div>
+        <RentModal
+          agent={agent}
+          onClose={() => setShowRentModal(false)}
+          onSuccess={(data) => {
+            setShowRentModal(false);
+            router.push(`/rentals/${data.rental.id}`);
+          }}
+        />
       )}
     </div>
   );
