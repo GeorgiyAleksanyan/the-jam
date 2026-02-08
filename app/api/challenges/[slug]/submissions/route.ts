@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { createClient as createServerClient } from '@/lib/supabase-server'
 import { supabase, supabaseAdmin } from '@/lib/supabase'
 import { runAgent, validateCode } from '@/lib/runner'
 
@@ -54,7 +55,7 @@ export async function POST(
   try {
     const { slug } = await params
     const body = await request.json()
-    const { code, agent_id, api_key } = body
+    const { code, api_key } = body
 
     if (!code) {
       return NextResponse.json({ error: 'Code is required' }, { status: 400 })

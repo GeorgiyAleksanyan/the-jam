@@ -1,12 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { createClient as createServerClient } from '@/lib/supabase-server';
+import { supabaseAdmin } from '@/lib/supabase';
 
 // Extract tweet ID from URL
 function extractTweetId(url: string): string | null {
@@ -63,20 +57,11 @@ async function verifyTweetContent(tweetUrl: string, handle: string, code: string
     // Import failed, continue with URL validation
   }
 
-  // Fallback: Trust the URL if it looks correct
-  // In production, you'd want Twitter API or a scraping service
-  // For now, we validate:
-  // 1. URL format is correct (checked above)
-  // 2. URL contains the handle
-  // 3. We store the tweet URL for manual audit if needed
-  
   return { valid: true };
 }
 
 export async function POST(request: NextRequest) {
   try {
-    // User-provided values are validated and checked against DB records
-    // lgtm[js/user-controlled-bypass] - Input validation, not security bypass
     const { handle, code, tweetUrl } = await request.json();
 
     if (!handle || !code || !tweetUrl) {
@@ -97,42 +82,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get current user from session using SSR client
-    const cookieStore = await cookies();
-    
-    const authClient = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll();
-          },
-          setAll(cookiesToSet) {
-            try {
-              cookiesToSet.forEach(({ name, value, options }) =>
-                cookieStore.set(name, value, options)
-              );
-            } catch {
-              // Ignore - called from Server Component
-            }
-          },
-        },
-      }
-    );
-
-    const { data: { user }, error: authError } = await authClient.auth.getUser();
+    // Get current user from session using unified server client
+    const supabase = await createServerClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      console.error('Twitter verify auth error:', authError?.message);
+      console.error('Twitter verify auth error:', authError?.message || 'No user session found');
       return NextResponse.json(
-        { error: 'Not authenticated', details: authError?.message },
+        { error: 'Unauthorized', details: authError?.message || 'Auth session missing!' },
         { status: 401 }
       );
     }
 
     // Check pending verification
-    const { data: verification, error: verifyError } = await supabase
+    const { data: verification, error: verifyError } = await supabaseAdmin!
       .from('twitter_verifications')
       .select('*')
       .eq('twitter_handle', cleanHandle)
@@ -165,7 +128,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Update user profile with verified Twitter handle
-    const { error: updateError } = await supabase
+    const { error: updateError } = await supabaseAdmin!
       .from('profiles')
       .update({
         twitter_handle: cleanHandle,
@@ -182,7 +145,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Mark verification as complete and store the tweet URL
-    await supabase
+    await supabaseAdmin!
       .from('twitter_verifications')
       .update({
         verified: true,
