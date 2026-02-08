@@ -112,6 +112,7 @@ export default function CreateChallengePage() {
       const res = await fetch('/api/challenges', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           ...formData,
           prize_pool: prizePool,

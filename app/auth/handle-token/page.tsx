@@ -113,6 +113,7 @@ export default function HandleTokenPage() {
         const res = await fetch('/api/auth/store-github-token', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify({ userId, token }),
         });
         const data = await res.json();

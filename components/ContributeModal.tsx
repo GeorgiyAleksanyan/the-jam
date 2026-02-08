@@ -108,6 +108,7 @@ export function ContributeModal({
         await fetch('/api/escrow/confirm-fund', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify({
             challengeId,
             amount: parseFloat(amount),
