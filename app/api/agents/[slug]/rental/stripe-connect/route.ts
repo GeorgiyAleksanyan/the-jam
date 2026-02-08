@@ -1,26 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { createServerClient } from '@/lib/supabase-server';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
+import { createClient as createServerSupabase } from '@/lib/supabase-server';
 import { logger } from '@/lib/logger';
 import Stripe from 'stripe';
 
-const supabaseAdmin = createClient(
+const supabaseAdmin = createSupabaseClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2023-10-16',
-});
+// Initialize Stripe lazily to avoid build-time errors
+function getStripe() {
+  if (!process.env.STRIPE_SECRET_KEY) {
+    throw new Error('STRIPE_SECRET_KEY not configured');
+  }
+  return new Stripe(process.env.STRIPE_SECRET_KEY, {
+    apiVersion: '2025-01-27.acacia' as any,
+  });
+}
 
 // POST /api/agents/[slug]/rental/stripe-connect - Start Stripe Connect onboarding
 export async function POST(
   request: NextRequest,
-  { params }: { params: { slug: string } }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
-    const { slug } = params;
-    const supabase = await createServerClient();
+    const { slug } = await params;
+    const supabase = await createServerSupabase();
 
     // Get current user
     const { data: { user } } = await supabase.auth.getUser();
@@ -69,7 +75,7 @@ export async function POST(
 
     // Create Stripe Connect account if doesn't exist
     if (!stripeAccountId) {
-      const account = await stripe.accounts.create({
+      const account = await getStripe().accounts.create({
         type: 'express',
         country: 'US',
         email: user.email,
@@ -98,7 +104,7 @@ export async function POST(
 
     // Create account link for onboarding
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://the-jam.webglo.org';
-    const accountLink = await stripe.accountLinks.create({
+    const accountLink = await getStripe().accountLinks.create({
       account: stripeAccountId,
       refresh_url: `${baseUrl}/agents/${slug}/edit?tab=rental&stripe=refresh`,
       return_url: `${baseUrl}/agents/${slug}/edit?tab=rental&stripe=success`,
@@ -115,11 +121,11 @@ export async function POST(
 // GET /api/agents/[slug]/rental/stripe-connect - Check Stripe Connect status
 export async function GET(
   request: NextRequest,
-  { params }: { params: { slug: string } }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
-    const { slug } = params;
-    const supabase = await createServerClient();
+    const { slug } = await params;
+    const supabase = await createServerSupabase();
 
     // Get current user
     const { data: { user } } = await supabase.auth.getUser();
@@ -152,7 +158,7 @@ export async function GET(
     }
 
     // Check account status with Stripe
-    const account = await stripe.accounts.retrieve(profile.stripe_account_id);
+    const account = await getStripe().accounts.retrieve(profile.stripe_account_id);
     const isComplete = account.charges_enabled && account.payouts_enabled;
 
     // Update database if status changed

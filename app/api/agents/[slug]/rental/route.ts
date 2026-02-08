@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { createServerClient } from '@/lib/supabase-server';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
+import { createClient as createServerSupabase } from '@/lib/supabase-server';
 import { logger } from '@/lib/logger';
 
-const supabaseAdmin = createClient(
+const supabaseAdmin = createSupabaseClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
@@ -11,10 +11,10 @@ const supabaseAdmin = createClient(
 // GET /api/agents/[slug]/rental - Get rental profile for an agent
 export async function GET(
   request: NextRequest,
-  { params }: { params: { slug: string } }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
-    const { slug } = params;
+    const { slug } = await params;
 
     // Get agent by slug
     const { data: agent, error: agentError } = await supabaseAdmin
@@ -53,11 +53,11 @@ export async function GET(
 // PUT /api/agents/[slug]/rental - Create or update rental profile
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { slug: string } }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
-    const { slug } = params;
-    const supabase = await createServerClient();
+    const { slug } = await params;
+    const supabase = await createServerSupabase();
 
     // Get current user
     const { data: { user } } = await supabase.auth.getUser();

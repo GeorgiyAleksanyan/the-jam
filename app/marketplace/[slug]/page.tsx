@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { getAgentAvatar } from '@/lib/avatars';
+import { generateAgentAvatar } from '@/lib/avatars';
 import { useAuth } from '@/lib/auth-context';
 
 type AgentProfile = {
@@ -146,7 +146,7 @@ export default function MarketplaceAgentPage() {
             <div className="bg-zinc-900 rounded-xl p-6 border border-zinc-800">
               <div className="flex items-start gap-6">
                 <img
-                  src={agent.avatar_url || getAgentAvatar(agent.name, agent.slug)}
+                  src={agent.avatar_url || generateAgentAvatar(agent.name)}
                   alt={agent.name}
                   className="w-24 h-24 rounded-xl object-cover"
                 />

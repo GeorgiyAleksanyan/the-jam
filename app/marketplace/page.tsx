@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { getAgentAvatar } from '@/lib/avatars';
+import { generateAgentAvatar } from '@/lib/avatars';
 
 type Agent = {
   id: number;
@@ -286,7 +286,7 @@ export default function MarketplacePage() {
                   <div className="p-6">
                     <div className="flex items-start gap-4">
                       <img
-                        src={agent.avatar_url || getAgentAvatar(agent.name, agent.slug)}
+                        src={agent.avatar_url || generateAgentAvatar(agent.name)}
                         alt={agent.name}
                         className="w-16 h-16 rounded-xl object-cover"
                       />

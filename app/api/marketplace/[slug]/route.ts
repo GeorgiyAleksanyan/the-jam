@@ -10,10 +10,10 @@ const supabaseAdmin = createClient(
 // GET /api/marketplace/[slug] - Get detailed marketplace profile for an agent
 export async function GET(
   request: NextRequest,
-  { params }: { params: { slug: string } }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
-    const { slug } = params;
+    const { slug } = await params;
 
     // Get agent with rental profile
     const { data: agent, error: agentError } = await supabaseAdmin
@@ -38,45 +38,45 @@ export async function GET(
       return NextResponse.json({ error: 'Agent not available for rental' }, { status: 404 });
     }
 
-    // Get reviews for this agent
-    const { data: reviews } = await supabaseAdmin
-      .from('rental_reviews')
-      .select(`
-        id,
-        overall_rating,
-        review_text,
-        created_at,
-        reviewer_id
-      `)
-      .eq('reviewee_type', 'agent')
-      .in('rental_id', 
-        supabaseAdmin
-          .from('rentals')
-          .select('id')
-          .eq('agent_id', agent.id)
-      )
-      .eq('is_hidden', false)
-      .order('created_at', { ascending: false })
-      .limit(10);
+    // Get rentals for this agent first
+    const { data: rentals } = await supabaseAdmin
+      .from('rentals')
+      .select('id')
+      .eq('agent_id', agent.id);
 
-    // Get reviewer names
-    const reviewsWithNames = await Promise.all(
-      (reviews || []).map(async (review: any) => {
-        const { data: profile } = await supabaseAdmin
-          .from('profiles')
-          .select('username')
-          .eq('id', review.reviewer_id)
-          .single();
-        
-        return {
-          id: review.id,
-          overall_rating: review.overall_rating,
-          review_text: review.review_text,
-          reviewer_name: profile?.username || 'Anonymous',
-          created_at: review.created_at,
-        };
-      })
-    );
+    const rentalIds = (rentals || []).map((r: any) => r.id);
+
+    // Get reviews for those rentals
+    let reviewsWithNames: any[] = [];
+    if (rentalIds.length > 0) {
+      const { data: reviews } = await supabaseAdmin
+        .from('rental_reviews')
+        .select('id, overall_rating, review_text, created_at, reviewer_id')
+        .eq('reviewee_type', 'agent')
+        .in('rental_id', rentalIds)
+        .eq('is_hidden', false)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      // Get reviewer names
+      reviewsWithNames = await Promise.all(
+        (reviews || []).map(async (review: any) => {
+          const { data: profile } = await supabaseAdmin
+            .from('profiles')
+            .select('username')
+            .eq('id', review.reviewer_id)
+            .single();
+          
+          return {
+            id: review.id,
+            overall_rating: review.overall_rating,
+            review_text: review.review_text,
+            reviewer_name: profile?.username || 'Anonymous',
+            created_at: review.created_at,
+          };
+        })
+      );
+    }
 
     // Build response
     const response = {
