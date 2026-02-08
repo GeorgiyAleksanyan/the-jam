@@ -305,6 +305,109 @@ const tools: Tool[] = [
       required: ['query'],
     },
   },
+  // ============ Texting/SMS Tools ============
+  {
+    name: 'pair_phone',
+    description: 'Pair a phone number for SMS texting. Uses free carrier email-to-SMS gateways. Supported carriers: tmobile, att, verizon, sprint, googlefi, cricket, metro, boost, mint, visible, uscellular.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        phone: {
+          type: 'string',
+          description: 'Phone number (10-digit US number, e.g., "+1 555 123 4567" or "5551234567")',
+        },
+        carrier: {
+          type: 'string',
+          description: 'Mobile carrier (tmobile, att, verizon, sprint, googlefi, etc)',
+        },
+      },
+      required: ['phone', 'carrier'],
+    },
+  },
+  {
+    name: 'verify_phone',
+    description: 'Complete phone pairing by entering the verification code sent via SMS.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        code: {
+          type: 'string',
+          description: 'The 6-digit verification code received via SMS',
+        },
+      },
+      required: ['code'],
+    },
+  },
+  {
+    name: 'texting_status',
+    description: 'Check current phone pairing status and rate limits.',
+    inputSchema: {
+      type: 'object',
+      properties: {},
+    },
+  },
+  {
+    name: 'send_text',
+    description: 'Send an SMS text message to the paired phone number. Returns the gog command to execute.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        message: {
+          type: 'string',
+          description: 'The message to send (keep under 160 chars for single SMS)',
+        },
+      },
+      required: ['message'],
+    },
+  },
+  {
+    name: 'get_texts',
+    description: 'Get text message history (sent and received).',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        since: {
+          type: 'string',
+          description: 'Time range (e.g., "1h", "24h", "7d" or ISO timestamp)',
+        },
+        limit: {
+          type: 'number',
+          description: 'Maximum messages to return (default: 50)',
+        },
+        direction: {
+          type: 'string',
+          enum: ['inbound', 'outbound', 'all'],
+          description: 'Filter by direction (default: all)',
+        },
+      },
+    },
+  },
+  {
+    name: 'record_inbound_text',
+    description: 'Record an inbound text message after polling Gmail. Helps track conversation and unpauses if paused.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        content: {
+          type: 'string',
+          description: 'The message content from the inbound SMS',
+        },
+        gmail_message_id: {
+          type: 'string',
+          description: 'Gmail message ID for deduplication',
+        },
+      },
+      required: ['content'],
+    },
+  },
+  {
+    name: 'unpair_phone',
+    description: 'Remove the current phone pairing.',
+    inputSchema: {
+      type: 'object',
+      properties: {},
+    },
+  },
 ];
 
 // Create MCP server
@@ -690,6 +793,212 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             {
               type: 'text',
               text: JSON.stringify(results, null, 2),
+            },
+          ],
+        };
+      }
+
+      // ============ Texting/SMS Handlers ============
+
+      case 'pair_phone': {
+        if (!API_KEY) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: 'Error: API key required for texting. Set THEJAM_API_KEY environment variable.',
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        const phone = args?.phone as string;
+        const carrier = args?.carrier as string;
+
+        if (!phone || !carrier) {
+          throw new Error('Missing required parameters: phone and carrier');
+        }
+
+        const result = await client.pairPhone(phone, carrier);
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      }
+
+      case 'verify_phone': {
+        if (!API_KEY) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: 'Error: API key required for texting. Set THEJAM_API_KEY environment variable.',
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        const code = args?.code as string;
+        if (!code) {
+          throw new Error('Missing required parameter: code');
+        }
+
+        const result = await client.verifyPhone(code);
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      }
+
+      case 'texting_status': {
+        if (!API_KEY) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: 'Error: API key required for texting. Set THEJAM_API_KEY environment variable.',
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        const status = await client.getPhonePairing();
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(status, null, 2),
+            },
+          ],
+        };
+      }
+
+      case 'send_text': {
+        if (!API_KEY) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: 'Error: API key required for texting. Set THEJAM_API_KEY environment variable.',
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        const message = args?.message as string;
+        if (!message) {
+          throw new Error('Missing required parameter: message');
+        }
+
+        const result = await client.sendText(message);
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      }
+
+      case 'get_texts': {
+        if (!API_KEY) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: 'Error: API key required for texting. Set THEJAM_API_KEY environment variable.',
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        const texts = await client.getTexts({
+          since: args?.since as string | undefined,
+          limit: args?.limit as number | undefined,
+          direction: args?.direction as 'inbound' | 'outbound' | 'all' | undefined,
+        });
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(texts, null, 2),
+            },
+          ],
+        };
+      }
+
+      case 'record_inbound_text': {
+        if (!API_KEY) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: 'Error: API key required for texting. Set THEJAM_API_KEY environment variable.',
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        const content = args?.content as string;
+        if (!content) {
+          throw new Error('Missing required parameter: content');
+        }
+
+        const result = await client.recordInboundText(
+          content,
+          args?.gmail_message_id as string | undefined
+        );
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      }
+
+      case 'unpair_phone': {
+        if (!API_KEY) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: 'Error: API key required for texting. Set THEJAM_API_KEY environment variable.',
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        const result = await client.unpairPhone();
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
             },
           ],
         };

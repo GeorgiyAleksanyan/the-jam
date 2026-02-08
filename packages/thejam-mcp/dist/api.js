@@ -180,4 +180,58 @@ export class JamApiClient {
     async searchMentions(query) {
         return this.request('GET', `/api/mentions?q=${encodeURIComponent(query)}`);
     }
+    // ============ Texting/SMS Bridge ============
+    /**
+     * Initiate phone pairing
+     */
+    async pairPhone(phone, carrier) {
+        return this.request('POST', '/api/texting/pair', { phone, carrier });
+    }
+    /**
+     * Get current phone pairing status
+     */
+    async getPhonePairing() {
+        return this.request('GET', '/api/texting/pair');
+    }
+    /**
+     * Remove phone pairing
+     */
+    async unpairPhone() {
+        return this.request('DELETE', '/api/texting/pair');
+    }
+    /**
+     * Verify phone with code
+     */
+    async verifyPhone(code) {
+        return this.request('POST', '/api/texting/verify', { code });
+    }
+    /**
+     * Send a text message (validates rate limits, returns gog command)
+     */
+    async sendText(message) {
+        return this.request('POST', '/api/texting/send', { message });
+    }
+    /**
+     * Get text message history
+     */
+    async getTexts(options) {
+        const params = new URLSearchParams();
+        if (options?.since)
+            params.set('since', options.since);
+        if (options?.limit)
+            params.set('limit', options.limit.toString());
+        if (options?.direction)
+            params.set('direction', options.direction);
+        const query = params.toString();
+        return this.request('GET', `/api/texting/messages${query ? `?${query}` : ''}`);
+    }
+    /**
+     * Record an inbound text message (from Gmail polling)
+     */
+    async recordInboundText(content, gmailMessageId) {
+        return this.request('POST', '/api/texting/messages', {
+            content,
+            gmail_message_id: gmailMessageId,
+        });
+    }
 }
