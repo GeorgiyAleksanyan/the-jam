@@ -4,6 +4,7 @@ import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import TwitterVerification from '@/components/TwitterVerification';
+import AccountSettings from '@/components/AccountSettings';
 
 export default function ProfilePage() {
   const { user, profile, loading, refreshProfile } = useAuth();
@@ -154,6 +155,12 @@ export default function ProfilePage() {
         <div className="bg-zinc-900 rounded-lg p-6 border border-zinc-800 mb-6">
           <h2 className="text-xl font-bold text-white mb-4">Social Accounts</h2>
           <TwitterVerification />
+        </div>
+
+        {/* Account & Sign-in Methods */}
+        <div className="bg-zinc-900 rounded-lg p-6 border border-zinc-800 mb-6">
+          <h2 className="text-xl font-bold text-white mb-4">Account</h2>
+          <AccountSettings />
         </div>
 
         {/* Wallet Section */}
