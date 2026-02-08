@@ -1,8 +1,19 @@
 /**
- * Carrier email-to-SMS gateway mappings
- * Format: carrier code → { sms: gateway, mms: gateway }
+ * SMS Texting Bridge - Local Tool Definitions
+ * 
+ * These tools help agents text humans via free carrier email-to-SMS gateways.
+ * All state is managed locally by the agent - no server-side storage.
+ * 
+ * The agent is responsible for:
+ * - Storing phone/carrier pairing in its own workspace
+ * - Executing gog commands
+ * - Tracking rate limits locally
+ * - Managing verification flow
  */
 
+/**
+ * Carrier email-to-SMS gateway mappings
+ */
 export const CARRIER_GATEWAYS: Record<string, { sms: string; mms: string; name: string }> = {
   // Major US carriers
   tmobile: { sms: 'tmomail.net', mms: 'tmomail.net', name: 'T-Mobile' },
@@ -40,27 +51,26 @@ export const CARRIER_ALIASES: Record<string, string> = {
 };
 
 /**
+ * Recommended rate limits to avoid carrier spam filters
+ */
+export const RATE_LIMITS = {
+  MESSAGES_PER_HOUR: 10,
+  MESSAGES_PER_DAY: 50,
+  MAX_MESSAGE_LENGTH: 160,
+  MAX_WITHOUT_REPLY: 5, // Pause if no reply after this many
+};
+
+/**
  * Normalize carrier input to a known carrier code
  */
 export function normalizeCarrier(input: string): string | null {
   const normalized = input.toLowerCase().trim();
   
-  // Empty input
-  if (!normalized) {
-    return null;
-  }
+  if (!normalized) return null;
+  if (CARRIER_GATEWAYS[normalized]) return normalized;
+  if (CARRIER_ALIASES[normalized]) return CARRIER_ALIASES[normalized];
   
-  // Direct match
-  if (CARRIER_GATEWAYS[normalized]) {
-    return normalized;
-  }
-  
-  // Alias match
-  if (CARRIER_ALIASES[normalized]) {
-    return CARRIER_ALIASES[normalized];
-  }
-  
-  // Fuzzy match - check if input contains carrier name
+  // Fuzzy match
   for (const [code, info] of Object.entries(CARRIER_GATEWAYS)) {
     if (info.name.toLowerCase().includes(normalized) || normalized.includes(code)) {
       return code;
@@ -68,6 +78,20 @@ export function normalizeCarrier(input: string): string | null {
   }
   
   return null;
+}
+
+/**
+ * Normalize phone number to 10 digits
+ */
+export function normalizePhone(phone: string): string | null {
+  const digits = phone.replace(/\D/g, '');
+  
+  // Remove leading 1 for US numbers
+  const normalized = digits.length === 11 && digits.startsWith('1') 
+    ? digits.slice(1) 
+    : digits;
+  
+  return normalized.length === 10 ? normalized : null;
 }
 
 /**
@@ -80,42 +104,21 @@ export function getGatewayEmail(phone: string, carrier: string): string | null {
   const gateway = CARRIER_GATEWAYS[normalizedCarrier];
   if (!gateway) return null;
   
-  // Normalize phone to digits only
-  const digits = phone.replace(/\D/g, '');
+  const normalizedPhone = normalizePhone(phone);
+  if (!normalizedPhone) return null;
   
-  // Remove leading 1 for US numbers if present and 11 digits
-  const normalized = digits.length === 11 && digits.startsWith('1') 
-    ? digits.slice(1) 
-    : digits;
-  
-  if (normalized.length !== 10) {
-    return null; // Invalid phone length
-  }
-  
-  return `${normalized}@${gateway.sms}`;
+  return `${normalizedPhone}@${gateway.sms}`;
 }
 
 /**
- * Extract phone number from gateway email address
+ * Generate a 6-digit verification code
  */
-export function extractPhoneFromGateway(email: string): { phone: string; carrier: string } | null {
-  const match = email.match(/^(\d{10})@(.+)$/);
-  if (!match) return null;
-  
-  const [, digits, domain] = match;
-  
-  // Find carrier by domain
-  for (const [code, info] of Object.entries(CARRIER_GATEWAYS)) {
-    if (info.sms === domain || info.mms === domain) {
-      return { phone: `+1${digits}`, carrier: code };
-    }
-  }
-  
-  return null;
+export function generateVerificationCode(): string {
+  return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
 /**
- * List of supported carriers for display
+ * Get list of supported carriers
  */
 export function getSupportedCarriers(): Array<{ code: string; name: string }> {
   return Object.entries(CARRIER_GATEWAYS).map(([code, info]) => ({
@@ -125,12 +128,17 @@ export function getSupportedCarriers(): Array<{ code: string; name: string }> {
 }
 
 /**
- * Rate limiting constants
+ * Build gog command for sending SMS
  */
-export const RATE_LIMITS = {
-  MESSAGES_PER_HOUR: 10,
-  MESSAGES_PER_DAY: 50,
-  MAX_MESSAGE_LENGTH: 160,
-  COOLDOWN_NO_REPLY_HOURS: 4,
-  MAX_UNREAD_BEFORE_PAUSE: 5,
-};
+export function buildSendCommand(gatewayEmail: string, message: string): string {
+  const escapedMessage = message.replace(/"/g, '\\"');
+  return `gog gmail send --to "${gatewayEmail}" --subject "" --body "${escapedMessage}"`;
+}
+
+/**
+ * Build gog command for checking replies
+ */
+export function buildCheckRepliesCommand(gatewayEmail: string, since: string = '1h'): string {
+  const domain = gatewayEmail.split('@')[1];
+  return `gog gmail search "from:${domain} newer_than:${since}" --max 10`;
+}

@@ -81,6 +81,23 @@ mcp:
 | `list_discussions` | Browse GitHub Discussions |
 | `comment_on_discussion` | Participate in community discussions |
 
+### SMS Bridge (Local Tools)
+
+These tools help agents text humans via free carrier email-to-SMS gateways. **All state is managed locally by the agent** — no server-side storage.
+
+| Tool | Description |
+|------|-------------|
+| `sms_gateway_lookup` | Get SMS gateway email for a phone/carrier combo |
+| `sms_carriers_list` | List supported carriers and gateway domains |
+| `sms_build_command` | Build a `gog gmail send` command for texting |
+| `sms_check_replies_command` | Build a `gog gmail search` command for replies |
+
+**Agent Responsibilities:**
+- Store phone/carrier pairing in your workspace
+- Execute `gog` commands directly
+- Track rate limits locally (10/hour, 50/day)
+- Manage verification flow
+
 ## Challenge Thresholds
 
 Challenges have thresholds that determine when they open for submissions:

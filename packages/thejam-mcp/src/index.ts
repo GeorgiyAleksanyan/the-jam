@@ -19,6 +19,16 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 
 import { JamApiClient } from './api.js';
+import {
+  CARRIER_GATEWAYS,
+  RATE_LIMITS,
+  normalizeCarrier,
+  normalizePhone,
+  getGatewayEmail,
+  getSupportedCarriers,
+  buildSendCommand,
+  buildCheckRepliesCommand,
+} from './texting.js';
 
 // Configuration
 const API_URL = process.env.THEJAM_API_URL || 'https://the-jam.webglo.org';
@@ -305,10 +315,10 @@ const tools: Tool[] = [
       required: ['query'],
     },
   },
-  // ============ Texting/SMS Tools ============
+  // ============ Texting/SMS Tools (Local - No API) ============
   {
-    name: 'pair_phone',
-    description: 'Pair a phone number for SMS texting. Uses free carrier email-to-SMS gateways. Supported carriers: tmobile, att, verizon, sprint, googlefi, cricket, metro, boost, mint, visible, uscellular.',
+    name: 'sms_gateway_lookup',
+    description: 'Get the SMS gateway email for a phone number. Use this to send texts via gog gmail. All state is managed locally by the agent.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -318,91 +328,59 @@ const tools: Tool[] = [
         },
         carrier: {
           type: 'string',
-          description: 'Mobile carrier (tmobile, att, verizon, sprint, googlefi, etc)',
+          description: 'Mobile carrier (tmobile, att, verizon, sprint, googlefi, cricket, metro, boost, mint, visible, uscellular)',
         },
       },
       required: ['phone', 'carrier'],
     },
   },
   {
-    name: 'verify_phone',
-    description: 'Complete phone pairing by entering the verification code sent via SMS.',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        code: {
-          type: 'string',
-          description: 'The 6-digit verification code received via SMS',
-        },
-      },
-      required: ['code'],
-    },
-  },
-  {
-    name: 'texting_status',
-    description: 'Check current phone pairing status and rate limits.',
+    name: 'sms_carriers_list',
+    description: 'List all supported SMS carriers and their gateway domains.',
     inputSchema: {
       type: 'object',
       properties: {},
     },
   },
   {
-    name: 'send_text',
-    description: 'Send an SMS text message to the paired phone number. Returns the gog command to execute.',
+    name: 'sms_build_command',
+    description: 'Build a gog gmail command to send an SMS. Returns the exact command to execute.',
     inputSchema: {
       type: 'object',
       properties: {
+        gateway_email: {
+          type: 'string',
+          description: 'The gateway email (e.g., 5551234567@tmomail.net)',
+        },
         message: {
           type: 'string',
           description: 'The message to send (keep under 160 chars for single SMS)',
         },
       },
-      required: ['message'],
+      required: ['gateway_email', 'message'],
     },
   },
   {
-    name: 'get_texts',
-    description: 'Get text message history (sent and received).',
+    name: 'sms_check_replies_command',
+    description: 'Build a gog gmail command to check for SMS replies. Returns the exact command to execute.',
     inputSchema: {
       type: 'object',
       properties: {
+        gateway_email: {
+          type: 'string',
+          description: 'The gateway email to check replies from',
+        },
         since: {
           type: 'string',
-          description: 'Time range (e.g., "1h", "24h", "7d" or ISO timestamp)',
-        },
-        limit: {
-          type: 'number',
-          description: 'Maximum messages to return (default: 50)',
-        },
-        direction: {
-          type: 'string',
-          enum: ['inbound', 'outbound', 'all'],
-          description: 'Filter by direction (default: all)',
+          description: 'Time range (e.g., "1h", "24h", "7d"). Default: 1h',
         },
       },
+      required: ['gateway_email'],
     },
   },
   {
-    name: 'record_inbound_text',
-    description: 'Record an inbound text message after polling Gmail. Helps track conversation and unpauses if paused.',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        content: {
-          type: 'string',
-          description: 'The message content from the inbound SMS',
-        },
-        gmail_message_id: {
-          type: 'string',
-          description: 'Gmail message ID for deduplication',
-        },
-      },
-      required: ['content'],
-    },
-  },
-  {
-    name: 'unpair_phone',
-    description: 'Remove the current phone pairing.',
+    name: 'sms_rate_limits',
+    description: 'Get recommended rate limits to avoid carrier spam filters. Agent should track these locally.',
     inputSchema: {
       type: 'object',
       properties: {},
@@ -798,21 +776,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
       }
 
-      // ============ Texting/SMS Handlers ============
+      // ============ SMS Tools (Local - No API calls) ============
 
-      case 'pair_phone': {
-        if (!API_KEY) {
-          return {
-            content: [
-              {
-                type: 'text',
-                text: 'Error: API key required for texting. Set THEJAM_API_KEY environment variable.',
-              },
-            ],
-            isError: true,
-          };
-        }
-
+      case 'sms_gateway_lookup': {
         const phone = args?.phone as string;
         const carrier = args?.carrier as string;
 
@@ -820,185 +786,138 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           throw new Error('Missing required parameters: phone and carrier');
         }
 
-        const result = await client.pairPhone(phone, carrier);
-
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(result, null, 2),
-            },
-          ],
-        };
-      }
-
-      case 'verify_phone': {
-        if (!API_KEY) {
+        const normalizedCarrier = normalizeCarrier(carrier);
+        if (!normalizedCarrier) {
           return {
             content: [
               {
                 type: 'text',
-                text: 'Error: API key required for texting. Set THEJAM_API_KEY environment variable.',
+                text: JSON.stringify({
+                  error: `Unknown carrier: ${carrier}`,
+                  supported: getSupportedCarriers(),
+                }, null, 2),
               },
             ],
             isError: true,
           };
         }
 
-        const code = args?.code as string;
-        if (!code) {
-          throw new Error('Missing required parameter: code');
-        }
-
-        const result = await client.verifyPhone(code);
-
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(result, null, 2),
-            },
-          ],
-        };
-      }
-
-      case 'texting_status': {
-        if (!API_KEY) {
+        const gatewayEmail = getGatewayEmail(phone, carrier);
+        if (!gatewayEmail) {
           return {
             content: [
               {
                 type: 'text',
-                text: 'Error: API key required for texting. Set THEJAM_API_KEY environment variable.',
+                text: JSON.stringify({
+                  error: 'Invalid phone number. Expected 10-digit US number.',
+                }, null, 2),
               },
             ],
             isError: true,
           };
         }
 
-        const status = await client.getPhonePairing();
+        const normalizedPhone = normalizePhone(phone);
 
         return {
           content: [
             {
               type: 'text',
-              text: JSON.stringify(status, null, 2),
+              text: JSON.stringify({
+                phone: normalizedPhone,
+                carrier: normalizedCarrier,
+                carrier_name: CARRIER_GATEWAYS[normalizedCarrier].name,
+                gateway_email: gatewayEmail,
+                send_command: buildSendCommand(gatewayEmail, '<YOUR_MESSAGE>'),
+                check_replies_command: buildCheckRepliesCommand(gatewayEmail, '1h'),
+                note: 'Store this gateway_email locally. Use gog gmail send to send texts.',
+              }, null, 2),
             },
           ],
         };
       }
 
-      case 'send_text': {
-        if (!API_KEY) {
-          return {
-            content: [
-              {
-                type: 'text',
-                text: 'Error: API key required for texting. Set THEJAM_API_KEY environment variable.',
-              },
-            ],
-            isError: true,
-          };
-        }
+      case 'sms_carriers_list': {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify({
+                carriers: getSupportedCarriers(),
+                gateways: CARRIER_GATEWAYS,
+              }, null, 2),
+            },
+          ],
+        };
+      }
 
+      case 'sms_build_command': {
+        const gatewayEmail = args?.gateway_email as string;
         const message = args?.message as string;
-        if (!message) {
-          throw new Error('Missing required parameter: message');
+
+        if (!gatewayEmail || !message) {
+          throw new Error('Missing required parameters: gateway_email and message');
         }
 
-        const result = await client.sendText(message);
+        const command = buildSendCommand(gatewayEmail, message);
+        const warning = message.length > 160 
+          ? 'Message exceeds 160 chars and may be split into multiple SMS segments.'
+          : null;
 
         return {
           content: [
             {
               type: 'text',
-              text: JSON.stringify(result, null, 2),
+              text: JSON.stringify({
+                command,
+                message_length: message.length,
+                warning,
+                tip: 'Execute this command with your shell to send the SMS.',
+              }, null, 2),
             },
           ],
         };
       }
 
-      case 'get_texts': {
-        if (!API_KEY) {
-          return {
-            content: [
-              {
-                type: 'text',
-                text: 'Error: API key required for texting. Set THEJAM_API_KEY environment variable.',
-              },
-            ],
-            isError: true,
-          };
+      case 'sms_check_replies_command': {
+        const gatewayEmail = args?.gateway_email as string;
+        const since = (args?.since as string) || '1h';
+
+        if (!gatewayEmail) {
+          throw new Error('Missing required parameter: gateway_email');
         }
 
-        const texts = await client.getTexts({
-          since: args?.since as string | undefined,
-          limit: args?.limit as number | undefined,
-          direction: args?.direction as 'inbound' | 'outbound' | 'all' | undefined,
-        });
+        const command = buildCheckRepliesCommand(gatewayEmail, since);
 
         return {
           content: [
             {
               type: 'text',
-              text: JSON.stringify(texts, null, 2),
+              text: JSON.stringify({
+                command,
+                since,
+                tip: 'Execute this command to check for SMS replies in your Gmail.',
+              }, null, 2),
             },
           ],
         };
       }
 
-      case 'record_inbound_text': {
-        if (!API_KEY) {
-          return {
-            content: [
-              {
-                type: 'text',
-                text: 'Error: API key required for texting. Set THEJAM_API_KEY environment variable.',
-              },
-            ],
-            isError: true,
-          };
-        }
-
-        const content = args?.content as string;
-        if (!content) {
-          throw new Error('Missing required parameter: content');
-        }
-
-        const result = await client.recordInboundText(
-          content,
-          args?.gmail_message_id as string | undefined
-        );
-
+      case 'sms_rate_limits': {
         return {
           content: [
             {
               type: 'text',
-              text: JSON.stringify(result, null, 2),
-            },
-          ],
-        };
-      }
-
-      case 'unpair_phone': {
-        if (!API_KEY) {
-          return {
-            content: [
-              {
-                type: 'text',
-                text: 'Error: API key required for texting. Set THEJAM_API_KEY environment variable.',
-              },
-            ],
-            isError: true,
-          };
-        }
-
-        const result = await client.unpairPhone();
-
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(result, null, 2),
+              text: JSON.stringify({
+                recommended_limits: RATE_LIMITS,
+                tips: [
+                  'Track messages locally to enforce these limits',
+                  'Pause sending if no reply after 5 messages',
+                  'Keep messages under 160 chars when possible',
+                  'Avoid URLs in first few messages',
+                  'Wait for at least one reply to "warm up" the thread',
+                ],
+              }, null, 2),
             },
           ],
         };
