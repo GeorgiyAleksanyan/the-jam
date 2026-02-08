@@ -160,27 +160,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const signOut = async () => {
-    // Call the actual signOut and wait for it to clear cookies
-    try {
-      await supabase.auth.signOut();
-    } catch (err) {
-      console.error('Supabase signOut error:', err);
-    }
-    
-    // Clear local state
+    // Clear local state immediately
     setUser(null);
     setProfile(null);
     setSession(null);
     
-    // Clear any lingering auth tokens from localStorage (legacy)
+    // Clear localStorage
     if (typeof window !== 'undefined') {
       Object.keys(localStorage).forEach(key => {
         if (key.startsWith('sb-') || key.includes('supabase')) {
           localStorage.removeItem(key);
         }
       });
-      
-      // Force reload to clear any cached state
+    }
+    
+    // Call server-side signout to clear cookies
+    try {
+      await fetch('/api/auth/signout', { 
+        method: 'POST',
+        credentials: 'include'
+      });
+    } catch (err) {
+      console.error('Server signout error:', err);
+    }
+    
+    // Also call client-side signout
+    try {
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.error('Client signout error:', err);
+    }
+    
+    // Force reload to clear any cached state
+    if (typeof window !== 'undefined') {
       window.location.href = '/';
     }
   };
