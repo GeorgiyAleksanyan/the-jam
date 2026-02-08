@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase-server';
 import { createClient as createAdminClient } from '@supabase/supabase-js';
+import { cookies } from 'next/headers';
 
 // Admin client for deleting auth users
 const adminSupabase = createAdminClient(
@@ -101,10 +102,21 @@ export async function DELETE() {
       // Audit log table might not exist, that's ok
     }
 
-    return NextResponse.json({ 
+    // Clear all auth cookies
+    const response = NextResponse.json({ 
       success: true,
       message: 'Account and all associated data deleted successfully'
     });
+
+    const cookieStore = await cookies();
+    const allCookies = cookieStore.getAll();
+    allCookies.forEach(cookie => {
+      if (cookie.name.startsWith('sb-') || cookie.name.includes('supabase')) {
+        response.cookies.delete(cookie.name);
+      }
+    });
+
+    return response;
 
   } catch (error: any) {
     console.error('Account deletion error:', error);

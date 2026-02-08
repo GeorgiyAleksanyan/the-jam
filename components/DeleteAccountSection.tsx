@@ -66,6 +66,13 @@ export default function DeleteAccountSection() {
       });
       
       if (res.ok) {
+        // Clear localStorage before redirect
+        Object.keys(localStorage).forEach(key => {
+          if (key.startsWith('sb-') || key.includes('supabase')) {
+            localStorage.removeItem(key);
+          }
+        });
+        
         // Account deleted - redirect to home
         window.location.href = '/?deleted=true';
       } else {
