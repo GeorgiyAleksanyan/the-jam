@@ -36,14 +36,17 @@ vi.mock('crypto', async (importOriginal) => {
   }
 })
 
-// Mock global crypto.subtle for Web Crypto API (used in [slug]/route.ts)
-const mockDigest = vi.fn().mockResolvedValue(new Uint8Array([0x6d, 0x6f, 0x63, 0x6b, 0x65, 0x64, 0x2d, 0x68, 0x61, 0x73, 0x68]))
-globalThis.crypto = {
-  subtle: {
-    digest: mockDigest,
-  },
+// Mock Web Crypto API's subtle.digest (used in [slug]/route.ts for hashing API keys)
+// The result converts to '6d6f636b65642d68617368' as hex
+const mockSubtle = {
+  digest: vi.fn().mockResolvedValue(new Uint8Array([0x6d, 0x6f, 0x63, 0x6b, 0x65, 0x64, 0x2d, 0x68, 0x61, 0x73, 0x68])),
+}
+
+// Override crypto.subtle using vi.stubGlobal
+vi.stubGlobal('crypto', {
+  subtle: mockSubtle,
   getRandomValues: (arr: Uint8Array) => arr,
-} as unknown as Crypto
+})
 
 // Chainable mock that returns this for all chain methods
 function createChainable(finalResult: () => Promise<any>) {
