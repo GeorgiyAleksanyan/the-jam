@@ -12,7 +12,39 @@ export default function HandleTokenPage() {
     
     async function handleToken() {
       try {
-        // IMMEDIATELY capture the hash before Supabase consumes it
+        // Check for PKCE flow (code in query string)
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get('code');
+        
+        if (code) {
+          console.log('HandleToken: Found PKCE code, exchanging for session');
+          setStatus('Exchanging authorization code...');
+          
+          const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+          
+          if (exchangeError) {
+            console.error('HandleToken: Code exchange error:', exchangeError);
+            setError(exchangeError.message);
+            return;
+          }
+          
+          if (data.session && !redirected) {
+            redirected = true;
+            console.log('HandleToken: PKCE session created, redirecting');
+            
+            // Store GitHub token if available
+            if (data.session.provider_token) {
+              await storeGitHubToken(data.session.user.id, data.session.provider_token);
+            }
+            
+            setStatus('Success! Redirecting to dashboard...');
+            window.history.replaceState(null, '', '/auth/handle-token');
+            window.location.href = '/dashboard';
+            return;
+          }
+        }
+        
+        // Check for implicit flow (tokens in hash)
         const hash = window.location.hash;
         let providerTokenFromHash: string | null = null;
         
@@ -22,7 +54,7 @@ export default function HandleTokenPage() {
           console.log('HandleToken: Captured provider_token from hash:', !!providerTokenFromHash);
         }
         
-        console.log('HandleToken: checking hash');
+        console.log('HandleToken: checking for existing session');
         
         // Wait a moment for Supabase to auto-detect the hash
         await new Promise(resolve => setTimeout(resolve, 500));
@@ -31,29 +63,23 @@ export default function HandleTokenPage() {
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
         console.log('HandleToken: session check:', !!session, sessionError?.message);
-        console.log('HandleToken: provider_token in session:', !!session?.provider_token);
         
         if (session && !redirected) {
-          // Try to get provider token from session first, then from captured hash
           const tokenToStore = session.provider_token || providerTokenFromHash;
           
           if (tokenToStore) {
             console.log('HandleToken: Storing GitHub provider token');
             await storeGitHubToken(session.user.id, tokenToStore);
-          } else {
-            console.log('HandleToken: WARNING - No provider_token available!');
           }
           
           redirected = true;
-          console.log('HandleToken: Session found, redirecting to dashboard');
           setStatus('Success! Redirecting to dashboard...');
-          // Clear hash and redirect
           window.history.replaceState(null, '', '/auth/handle-token');
           window.location.href = '/dashboard';
           return;
         }
         
-        // If no session yet but we have a hash, try to set it manually
+        // If no session yet but we have a hash with access_token, try to set it manually
         if (hash && hash.includes('access_token')) {
           setStatus('Found access token, setting session...');
           
@@ -75,15 +101,12 @@ export default function HandleTokenPage() {
             }
             
             if (data.session && !redirected) {
-              // Store GitHub provider token if available
               const tokenToStore = providerToken || data.session.provider_token || providerTokenFromHash;
               if (tokenToStore) {
-                console.log('HandleToken: Storing GitHub provider token (from manual session)');
                 await storeGitHubToken(data.session.user.id, tokenToStore);
               }
               
               redirected = true;
-              console.log('HandleToken: Session set manually, redirecting');
               setStatus('Success! Redirecting to dashboard...');
               window.history.replaceState(null, '', '/auth/handle-token');
               window.location.href = '/dashboard';
