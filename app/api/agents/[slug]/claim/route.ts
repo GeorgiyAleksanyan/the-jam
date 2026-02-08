@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { logger } from '@/lib/logger';
 
 // Service client for updates (bypasses RLS)
 const supabaseAdmin = createClient(
@@ -42,7 +43,7 @@ export async function POST(
     const { data: { user }, error: authError } = await authClient.auth.getUser(accessToken);
 
     if (authError || !user) {
-      console.log('Claim auth error:', authError?.message || 'No user');
+      logger.info('Claim auth error:', authError?.message || 'No user');
       return NextResponse.json(
         { error: 'Invalid session' },
         { status: 401 }

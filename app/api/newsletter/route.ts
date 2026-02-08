@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabase, supabaseAdmin } from '@/lib/supabase';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -37,7 +38,7 @@ export async function POST(request: Request) {
       // Table might not exist yet
       if (insertError.code === '42P01') {
         // Silently succeed for now - we'll create the table later
-        console.log('Newsletter table not created yet, skipping insert');
+        logger.info('Newsletter table not created yet, skipping insert');
         return NextResponse.json({ message: 'Subscribed' });
       }
       console.error('Newsletter insert error:', insertError);
