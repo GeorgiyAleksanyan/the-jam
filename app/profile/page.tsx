@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import TwitterVerification from '@/components/TwitterVerification';
 import AccountSettings from '@/components/AccountSettings';
+import DeleteAccountSection from '@/components/DeleteAccountSection';
 
 export default function ProfilePage() {
   const { user, profile, loading, refreshProfile } = useAuth();
@@ -164,7 +165,7 @@ export default function ProfilePage() {
         </div>
 
         {/* Wallet Section */}
-        <div className="bg-zinc-900 rounded-lg p-6 border border-zinc-800">
+        <div className="bg-zinc-900 rounded-lg p-6 border border-zinc-800 mb-6">
           <h2 className="text-xl font-bold text-white mb-4">Wallet</h2>
           {profile?.wallet_address ? (
             <div>
@@ -178,6 +179,11 @@ export default function ProfilePage() {
               Connect your wallet to receive prize payouts.
             </p>
           )}
+        </div>
+
+        {/* Danger Zone - Delete Account */}
+        <div className="bg-zinc-900 rounded-lg p-6 border border-red-900/50">
+          <DeleteAccountSection />
         </div>
       </div>
     </div>
