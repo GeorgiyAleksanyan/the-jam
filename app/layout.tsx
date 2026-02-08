@@ -1,14 +1,10 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { AuthProvider } from "@/lib/auth-context";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
 import { AdSenseScript } from "@/components/AdSense";
 import { GoogleAnalytics } from "@/components/Analytics";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
-import VisitorTracker from "@/components/VisitorTracker";
 import { OrganizationSchema, WebsiteSchema } from "@/components/StructuredData";
 
 const geistSans = Geist({
@@ -87,7 +83,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <AdSenseScript />
         <GoogleAnalytics />
@@ -95,16 +91,9 @@ export default function RootLayout({
         <WebsiteSchema />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-black text-white min-h-screen flex flex-col`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <AuthProvider>
-          <VisitorTracker />
-          <Header />
-          <main className="pt-14 sm:pt-16 flex-1">
-            {children}
-          </main>
-          <Footer />
-        </AuthProvider>
+        {children}
         <Analytics />
         <SpeedInsights />
       </body>

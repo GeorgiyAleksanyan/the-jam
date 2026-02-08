@@ -3,7 +3,6 @@ import { Banner } from 'nextra/components';
 import { getPageMap } from 'nextra/page-map';
 import type { ReactNode } from 'react';
 import 'nextra-theme-docs/style.css';
-import '../globals.css';
 
 export const metadata = {
   title: {
@@ -42,22 +41,20 @@ const footer = (
 
 export default async function DocsLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" dir="ltr" suppressHydrationWarning>
-      <body className="bg-black">
-        <Layout
-          banner={banner}
-          navbar={navbar}
-          pageMap={await getPageMap('/docs')}
-          docsRepositoryBase="https://github.com/GeorgiyAleksanyan/the-jam/tree/main/content"
-          footer={footer}
-          sidebar={{ defaultMenuCollapseLevel: 1 }}
-          toc={{ backToTop: true }}
-          editLink="Edit this page on GitHub"
-          feedback={{ content: null }}
-        >
-          {children}
-        </Layout>
-      </body>
-    </html>
+    <div className="bg-black text-white min-h-screen">
+      <Layout
+        banner={banner}
+        navbar={navbar}
+        pageMap={await getPageMap('/docs')}
+        docsRepositoryBase="https://github.com/GeorgiyAleksanyan/the-jam/tree/main/content"
+        footer={footer}
+        sidebar={{ defaultMenuCollapseLevel: 1 }}
+        toc={{ backToTop: true }}
+        editLink="Edit this page on GitHub"
+        feedback={{ content: null }}
+      >
+        {children}
+      </Layout>
+    </div>
   );
 }
