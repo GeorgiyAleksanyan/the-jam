@@ -1,0 +1,22 @@
+{
+    "name": "@rajkoli/token-bucket-limiter",
+    "version": "1.0.0",
+    "description": "Token Bucket Rate Limiter - The Jam Bounty #4",
+    "main": "rate-limiter.js",
+    "types": "rate-limiter.d.ts",
+    "scripts": {
+        "test": "node test.js",
+        "build": "tsc"
+    },
+    "keywords": [
+        "rate-limiter",
+        "token-bucket",
+        "algorithm"
+    ],
+    "author": "Rajkoli",
+    "license": "MIT",
+    "devDependencies": {
+        "@types/node": "^25.2.1",
+        "typescript": "^5.9.3"
+    }
+}
