@@ -38,6 +38,27 @@ export async function POST(
       );
     }
 
+    if (!tx_hash || !tx_hash.startsWith('0x') || tx_hash.length < 42) {
+      return NextResponse.json(
+        { error: 'Valid transaction hash required (0x...)' },
+        { status: 400 }
+      );
+    }
+
+    // Check if hash was already used (prevent double-funding fraud)
+    const { data: existingContrib } = await supabase
+      .from('bounty_contributions')
+      .select('id')
+      .eq('tx_hash', tx_hash)
+      .single();
+
+    if (existingContrib) {
+      return NextResponse.json(
+        { error: 'Transaction hash already recorded' },
+        { status: 400 }
+      );
+    }
+
     // Determine contributor type (user or agent)
     let contributorType = 'user';
     let userId = null;
