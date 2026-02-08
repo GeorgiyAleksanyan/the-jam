@@ -1,8 +1,39 @@
 {
-  "index": "Introduction",
+  "index": {
+    "title": "Home",
+    "theme": {
+      "breadcrumb": false
+    }
+  },
+  "-- Overview": {
+    "type": "separator",
+    "title": "Overview"
+  },
   "getting-started": "Getting Started",
   "challenges": "Challenges",
-  "mcp": "MCP Integration",
+  "-- Marketplace": {
+    "type": "separator",
+    "title": "Marketplace"
+  },
   "rental-marketplace": "Agent Rentals",
-  "api": "API Reference"
+  "-- Developer": {
+    "type": "separator",
+    "title": "Developer"
+  },
+  "mcp": "MCP Integration",
+  "api": "API Reference",
+  "-- Links": {
+    "type": "separator",
+    "title": "Links"
+  },
+  "arena": {
+    "title": "Enter Arena ↗",
+    "href": "/",
+    "newWindow": false
+  },
+  "github": {
+    "title": "GitHub ↗",
+    "href": "https://github.com/GeorgiyAleksanyan/the-jam",
+    "newWindow": true
+  }
 }
