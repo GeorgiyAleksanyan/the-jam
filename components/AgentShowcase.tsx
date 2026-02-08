@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { getAgentAvatarUrl } from '@/lib/avatars'
@@ -12,12 +12,12 @@ interface Agent {
   avatar_url?: string
   total_wins: number
   is_verified: boolean
+  description?: string
 }
 
 export default function AgentShowcase() {
   const [agents, setAgents] = useState<Agent[]>([])
   const [loading, setLoading] = useState(true)
-  const scrollRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const fetchAgents = async () => {
@@ -37,112 +37,84 @@ export default function AgentShowcase() {
     fetchAgents()
   }, [])
 
-  // Auto-scroll animation
-  useEffect(() => {
-    if (!scrollRef.current || agents.length === 0) return
-
-    const scroll = scrollRef.current
-    let animationId: number
-    let scrollPos = 0
-    const speed = 0.5 // pixels per frame
-
-    const animate = () => {
-      scrollPos += speed
-      if (scrollPos >= scroll.scrollWidth / 2) {
-        scrollPos = 0
-      }
-      scroll.scrollLeft = scrollPos
-      animationId = requestAnimationFrame(animate)
-    }
-
-    animationId = requestAnimationFrame(animate)
-
-    // Pause on hover
-    const pauseScroll = () => cancelAnimationFrame(animationId)
-    const resumeScroll = () => { animationId = requestAnimationFrame(animate) }
-
-    scroll.addEventListener('mouseenter', pauseScroll)
-    scroll.addEventListener('mouseleave', resumeScroll)
-
-    return () => {
-      cancelAnimationFrame(animationId)
-      scroll.removeEventListener('mouseenter', pauseScroll)
-      scroll.removeEventListener('mouseleave', resumeScroll)
-    }
-  }, [agents])
-
   if (loading) {
     return (
-      <div className="flex gap-4 overflow-hidden py-4">
-        {[...Array(6)].map((_, i) => (
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+        {[...Array(5)].map((_, i) => (
           <div 
             key={i}
-            className="flex-shrink-0 w-32 h-40 bg-zinc-900 rounded-xl animate-pulse"
-          />
+            className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4 animate-pulse"
+          >
+            <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-zinc-800" />
+            <div className="h-4 bg-zinc-800 rounded w-3/4 mx-auto" />
+          </div>
         ))}
       </div>
     )
   }
 
   if (agents.length === 0) {
-    return null
+    return (
+      <div className="text-center py-12 text-zinc-500">
+        <p className="text-lg mb-2">No agents registered yet</p>
+        <Link href="/agents/new" className="text-purple-400 hover:text-purple-300">
+          Be the first to register →
+        </Link>
+      </div>
+    )
   }
 
-  // Duplicate agents for seamless loop
-  const displayAgents = [...agents, ...agents]
-
   return (
-    <div className="relative">
-      {/* Gradient fade edges */}
-      <div className="absolute left-0 top-0 bottom-0 w-16 bg-gradient-to-r from-black to-transparent z-10 pointer-events-none" />
-      <div className="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-black to-transparent z-10 pointer-events-none" />
-
-      {/* Scrolling container */}
-      <div 
-        ref={scrollRef}
-        className="flex gap-4 overflow-x-hidden py-4 scrollbar-hide"
-        style={{ scrollBehavior: 'auto' }}
-      >
-        {displayAgents.map((agent, i) => (
-          <Link
-            key={`${agent.id}-${i}`}
-            href={`/agents/${agent.slug}`}
-            className="flex-shrink-0 group"
-          >
-            <div className="w-28 sm:w-32 bg-zinc-900/80 border border-zinc-800 rounded-xl p-3 hover:border-purple-500/50 hover:bg-zinc-900 transition-all hover:scale-105">
-              {/* Avatar */}
-              <div className="relative w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-2 rounded-full overflow-hidden bg-gradient-to-br from-purple-600 to-pink-600">
-                <Image
-                  src={getAgentAvatarUrl(agent.avatar_url, agent.name)}
-                  alt={agent.name}
-                  fill
-                  className="object-cover"
-                  unoptimized
-                />
-                {agent.is_verified && (
-                  <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
-                    <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                )}
-              </div>
-
-              {/* Name */}
-              <div className="text-center">
-                <div className="font-medium text-sm truncate group-hover:text-purple-400 transition-colors">
-                  {agent.name}
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+      {agents.map((agent) => (
+        <Link
+          key={agent.id}
+          href={`/agents/${agent.slug}`}
+          className="group"
+        >
+          <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4 hover:border-purple-500/50 hover:bg-zinc-900 transition-all hover:scale-[1.02] hover:shadow-lg hover:shadow-purple-500/10">
+            {/* Avatar */}
+            <div className="relative w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-3 rounded-full overflow-hidden">
+              <Image
+                src={getAgentAvatarUrl(agent.avatar_url, agent.name)}
+                alt={agent.name}
+                fill
+                className="object-cover"
+                unoptimized
+              />
+              {agent.is_verified && (
+                <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center border-2 border-zinc-900">
+                  <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
                 </div>
-                {agent.total_wins > 0 && (
-                  <div className="text-xs text-yellow-500 mt-0.5">
-                    🏆 {agent.total_wins} win{agent.total_wins !== 1 ? 's' : ''}
-                  </div>
-                )}
-              </div>
+              )}
             </div>
-          </Link>
-        ))}
-      </div>
+
+            {/* Name */}
+            <div className="text-center">
+              <div className="font-medium text-sm truncate group-hover:text-purple-400 transition-colors">
+                {agent.name}
+              </div>
+              {agent.total_wins > 0 ? (
+                <div className="text-xs text-yellow-500 mt-1">
+                  🏆 {agent.total_wins} win{agent.total_wins !== 1 ? 's' : ''}
+                </div>
+              ) : (
+                <div className="text-xs text-zinc-500 mt-1">
+                  Ready to compete
+                </div>
+              )}
+            </div>
+
+            {/* Status indicator */}
+            <div className="flex items-center justify-center gap-1.5 mt-2">
+              <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+              <span className="text-xs text-zinc-500">Available</span>
+            </div>
+          </div>
+        </Link>
+      ))}
     </div>
   )
 }

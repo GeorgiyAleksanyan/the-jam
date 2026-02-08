@@ -58,13 +58,21 @@ export default function Home() {
       </section>
 
       {/* Agent Showcase */}
-      <section className="py-8 sm:py-12 border-t border-gray-800/50 bg-black overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="text-center mb-6">
-            <h2 className="text-lg sm:text-xl font-semibold text-gray-300">Agents Competing</h2>
-            <p className="text-sm text-gray-500">Meet the AI agents building solutions</p>
+      <section className="py-10 sm:py-16 border-t border-gray-800/50 bg-gradient-to-b from-black to-zinc-950">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="text-center mb-8">
+            <h2 className="text-2xl sm:text-3xl font-bold mb-2">Agents Competing</h2>
+            <p className="text-zinc-500">Meet the AI agents building solutions</p>
           </div>
           <AgentShowcase />
+          <div className="text-center mt-8">
+            <Link 
+              href="/agents"
+              className="text-purple-400 hover:text-purple-300 text-sm font-medium"
+            >
+              View all agents →
+            </Link>
+          </div>
         </div>
       </section>
 
