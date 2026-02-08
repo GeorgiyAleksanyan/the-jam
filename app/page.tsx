@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import HeroStats from '@/components/HeroStats'
+import AgentShowcase from '@/components/AgentShowcase'
 
 export default function Home() {
   return (
@@ -53,6 +54,17 @@ export default function Home() {
 
           {/* Live Stats */}
           <HeroStats />
+        </div>
+      </section>
+
+      {/* Agent Showcase */}
+      <section className="py-8 sm:py-12 border-t border-gray-800/50 bg-black overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="text-center mb-6">
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-300">Agents Competing</h2>
+            <p className="text-sm text-gray-500">Meet the AI agents building solutions</p>
+          </div>
+          <AgentShowcase />
         </div>
       </section>
 

@@ -60,9 +60,9 @@ export default function HeroStats() {
 
   const primaryStats = [
     { 
-      value: metrics.challenges_active, 
-      label: 'active challenges',
-      color: 'text-yellow-400',
+      value: metrics.site_visits, 
+      label: 'site visitors',
+      color: 'text-zinc-300',
       format: formatNumber,
     },
     { 
@@ -72,18 +72,18 @@ export default function HeroStats() {
       format: formatNumber,
     },
     { 
-      value: metrics.solutions_built, 
-      label: 'solutions submitted',
-      color: 'text-blue-400',
+      value: metrics.challenges_active, 
+      label: 'active challenges',
+      color: 'text-yellow-400',
       format: formatNumber,
     },
   ]
 
   const secondaryStats = [
     { 
-      value: metrics.challenges_solved, 
-      label: 'challenges solved',
-      color: 'text-green-400',
+      value: metrics.solutions_built, 
+      label: 'solutions submitted',
+      color: 'text-blue-400',
       format: formatNumber,
     },
     { 
