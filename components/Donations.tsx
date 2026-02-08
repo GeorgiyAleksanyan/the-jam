@@ -1,29 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useWallet } from './WalletConnect';
 import { getDefaultWallet, USDC_CONTRACTS } from '@/lib/wallets';
-
-// ERC20 ABI for USDC transfer
-const ERC20_ABI = [
-  {
-    constant: false,
-    inputs: [
-      { name: '_to', type: 'address' },
-      { name: '_value', type: 'uint256' }
-    ],
-    name: 'transfer',
-    outputs: [{ name: '', type: 'bool' }],
-    type: 'function'
-  },
-  {
-    constant: true,
-    inputs: [{ name: '_owner', type: 'address' }],
-    name: 'balanceOf',
-    outputs: [{ name: 'balance', type: 'uint256' }],
-    type: 'function'
-  }
-];
 
 interface Donation {
   id: number;
@@ -70,7 +48,6 @@ export function DonationWall({ limit = 10 }: DonationWallProps) {
 
   return (
     <div>
-      {/* Total */}
       <div className="text-center mb-6">
         <div className="text-sm text-zinc-500">Total Donated</div>
         <div className="text-3xl font-bold text-green-400">
@@ -78,14 +55,12 @@ export function DonationWall({ limit = 10 }: DonationWallProps) {
         </div>
       </div>
 
-      {/* Donations List */}
       <div className="space-y-3">
         {donations.map((donation) => (
           <div
             key={donation.id}
             className="flex items-center gap-3 p-3 bg-zinc-800/50 rounded-lg"
           >
-            {/* Avatar */}
             {donation.donor.avatar ? (
               <img
                 src={donation.donor.avatar}
@@ -98,7 +73,6 @@ export function DonationWall({ limit = 10 }: DonationWallProps) {
               </div>
             )}
 
-            {/* Info */}
             <div className="flex-1 min-w-0">
               <div className="font-medium truncate">{donation.donor.name}</div>
               {donation.message && (
@@ -108,7 +82,6 @@ export function DonationWall({ limit = 10 }: DonationWallProps) {
               )}
             </div>
 
-            {/* Amount */}
             <div className="text-right">
               <div className="font-bold text-green-400">
                 ${donation.amount.toFixed(2)}
@@ -128,13 +101,22 @@ export function DonationWall({ limit = 10 }: DonationWallProps) {
   );
 }
 
+// Unified donate modal with built-in wallet connection
 interface DonateModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
+type Chain = 'base' | 'ethereum';
+
 export function DonateModal({ isOpen, onClose }: DonateModalProps) {
-  const { connected, address, chain } = useWallet();
+  // Wallet state (self-contained)
+  const [walletConnected, setWalletConnected] = useState(false);
+  const [walletAddress, setWalletAddress] = useState<string | null>(null);
+  const [chain, setChain] = useState<Chain>('base');
+  const [connectingWallet, setConnectingWallet] = useState(false);
+
+  // Donation state
   const [amount, setAmount] = useState('');
   const [message, setMessage] = useState('');
   const [donorName, setDonorName] = useState('');
@@ -144,16 +126,74 @@ export function DonateModal({ isOpen, onClose }: DonateModalProps) {
   const [success, setSuccess] = useState(false);
   const [txHash, setTxHash] = useState<string | null>(null);
 
+  // Check for existing wallet connection on mount
+  useEffect(() => {
+    const checkConnection = async () => {
+      try {
+        const provider = (window as any).ethereum;
+        if (provider) {
+          const accounts = await provider.request({ method: 'eth_accounts' });
+          if (accounts.length > 0) {
+            setWalletAddress(accounts[0]);
+            setWalletConnected(true);
+          }
+        }
+      } catch {}
+    };
+    if (isOpen) checkConnection();
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
-  const handleDonate = async () => {
-    if (!connected || !address || !chain) {
-      setError('Please connect your wallet first');
-      return;
-    }
+  const connectWallet = async () => {
+    setConnectingWallet(true);
+    setError(null);
+    
+    try {
+      const provider = (window as any).ethereum;
+      if (!provider) {
+        window.open('https://metamask.io/download/', '_blank');
+        throw new Error('Please install MetaMask or another Web3 wallet');
+      }
 
-    if (chain !== 'base' && chain !== 'ethereum') {
-      setError('Please switch to Base or Ethereum network');
+      const accounts = await provider.request({ method: 'eth_requestAccounts' });
+      const address = accounts[0];
+
+      // Try to switch to Base
+      try {
+        await provider.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: '0x2105' }], // Base
+        });
+        setChain('base');
+      } catch (switchError: any) {
+        if (switchError.code === 4902) {
+          await provider.request({
+            method: 'wallet_addEthereumChain',
+            params: [{
+              chainId: '0x2105',
+              chainName: 'Base',
+              nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+              rpcUrls: ['https://mainnet.base.org'],
+              blockExplorerUrls: ['https://basescan.org'],
+            }],
+          });
+          setChain('base');
+        }
+      }
+
+      setWalletAddress(address);
+      setWalletConnected(true);
+    } catch (err: any) {
+      setError(err.message || 'Failed to connect wallet');
+    } finally {
+      setConnectingWallet(false);
+    }
+  };
+
+  const handleDonate = async () => {
+    if (!walletConnected || !walletAddress) {
+      await connectWallet();
       return;
     }
 
@@ -173,27 +213,23 @@ export function DonateModal({ isOpen, onClose }: DonateModalProps) {
 
     try {
       const provider = (window as any).ethereum;
-      if (!provider) {
-        throw new Error('No wallet provider found');
-      }
+      if (!provider) throw new Error('No wallet provider found');
 
       const platformWallet = getDefaultWallet();
-      const usdcAddress = USDC_CONTRACTS[chain as 'base' | 'ethereum'];
+      const usdcAddress = USDC_CONTRACTS[chain];
       
       // USDC has 6 decimals
       const amountInWei = BigInt(Math.floor(numAmount * 1_000_000));
       
       // Encode transfer function call
-      // transfer(address,uint256) selector = 0xa9059cbb
       const transferData = '0xa9059cbb' + 
         platformWallet.address.slice(2).padStart(64, '0') + 
         amountInWei.toString(16).padStart(64, '0');
 
-      // Send the transaction
       const hash = await provider.request({
         method: 'eth_sendTransaction',
         params: [{
-          from: address,
+          from: walletAddress,
           to: usdcAddress,
           data: transferData,
         }],
@@ -201,37 +237,27 @@ export function DonateModal({ isOpen, onClose }: DonateModalProps) {
 
       setTxHash(hash);
 
-      // Record the donation in database
-      const token = localStorage.getItem('supabase_access_token');
-      const res = await fetch('/api/donations', {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({
-          amount: numAmount,
-          token: 'USDC',
-          chain,
-          wallet_address: address,
-          tx_hash: hash,
-          message: message || undefined,
-          donor_name: donorName || undefined,
-          is_anonymous: isAnonymous,
-        }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        // Transaction sent but DB record failed - still show success
-        console.warn('Failed to record donation in DB:', data.error);
-      }
+      // Record in database
+      try {
+        await fetch('/api/donations', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            amount: numAmount,
+            token: 'USDC',
+            chain,
+            wallet_address: walletAddress,
+            tx_hash: hash,
+            message: message || undefined,
+            donor_name: donorName || undefined,
+            is_anonymous: isAnonymous,
+          }),
+        });
+      } catch {}
 
       setSuccess(true);
     } catch (err: any) {
-      // User rejected or transaction failed
       if (err.code === 4001) {
         setError('Transaction cancelled');
       } else if (err.message?.includes('insufficient')) {
@@ -260,9 +286,11 @@ export function DonateModal({ isOpen, onClose }: DonateModalProps) {
     ? 'https://etherscan.io/tx/' 
     : 'https://basescan.org/tx/';
 
+  const truncateAddress = (addr: string) => `${addr.slice(0, 6)}...${addr.slice(-4)}`;
+
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-      <div className="bg-zinc-900 border border-zinc-700 rounded-xl max-w-md w-full overflow-hidden">
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={handleClose}>
+      <div className="bg-zinc-900 border border-zinc-700 rounded-xl max-w-md w-full overflow-hidden" onClick={e => e.stopPropagation()}>
         {/* Header */}
         <div className="px-6 py-4 border-b border-zinc-700 flex items-center justify-between">
           <h2 className="text-xl font-semibold">Support The Jam 💚</h2>
@@ -301,9 +329,29 @@ export function DonateModal({ isOpen, onClose }: DonateModalProps) {
             </div>
           ) : (
             <>
-              <p className="text-zinc-400 mb-4">
-                Help keep The Jam running! Your donation supports infrastructure, development, and prize pools.
-              </p>
+              {/* Wallet Status */}
+              {walletConnected && walletAddress ? (
+                <div className="mb-4 p-3 bg-green-900/20 border border-green-700 rounded-lg flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-green-500 rounded-full" />
+                    <span className="text-sm text-green-400">Connected</span>
+                  </div>
+                  <span className="text-sm font-mono text-zinc-400">{truncateAddress(walletAddress)}</span>
+                </div>
+              ) : (
+                <div className="mb-4 p-3 bg-zinc-800 border border-zinc-700 rounded-lg">
+                  <p className="text-sm text-zinc-400 mb-3">
+                    Connect your wallet to donate with USDC on Base.
+                  </p>
+                  <button
+                    onClick={connectWallet}
+                    disabled={connectingWallet}
+                    className="w-full py-2 bg-purple-600 rounded-lg font-medium hover:bg-purple-500 disabled:opacity-50"
+                  >
+                    {connectingWallet ? 'Connecting...' : '🔗 Connect Wallet'}
+                  </button>
+                </div>
+              )}
 
               {/* Amount */}
               <div className="mb-4">
@@ -382,12 +430,25 @@ export function DonateModal({ isOpen, onClose }: DonateModalProps) {
                 </div>
               )}
 
+              {/* Main CTA */}
               <button
                 onClick={handleDonate}
-                disabled={loading || !connected || !amount}
+                disabled={loading || !amount}
                 className="w-full py-3 bg-gradient-to-r from-green-600 to-emerald-600 rounded-lg font-semibold hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? 'Processing...' : !connected ? 'Connect Wallet First' : 'Donate'}
+                {loading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <svg className="w-5 h-5 animate-spin" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                    Processing...
+                  </span>
+                ) : !walletConnected ? (
+                  'Connect Wallet & Donate'
+                ) : (
+                  `Donate $${amount || '0'} USDC`
+                )}
               </button>
 
               {/* Direct wallet option */}

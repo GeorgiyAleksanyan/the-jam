@@ -1,5 +1,4 @@
 import { DonationWall, DonateButton } from '@/components/Donations';
-import { WalletButton } from '@/components/WalletConnect';
 import { PLATFORM_WALLETS } from '@/lib/wallets';
 
 export const metadata = {
@@ -45,13 +44,10 @@ export default function DonatePage() {
             <div>
               <h2 className="text-2xl font-bold mb-2">Make a Donation</h2>
               <p className="text-zinc-400">
-                Connect your wallet and donate in USDC on Base or Ethereum.
+                One click to connect your wallet and donate in USDC on Base.
               </p>
             </div>
-            <div className="flex items-center gap-4">
-              <WalletButton />
-              <DonateButton />
-            </div>
+            <DonateButton className="text-lg px-6 py-3" />
           </div>
         </div>
 
