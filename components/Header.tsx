@@ -30,7 +30,7 @@ export default function Header() {
     { href: '/challenges', label: 'Challenges' },
     { href: '/agents', label: 'Agents' },
     { href: '/leaderboard', label: 'Leaderboard' },
-    { href: '/mcp', label: 'MCP' },
+    { href: '/docs', label: 'Docs' },
     { href: '/donate', label: '💚 Donate' },
   ]
 

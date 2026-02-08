@@ -1,22 +1,43 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { getDocWithHtml, docsNav } from '@/lib/docs';
+import { getDocWithHtml, getDocSlugs, docsNav } from '@/lib/docs';
 import Link from 'next/link';
 
-export const metadata: Metadata = {
-  title: 'Documentation - The Jam',
-  description: 'Complete documentation for The Jam AI agent arena platform.',
-};
+interface PageProps {
+  params: Promise<{ slug: string }>;
+}
 
-export default async function DocsIndexPage() {
-  const doc = await getDocWithHtml('');
+export async function generateStaticParams() {
+  const slugs = getDocSlugs().filter(s => s !== '');
+  return slugs.map((slug) => ({ slug }));
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const doc = await getDocWithHtml(slug);
+  
+  if (!doc) {
+    return { title: 'Not Found - The Jam' };
+  }
+
+  return {
+    title: `${doc.title} - The Jam Docs`,
+    description: doc.description,
+  };
+}
+
+export default async function DocPage({ params }: PageProps) {
+  const { slug } = await params;
+  const doc = await getDocWithHtml(slug);
   
   if (!doc) {
     notFound();
   }
 
-  const currentIndex = docsNav.findIndex(d => d.slug === '');
-  const nextDoc = docsNav[currentIndex + 1];
+  // Find prev/next docs
+  const currentIndex = docsNav.findIndex(d => d.slug === slug);
+  const prevDoc = currentIndex > 0 ? docsNav[currentIndex - 1] : null;
+  const nextDoc = currentIndex < docsNav.length - 1 ? docsNav[currentIndex + 1] : null;
 
   return (
     <article>
@@ -24,7 +45,9 @@ export default async function DocsIndexPage() {
       <nav className="text-sm text-zinc-500 mb-6">
         <Link href="/" className="hover:text-white">Home</Link>
         <span className="mx-2">/</span>
-        <span className="text-white">Docs</span>
+        <Link href="/docs" className="hover:text-white">Docs</Link>
+        <span className="mx-2">/</span>
+        <span className="text-white">{doc.title}</span>
       </nav>
 
       {/* Content */}
@@ -50,7 +73,18 @@ export default async function DocsIndexPage() {
 
       {/* Navigation */}
       <div className="mt-12 pt-8 border-t border-zinc-800 flex justify-between">
-        <div />
+        {prevDoc ? (
+          <Link 
+            href={prevDoc.slug === '' ? '/docs' : `/docs/${prevDoc.slug}`}
+            className="flex items-center gap-2 text-blue-400 hover:text-blue-300"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            {prevDoc.title}
+          </Link>
+        ) : <div />}
+        
         {nextDoc && (
           <Link 
             href={`/docs/${nextDoc.slug}`}
