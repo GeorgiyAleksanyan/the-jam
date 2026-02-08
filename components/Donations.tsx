@@ -2,7 +2,28 @@
 
 import { useState, useEffect } from 'react';
 import { useWallet } from './WalletConnect';
-import { getDefaultWallet } from '@/lib/wallets';
+import { getDefaultWallet, USDC_CONTRACTS } from '@/lib/wallets';
+
+// ERC20 ABI for USDC transfer
+const ERC20_ABI = [
+  {
+    constant: false,
+    inputs: [
+      { name: '_to', type: 'address' },
+      { name: '_value', type: 'uint256' }
+    ],
+    name: 'transfer',
+    outputs: [{ name: '', type: 'bool' }],
+    type: 'function'
+  },
+  {
+    constant: true,
+    inputs: [{ name: '_owner', type: 'address' }],
+    name: 'balanceOf',
+    outputs: [{ name: 'balance', type: 'uint256' }],
+    type: 'function'
+  }
+];
 
 interface Donation {
   id: number;
@@ -121,6 +142,7 @@ export function DonateModal({ isOpen, onClose }: DonateModalProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [txHash, setTxHash] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
@@ -130,9 +152,19 @@ export function DonateModal({ isOpen, onClose }: DonateModalProps) {
       return;
     }
 
+    if (chain !== 'base' && chain !== 'ethereum') {
+      setError('Please switch to Base or Ethereum network');
+      return;
+    }
+
     const numAmount = parseFloat(amount);
     if (isNaN(numAmount) || numAmount <= 0) {
       setError('Please enter a valid amount');
+      return;
+    }
+
+    if (numAmount < 1) {
+      setError('Minimum donation is $1 USDC');
       return;
     }
 
@@ -140,11 +172,36 @@ export function DonateModal({ isOpen, onClose }: DonateModalProps) {
     setError(null);
 
     try {
-      // Simulate transaction (replace with real wallet transaction)
-      const mockTxHash = `0x${Array.from({ length: 64 }, () =>
-        Math.floor(Math.random() * 16).toString(16)
-      ).join('')}`;
+      const provider = (window as any).ethereum;
+      if (!provider) {
+        throw new Error('No wallet provider found');
+      }
 
+      const platformWallet = getDefaultWallet();
+      const usdcAddress = USDC_CONTRACTS[chain as 'base' | 'ethereum'];
+      
+      // USDC has 6 decimals
+      const amountInWei = BigInt(Math.floor(numAmount * 1_000_000));
+      
+      // Encode transfer function call
+      // transfer(address,uint256) selector = 0xa9059cbb
+      const transferData = '0xa9059cbb' + 
+        platformWallet.address.slice(2).padStart(64, '0') + 
+        amountInWei.toString(16).padStart(64, '0');
+
+      // Send the transaction
+      const hash = await provider.request({
+        method: 'eth_sendTransaction',
+        params: [{
+          from: address,
+          to: usdcAddress,
+          data: transferData,
+        }],
+      });
+
+      setTxHash(hash);
+
+      // Record the donation in database
       const token = localStorage.getItem('supabase_access_token');
       const res = await fetch('/api/donations', {
         method: 'POST',
@@ -158,7 +215,7 @@ export function DonateModal({ isOpen, onClose }: DonateModalProps) {
           token: 'USDC',
           chain,
           wallet_address: address,
-          tx_hash: mockTxHash,
+          tx_hash: hash,
           message: message || undefined,
           donor_name: donorName || undefined,
           is_anonymous: isAnonymous,
@@ -168,12 +225,20 @@ export function DonateModal({ isOpen, onClose }: DonateModalProps) {
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || 'Failed to record donation');
+        // Transaction sent but DB record failed - still show success
+        console.warn('Failed to record donation in DB:', data.error);
       }
 
       setSuccess(true);
     } catch (err: any) {
-      setError(err.message || 'Donation failed');
+      // User rejected or transaction failed
+      if (err.code === 4001) {
+        setError('Transaction cancelled');
+      } else if (err.message?.includes('insufficient')) {
+        setError('Insufficient USDC balance');
+      } else {
+        setError(err.message || 'Transaction failed');
+      }
     } finally {
       setLoading(false);
     }
@@ -186,10 +251,14 @@ export function DonateModal({ isOpen, onClose }: DonateModalProps) {
     setIsAnonymous(false);
     setError(null);
     setSuccess(false);
+    setTxHash(null);
     onClose();
   };
 
   const presetAmounts = [5, 10, 25, 50, 100];
+  const explorerUrl = chain === 'ethereum' 
+    ? 'https://etherscan.io/tx/' 
+    : 'https://basescan.org/tx/';
 
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
@@ -210,12 +279,22 @@ export function DonateModal({ isOpen, onClose }: DonateModalProps) {
             <div className="text-center py-4">
               <div className="text-6xl mb-4">🎉</div>
               <h3 className="text-xl font-semibold mb-2 text-green-400">Thank You!</h3>
-              <p className="text-zinc-400 mb-6">
+              <p className="text-zinc-400 mb-4">
                 Your donation helps keep The Jam running and growing.
               </p>
+              {txHash && (
+                <a
+                  href={`${explorerUrl}${txHash}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block mb-6 text-sm text-blue-400 hover:text-blue-300"
+                >
+                  View transaction ↗
+                </a>
+              )}
               <button
                 onClick={handleClose}
-                className="w-full py-3 bg-zinc-800 rounded-lg font-medium hover:bg-zinc-700"
+                className="w-full py-3 bg-green-600 rounded-lg font-medium hover:bg-green-500"
               >
                 Done
               </button>

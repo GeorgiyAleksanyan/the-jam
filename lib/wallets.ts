@@ -31,6 +31,12 @@ export const PLATFORM_WALLETS = {
   // },
 } as const;
 
+// USDC contract addresses per chain
+export const USDC_CONTRACTS = {
+  base: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',    // Base USDC
+  ethereum: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', // Ethereum USDC
+} as const;
+
 export type SupportedChain = keyof typeof PLATFORM_WALLETS;
 
 export function getPlatformWallet(chain: SupportedChain) {
@@ -39,4 +45,8 @@ export function getPlatformWallet(chain: SupportedChain) {
 
 export function getDefaultWallet() {
   return PLATFORM_WALLETS.base;
+}
+
+export function getUSDCContract(chain: 'base' | 'ethereum') {
+  return USDC_CONTRACTS[chain];
 }
