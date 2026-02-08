@@ -342,6 +342,11 @@ export default function RentalDetailPage() {
                   </>
                 )}
 
+                {/* Payment buttons for renter when approved */}
+                {role === 'renter' && rental.status === 'approved' && (
+                  <PaymentButtons rentalId={rental.id} />
+                )}
+
                 {role === 'owner' && (rental.status === 'approved' || rental.status === 'paid') && (
                   <button
                     onClick={() => handleAction('start')}
@@ -385,6 +390,70 @@ export default function RentalDetailPage() {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function PaymentButtons({ rentalId }: { rentalId: number }) {
+  const [loading, setLoading] = useState<string | null>(null);
+
+  const handlePay = async (paymentType: 'card' | 'crypto') => {
+    setLoading(paymentType);
+    try {
+      const res = await fetch(`/api/rentals/${rentalId}/pay`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ payment_type: paymentType }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.error || 'Payment failed');
+        return;
+      }
+
+      // Redirect to Stripe checkout
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    } catch (error) {
+      console.error('Payment error:', error);
+      alert('Payment failed. Please try again.');
+    } finally {
+      setLoading(null);
+    }
+  };
+
+  return (
+    <div className="space-y-2">
+      <p className="text-zinc-400 text-sm mb-3">Pay to start the rental:</p>
+      <button
+        onClick={() => handlePay('card')}
+        disabled={!!loading}
+        className="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg disabled:opacity-50 flex items-center justify-center gap-2"
+      >
+        {loading === 'card' ? (
+          'Processing...'
+        ) : (
+          <>💳 Pay with Card</>
+        )}
+      </button>
+      <button
+        onClick={() => handlePay('crypto')}
+        disabled={!!loading}
+        className="w-full py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg disabled:opacity-50 flex items-center justify-center gap-2"
+      >
+        {loading === 'crypto' ? (
+          'Processing...'
+        ) : (
+          <>💎 Pay with USDC</>
+        )}
+      </button>
+      <p className="text-zinc-500 text-xs text-center mt-2">
+        Powered by Stripe. 10% platform fee.
+      </p>
     </div>
   );
 }
