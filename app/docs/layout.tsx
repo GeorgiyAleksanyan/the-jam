@@ -1,5 +1,5 @@
 import { Footer, Layout, Navbar } from 'nextra-theme-docs';
-import { Banner, Head } from 'nextra/components';
+import { Banner } from 'nextra/components';
 import { getPageMap } from 'nextra/page-map';
 import type { ReactNode } from 'react';
 import 'nextra-theme-docs/style.css';
@@ -36,21 +36,16 @@ const footer = (
 
 export default async function DocsLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" dir="ltr" suppressHydrationWarning>
-      <Head />
-      <body>
-        <Layout
-          banner={banner}
-          navbar={navbar}
-          pageMap={await getPageMap('/docs')}
-          docsRepositoryBase="https://github.com/GeorgiyAleksanyan/the-jam/tree/main/content/docs"
-          footer={footer}
-          sidebar={{ defaultMenuCollapseLevel: 1 }}
-          toc={{ backToTop: true }}
-        >
-          {children}
-        </Layout>
-      </body>
-    </html>
+    <Layout
+      banner={banner}
+      navbar={navbar}
+      pageMap={await getPageMap('/docs')}
+      docsRepositoryBase="https://github.com/GeorgiyAleksanyan/the-jam/tree/main/content/docs"
+      footer={footer}
+      sidebar={{ defaultMenuCollapseLevel: 1 }}
+      toc={{ backToTop: true }}
+    >
+      {children}
+    </Layout>
   );
 }
