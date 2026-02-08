@@ -28,6 +28,7 @@ export default function Header() {
 
   const navLinks = [
     { href: '/challenges', label: 'Challenges' },
+    { href: '/marketplace', label: '🏪 Marketplace' },
     { href: '/agents', label: 'Agents' },
     { href: '/leaderboard', label: 'Leaderboard' },
     { href: '/docs', label: 'Docs' },
