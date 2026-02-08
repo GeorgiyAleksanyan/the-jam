@@ -5,6 +5,9 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
 import { generateAgentAvatar, generateIdenticon } from '@/lib/avatars';
+import { createPublicClient, createWalletClient, custom, http, parseUnits, formatUnits } from 'viem';
+import { base } from 'viem/chains';
+import { RENTAL_ESCROW_ADDRESS, USDC_ADDRESS, RENTAL_ESCROW_ABI, ERC20_ABI } from '@/lib/escrow';
 
 type Message = {
   id: number;
@@ -396,8 +399,34 @@ export default function RentalDetailPage() {
 
 function PaymentButtons({ rentalId }: { rentalId: number }) {
   const [loading, setLoading] = useState<string | null>(null);
+  const [showCryptoModal, setShowCryptoModal] = useState(false);
+  const [cryptoPayData, setCryptoPayData] = useState<any>(null);
 
-  const handlePay = async (paymentType: 'card' | 'crypto') => {
+  const handlePay = async (paymentType: 'card' | 'crypto' | 'onchain') => {
+    if (paymentType === 'onchain') {
+      // Prepare on-chain payment
+      setLoading('onchain');
+      try {
+        const res = await fetch(`/api/rentals/${rentalId}/crypto-pay`, {
+          method: 'POST',
+          credentials: 'include',
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          alert(data.error || 'Failed to prepare payment');
+          return;
+        }
+        setCryptoPayData(data);
+        setShowCryptoModal(true);
+      } catch (error) {
+        console.error('Crypto pay error:', error);
+        alert('Failed to prepare payment');
+      } finally {
+        setLoading(null);
+      }
+      return;
+    }
+
     setLoading(paymentType);
     try {
       const res = await fetch(`/api/rentals/${rentalId}/pay`, {
@@ -448,12 +477,304 @@ function PaymentButtons({ rentalId }: { rentalId: number }) {
         {loading === 'crypto' ? (
           'Processing...'
         ) : (
-          <>💎 Pay with USDC</>
+          <>💎 Pay with USDC (Stripe)</>
+        )}
+      </button>
+      <button
+        onClick={() => handlePay('onchain')}
+        disabled={!!loading}
+        className="w-full py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white rounded-lg disabled:opacity-50 flex items-center justify-center gap-2"
+      >
+        {loading === 'onchain' ? (
+          'Preparing...'
+        ) : (
+          <>🔗 Pay On-Chain (Base)</>
         )}
       </button>
       <p className="text-zinc-500 text-xs text-center mt-2">
-        Powered by Stripe. 10% platform fee.
+        10% platform fee on all payments
       </p>
+
+      {showCryptoModal && cryptoPayData && (
+        <CryptoPayModal
+          data={cryptoPayData}
+          onClose={() => setShowCryptoModal(false)}
+          onSuccess={() => window.location.reload()}
+        />
+      )}
+    </div>
+  );
+}
+
+function CryptoPayModal({
+  data,
+  onClose,
+  onSuccess,
+}: {
+  data: { rental_id: number; agent_owner_wallet: string; amount_usdc: number; amount_display: number };
+  onClose: () => void;
+  onSuccess: () => void;
+}) {
+  const [step, setStep] = useState<'connect' | 'approve' | 'fund' | 'confirm'>('connect');
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [walletAddress, setWalletAddress] = useState<string | null>(null);
+
+  useEffect(() => {
+    checkWallet();
+  }, []);
+
+  const checkWallet = async () => {
+    if (typeof window !== 'undefined' && (window as any).ethereum) {
+      try {
+        const accounts = await (window as any).ethereum.request({ method: 'eth_accounts' });
+        if (accounts.length > 0) {
+          setWalletAddress(accounts[0]);
+          setStep('approve');
+        }
+      } catch (err) {
+        console.error('Wallet check failed:', err);
+      }
+    }
+  };
+
+  const connectWallet = async () => {
+    if (typeof window === 'undefined' || !(window as any).ethereum) {
+      setError('Please install MetaMask or another Web3 wallet');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const accounts = await (window as any).ethereum.request({ method: 'eth_requestAccounts' });
+      setWalletAddress(accounts[0]);
+      
+      // Switch to Base
+      try {
+        await (window as any).ethereum.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: '0x2105' }], // Base chainId
+        });
+      } catch (switchError: any) {
+        if (switchError.code === 4902) {
+          await (window as any).ethereum.request({
+            method: 'wallet_addEthereumChain',
+            params: [{
+              chainId: '0x2105',
+              chainName: 'Base',
+              nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
+              rpcUrls: ['https://mainnet.base.org'],
+              blockExplorerUrls: ['https://basescan.org'],
+            }],
+          });
+        }
+      }
+
+      setStep('approve');
+    } catch (err: any) {
+      setError(err.message || 'Failed to connect wallet');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleApprove = async () => {
+    if (!RENTAL_ESCROW_ADDRESS) {
+      setError('Rental escrow contract not deployed yet');
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const walletClient = createWalletClient({
+        chain: base,
+        transport: custom((window as any).ethereum),
+      });
+
+      const hash = await walletClient.writeContract({
+        address: USDC_ADDRESS as `0x${string}`,
+        abi: ERC20_ABI,
+        functionName: 'approve',
+        args: [RENTAL_ESCROW_ADDRESS as `0x${string}`, BigInt(data.amount_usdc)],
+        account: walletAddress as `0x${string}`,
+      });
+
+      // Wait for confirmation
+      const publicClient = createPublicClient({
+        chain: base,
+        transport: http(),
+      });
+
+      await publicClient.waitForTransactionReceipt({ hash });
+      setStep('fund');
+    } catch (err: any) {
+      setError(err.shortMessage || err.message || 'Approval failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleFund = async () => {
+    if (!RENTAL_ESCROW_ADDRESS) {
+      setError('Rental escrow contract not deployed yet');
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const walletClient = createWalletClient({
+        chain: base,
+        transport: custom((window as any).ethereum),
+      });
+
+      const hash = await walletClient.writeContract({
+        address: RENTAL_ESCROW_ADDRESS as `0x${string}`,
+        abi: RENTAL_ESCROW_ABI,
+        functionName: 'fundRental',
+        args: [
+          BigInt(data.rental_id),
+          data.agent_owner_wallet as `0x${string}`,
+          BigInt(data.amount_usdc),
+        ],
+        account: walletAddress as `0x${string}`,
+      });
+
+      // Wait for confirmation
+      const publicClient = createPublicClient({
+        chain: base,
+        transport: http(),
+      });
+
+      await publicClient.waitForTransactionReceipt({ hash });
+      
+      // Confirm in database
+      setStep('confirm');
+      const res = await fetch(`/api/rentals/${data.rental_id}/crypto-pay`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ tx_hash: hash }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error);
+      }
+
+      onSuccess();
+    } catch (err: any) {
+      setError(err.shortMessage || err.message || 'Transaction failed');
+      setStep('fund');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+      <div className="bg-zinc-900 rounded-xl p-6 max-w-md w-full border border-zinc-800">
+        <h2 className="text-xl font-bold text-white mb-4">Pay with USDC on Base</h2>
+        
+        <div className="bg-zinc-800 rounded-lg p-4 mb-4">
+          <div className="flex justify-between mb-2">
+            <span className="text-zinc-400">Amount</span>
+            <span className="text-white font-semibold">${data.amount_display} USDC</span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-zinc-400">Network</span>
+            <span className="text-blue-400">Base</span>
+          </div>
+          {walletAddress && (
+            <div className="flex justify-between text-sm mt-2">
+              <span className="text-zinc-400">Your Wallet</span>
+              <span className="text-zinc-300 font-mono text-xs">
+                {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
+              </span>
+            </div>
+          )}
+        </div>
+
+        {error && (
+          <div className="bg-red-500/20 border border-red-500 text-red-400 px-4 py-2 rounded-lg mb-4 text-sm">
+            {error}
+          </div>
+        )}
+
+        <div className="space-y-3 mb-4">
+          <div className={`flex items-center gap-3 ${step === 'connect' ? 'text-white' : 'text-zinc-500'}`}>
+            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${
+              walletAddress ? 'bg-green-600' : step === 'connect' ? 'bg-blue-600' : 'bg-zinc-700'
+            }`}>
+              {walletAddress ? '✓' : '1'}
+            </div>
+            <span>Connect Wallet</span>
+          </div>
+          <div className={`flex items-center gap-3 ${step === 'approve' ? 'text-white' : 'text-zinc-500'}`}>
+            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${
+              step === 'fund' || step === 'confirm' ? 'bg-green-600' : step === 'approve' ? 'bg-blue-600' : 'bg-zinc-700'
+            }`}>
+              {step === 'fund' || step === 'confirm' ? '✓' : '2'}
+            </div>
+            <span>Approve USDC</span>
+          </div>
+          <div className={`flex items-center gap-3 ${step === 'fund' ? 'text-white' : 'text-zinc-500'}`}>
+            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${
+              step === 'confirm' ? 'bg-green-600' : step === 'fund' ? 'bg-blue-600' : 'bg-zinc-700'
+            }`}>
+              {step === 'confirm' ? '✓' : '3'}
+            </div>
+            <span>Fund Escrow</span>
+          </div>
+        </div>
+
+        {step === 'connect' && (
+          <button
+            onClick={connectWallet}
+            disabled={loading}
+            className="w-full py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-zinc-700 text-white rounded-lg"
+          >
+            {loading ? 'Connecting...' : 'Connect Wallet'}
+          </button>
+        )}
+
+        {step === 'approve' && (
+          <button
+            onClick={handleApprove}
+            disabled={loading}
+            className="w-full py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-zinc-700 text-white rounded-lg"
+          >
+            {loading ? 'Approving...' : 'Approve USDC'}
+          </button>
+        )}
+
+        {step === 'fund' && (
+          <button
+            onClick={handleFund}
+            disabled={loading}
+            className="w-full py-3 bg-purple-600 hover:bg-purple-500 disabled:bg-zinc-700 text-white rounded-lg"
+          >
+            {loading ? 'Funding...' : 'Fund Escrow'}
+          </button>
+        )}
+
+        {step === 'confirm' && (
+          <div className="text-center py-4">
+            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500 mx-auto mb-2"></div>
+            <p className="text-zinc-400">Confirming payment...</p>
+          </div>
+        )}
+
+        <button
+          onClick={onClose}
+          className="w-full py-2 mt-3 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg"
+        >
+          Cancel
+        </button>
+      </div>
     </div>
   );
 }

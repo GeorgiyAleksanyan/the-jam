@@ -23,35 +23,38 @@ export async function GET(
     }
 
     // Get on-chain data
-    const [pool, funded, paid, refunded] = await publicClient.readContract({
+    const challengeData = await publicClient.readContract({
       address: ESCROW_ADDRESS as `0x${string}`,
       abi: ESCROW_ABI,
       functionName: 'getChallenge',
       args: [BigInt(challengeId)],
-    }) as [bigint, bigint, boolean, boolean];
+    }) as { id: bigint; totalFunding: bigint; status: number; winner: `0x${string}` };
+
+    const pool = challengeData.totalFunding;
+    const paid = challengeData.status === 2; // Status 2 = Paid
+    const refunded = challengeData.status === 3; // Status 3 = Refunded
 
     // Get fee rate
     const feeBps = await publicClient.readContract({
       address: ESCROW_ADDRESS as `0x${string}`,
       abi: ESCROW_ABI,
-      functionName: 'feeBps',
+      functionName: 'platformFeePercent',
     }) as bigint;
 
     // USDC has 6 decimals
     const poolUsdc = parseFloat(formatUnits(pool, 6));
-    const fundedUsdc = parseFloat(formatUnits(funded, 6));
-    const feePercent = Number(feeBps) / 100;
+    const feePercent = Number(feeBps);
 
     return NextResponse.json({
       challengeId,
       escrow: {
         address: ESCROW_ADDRESS,
         pool: poolUsdc,
-        totalFunded: fundedUsdc,
+        totalFunded: poolUsdc,
         paid,
         refunded,
         feePercent,
-        network: 'base-sepolia',
+        network: 'base',
         usdcAddress: USDC_ADDRESS,
       },
     });

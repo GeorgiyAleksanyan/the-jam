@@ -62,12 +62,16 @@ export async function POST(request: NextRequest) {
     });
 
     // Check escrow has funds
-    const [pool, , paid, refunded] = await publicClient.readContract({
+    const challengeData = await publicClient.readContract({
       address: ESCROW_ADDRESS as `0x${string}`,
       abi: ESCROW_ABI,
       functionName: 'getChallenge',
       args: [BigInt(challengeId)],
-    }) as [bigint, bigint, boolean, boolean];
+    }) as { id: bigint; totalFunding: bigint; status: number; winner: `0x${string}` };
+
+    const pool = challengeData.totalFunding;
+    const paid = challengeData.status === 2;
+    const refunded = challengeData.status === 3;
 
     if (paid) {
       return NextResponse.json(

@@ -158,12 +158,16 @@ export async function POST(
       });
 
       // Check on-chain balance
-      const [pool, , paid, refunded] = await publicClient.readContract({
+      const challengeData = await publicClient.readContract({
         address: ESCROW_ADDRESS as `0x${string}`,
         abi: ESCROW_ABI,
         functionName: 'getChallenge',
         args: [BigInt(challenge.id)],
-      }) as [bigint, bigint, boolean, boolean];
+      }) as { id: bigint; totalFunding: bigint; status: number; winner: `0x${string}` };
+
+      const pool = challengeData.totalFunding;
+      const paid = challengeData.status === 2; // Status 2 = Paid
+      const refunded = challengeData.status === 3; // Status 3 = Refunded
 
       if (pool > BigInt(0) && !paid && !refunded) {
         // Execute payout

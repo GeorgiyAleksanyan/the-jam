@@ -65,13 +65,14 @@ export async function GET(request: NextRequest) {
     // Check each funded challenge's on-chain balance with rate limiting
     for (const challenge of challenges || []) {
       try {
-        const [pool] = await publicClient.readContract({
+        const challengeData = await publicClient.readContract({
           address: ESCROW_ADDRESS as `0x${string}`,
           abi: ESCROW_ABI,
           functionName: 'getChallenge',
           args: [BigInt(challenge.id)],
-        }) as [bigint, bigint, boolean, boolean];
+        }) as { id: bigint; totalFunding: bigint; status: number; winner: `0x${string}` };
 
+        const pool = challengeData.totalFunding;
         const onChainPool = parseFloat(formatUnits(pool, 6));
         
         // Update if different (with small epsilon for float comparison)
