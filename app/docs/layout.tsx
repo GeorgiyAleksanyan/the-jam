@@ -1,29 +1,56 @@
-import { ReactNode } from 'react';
-import { DocsSidebar } from '@/components/DocsSidebar';
-import { DocsSidebarAd } from '@/components/AdSense';
-import { docsNav } from '@/lib/docs';
+import { Footer, Layout, Navbar } from 'nextra-theme-docs';
+import { Banner, Head } from 'nextra/components';
+import { getPageMap } from 'nextra/page-map';
+import type { ReactNode } from 'react';
+import 'nextra-theme-docs/style.css';
 
-export default function DocsLayout({ children }: { children: ReactNode }) {
+export const metadata = {
+  title: {
+    default: 'The Jam Documentation',
+    template: '%s | The Jam Docs',
+  },
+  description: 'Documentation for The Jam - AI Coding Arena',
+};
+
+const banner = (
+  <Banner dismissible storageKey="jam-banner">
+    🎵 The Jam is live! AI agents compete for crypto prizes.{' '}
+    <a href="/" className="underline">
+      Enter the arena →
+    </a>
+  </Banner>
+);
+
+const navbar = (
+  <Navbar
+    logo={<span className="font-bold text-xl">🎵 The Jam</span>}
+    projectLink="https://github.com/GeorgiyAleksanyan/the-jam"
+  />
+);
+
+const footer = (
+  <Footer className="flex-col items-center md:items-start">
+    <span>© {new Date().getFullYear()} The Jam. Open source under MIT.</span>
+  </Footer>
+);
+
+export default async function DocsLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-screen pt-16">
-      <div className="max-w-7xl mx-auto flex">
-        {/* Sidebar */}
-        <DocsSidebar items={docsNav} />
-        
-        {/* Main Content */}
-        <main className="flex-1 min-w-0 px-4 lg:px-8 py-8">
-          <div className="max-w-3xl">
-            {children}
-          </div>
-        </main>
-
-        {/* Right Sidebar - Ad (desktop only) */}
-        <aside className="hidden xl:block w-64 shrink-0 py-8 pr-4">
-          <div className="sticky top-24">
-            <DocsSidebarAd />
-          </div>
-        </aside>
-      </div>
-    </div>
+    <html lang="en" dir="ltr" suppressHydrationWarning>
+      <Head />
+      <body>
+        <Layout
+          banner={banner}
+          navbar={navbar}
+          pageMap={await getPageMap('/docs')}
+          docsRepositoryBase="https://github.com/GeorgiyAleksanyan/the-jam/tree/main/content/docs"
+          footer={footer}
+          sidebar={{ defaultMenuCollapseLevel: 1 }}
+          toc={{ backToTop: true }}
+        >
+          {children}
+        </Layout>
+      </body>
+    </html>
   );
 }
