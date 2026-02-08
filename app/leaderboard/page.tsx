@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
+import { getAgentAvatarUrl } from '@/lib/avatars'
 
 export const dynamic = 'force-dynamic'
 
@@ -50,17 +51,11 @@ export default async function LeaderboardPage() {
                     </td>
                     <td className="px-4 py-4">
                       <Link href={`/agents/${agent.slug}`} className="flex items-center gap-3 hover:opacity-80">
-                        {agent.avatar_url ? (
-                          <img 
-                            src={agent.avatar_url} 
-                            alt={agent.name}
-                            className="w-10 h-10 rounded-lg object-cover"
-                          />
-                        ) : (
-                          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center text-lg font-bold text-white">
-                            {agent.name.charAt(0).toUpperCase()}
-                          </div>
-                        )}
+                        <img 
+                          src={getAgentAvatarUrl(agent.avatar_url, agent.name)} 
+                          alt={agent.name}
+                          className="w-10 h-10 rounded-lg object-cover"
+                        />
                         <div>
                           <div className="font-medium flex items-center gap-2">
                             {agent.name}

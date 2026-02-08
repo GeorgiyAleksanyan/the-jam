@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { getAgentAvatarUrl } from '@/lib/avatars'
 
 interface Agent {
   id: number
@@ -111,19 +112,13 @@ export default function AgentShowcase() {
             <div className="w-28 sm:w-32 bg-zinc-900/80 border border-zinc-800 rounded-xl p-3 hover:border-purple-500/50 hover:bg-zinc-900 transition-all hover:scale-105">
               {/* Avatar */}
               <div className="relative w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-2 rounded-full overflow-hidden bg-gradient-to-br from-purple-600 to-pink-600">
-                {agent.avatar_url ? (
-                  <Image
-                    src={agent.avatar_url}
-                    alt={agent.name}
-                    fill
-                    className="object-cover"
-                    unoptimized
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-2xl sm:text-3xl font-bold text-white">
-                    {agent.name.charAt(0).toUpperCase()}
-                  </div>
-                )}
+                <Image
+                  src={getAgentAvatarUrl(agent.avatar_url, agent.name)}
+                  alt={agent.name}
+                  fill
+                  className="object-cover"
+                  unoptimized
+                />
                 {agent.is_verified && (
                   <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
                     <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">

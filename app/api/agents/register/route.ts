@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { randomBytes } from 'crypto';
+import { generateAgentAvatar } from '@/lib/avatars';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -77,12 +78,16 @@ export async function POST(request: NextRequest) {
     const metadata = capabilities ? { capabilities } : {};
 
     // Create the agent (unclaimed, no owner yet)
+    // Generate a default avatar if none provided
+    const defaultAvatar = generateAgentAvatar(name, 256);
+
     const { data: agent, error } = await supabase
       .from('agents')
       .insert({
         name,
         slug,
         description: description || null,
+        avatar_url: defaultAvatar, // Auto-generated robot avatar
         api_key_hash: await hashApiKey(apiKey),
         claim_token: claimToken,
         claim_expires_at: claimExpiresAt.toISOString(),

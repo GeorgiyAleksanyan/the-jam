@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useAuth } from '@/lib/auth-context'
 import { useRouter } from 'next/navigation'
+import { getUserAvatarUrl } from '@/lib/avatars'
 
 export default function UserMenu() {
   const { user, profile, signOut, loading } = useAuth()
@@ -33,7 +34,10 @@ export default function UserMenu() {
   }
 
   const displayName = profile?.display_name || profile?.username || user.email?.split('@')[0] || 'User'
-  const avatarUrl = profile?.avatar_url || user.user_metadata?.avatar_url
+  const avatarUrl = getUserAvatarUrl(
+    profile?.avatar_url || user.user_metadata?.avatar_url,
+    displayName
+  )
 
   const handleNavigation = (path: string) => {
     setIsOpen(false)
@@ -62,17 +66,11 @@ export default function UserMenu() {
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2 hover:opacity-80 transition-opacity"
       >
-        {avatarUrl ? (
-          <img 
-            src={avatarUrl} 
-            alt={displayName}
-            className="w-8 h-8 rounded-full object-cover border border-gray-600"
-          />
-        ) : (
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-sm font-bold">
-            {displayName.charAt(0).toUpperCase()}
-          </div>
-        )}
+        <img 
+          src={avatarUrl} 
+          alt={displayName}
+          className="w-8 h-8 rounded-full object-cover border border-gray-600"
+        />
         <span className="text-gray-300 text-sm hidden sm:block">{displayName}</span>
         <svg 
           className={`w-4 h-4 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}
