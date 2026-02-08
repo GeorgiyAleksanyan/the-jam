@@ -152,7 +152,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'github',
       options: {
-        redirectTo: `${window.location.origin}/auth/handle-token`,
+        redirectTo: `${window.location.origin}/auth/callback`,
         scopes: 'public_repo'
       }
     })
@@ -160,25 +160,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const signOut = async () => {
-    // Clear local state FIRST, don't wait for API
-    setUser(null)
-    setProfile(null)
-    setSession(null)
+    // Call the actual signOut and wait for it to clear cookies
+    try {
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.error('Supabase signOut error:', err);
+    }
     
-    // Clear any lingering auth tokens from localStorage
+    // Clear local state
+    setUser(null);
+    setProfile(null);
+    setSession(null);
+    
+    // Clear any lingering auth tokens from localStorage (legacy)
     if (typeof window !== 'undefined') {
       Object.keys(localStorage).forEach(key => {
         if (key.startsWith('sb-') || key.includes('supabase')) {
-          localStorage.removeItem(key)
+          localStorage.removeItem(key);
         }
-      })
+      });
+      
+      // Force reload to clear any cached state
+      window.location.href = '/';
     }
-    
-    // Fire and forget the API call
-    supabase.auth.signOut().catch(err => {
-      console.error('Supabase signOut error (ignored):', err)
-    })
-  }
+  };
 
   return (
     <AuthContext.Provider value={{
