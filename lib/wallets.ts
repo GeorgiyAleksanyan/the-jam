@@ -8,16 +8,16 @@
 export const PLATFORM_WALLETS = {
   // Primary donation wallet (Base/Ethereum)
   base: {
-    address: '0x37D270b764FC1AF0509C5Ad4B3d3EF8f1485605a',
+    address: '0x249b3Cfdc3a44f6b4ce160c3E8E4FaD268D5AF8f',
     chain: 'base',
     chainId: 8453,
     name: 'The Jam (Base)',
-    profile: 'https://base.app/profile/georgiya',
+    profile: 'https://basescan.org/address/0x249b3Cfdc3a44f6b4ce160c3E8E4FaD268D5AF8f',
   },
   
   // Ethereum (same address works on ETH mainnet)
   ethereum: {
-    address: '0x37D270b764FC1AF0509C5Ad4B3d3EF8f1485605a',
+    address: '0x249b3Cfdc3a44f6b4ce160c3E8E4FaD268D5AF8f',
     chain: 'ethereum',
     chainId: 1,
     name: 'The Jam (Ethereum)',

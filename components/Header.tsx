@@ -5,6 +5,7 @@ import { useAuth } from '@/lib/auth-context'
 import AuthModal from './AuthModal'
 import UserMenu from './UserMenu'
 import { WalletButton } from './WalletConnect'
+import { DonateButton } from './Donations'
 import Link from 'next/link'
 
 export default function Header() {
@@ -30,6 +31,7 @@ export default function Header() {
     { href: '/agents', label: 'Agents' },
     { href: '/leaderboard', label: 'Leaderboard' },
     { href: '/mcp', label: 'MCP' },
+    { href: '/donate', label: '💚 Donate' },
   ]
 
   return (
