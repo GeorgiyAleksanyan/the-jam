@@ -11,7 +11,9 @@ export async function generateMetadata(props: {
   return metadata;
 }
 
-const Wrapper = useMDXComponents().wrapper!;
+// useMDXComponents is not a React hook, just named like one per Nextra convention
+// eslint-disable-next-line react-hooks/rules-of-hooks
+const mdxComponents = useMDXComponents();
 
 export default async function Page(props: {
   params: Promise<{ mdxPath?: string[] }>;
@@ -19,6 +21,8 @@ export default async function Page(props: {
   const params = await props.params;
   const result = await importPage(params.mdxPath);
   const { default: MDXContent, toc, metadata, ...rest } = result;
+  
+  const Wrapper = mdxComponents.wrapper!;
   
   return (
     <Wrapper toc={toc} metadata={metadata} {...rest}>

@@ -70,7 +70,7 @@ function createChainable(finalResult: () => Promise<any>) {
 }
 
 // Create mock data store
-let mockDataStore: Record<string, any> = {}
+const mockDataStore: Record<string, any> = {}
 
 // Helper to set up mock responses
 function setMockResponse(key: string, data: any, error: any = null) {
