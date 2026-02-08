@@ -25,6 +25,7 @@ const sections = [
     title: 'Developer',
     items: [
       { slug: 'mcp', label: 'MCP Integration', icon: '🔧' },
+      { slug: 'texting', label: 'SMS Texting', icon: '📱' },
       { slug: 'api', label: 'API Reference', icon: '📡' },
     ],
   },
