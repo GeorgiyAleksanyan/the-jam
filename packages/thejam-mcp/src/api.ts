@@ -328,4 +328,121 @@ export class JamApiClient {
   }[]> {
     return this.request('GET', `/api/mentions?q=${encodeURIComponent(query)}`);
   }
+
+  // ============ Texting/SMS Bridge ============
+
+  /**
+   * Initiate phone pairing
+   */
+  async pairPhone(phone: string, carrier: string): Promise<{
+    success: boolean;
+    message: string;
+    gateway_email: string;
+    verification_code: string;
+    expires_at: string;
+    instructions: string;
+  }> {
+    return this.request('POST', '/api/texting/pair', { phone, carrier });
+  }
+
+  /**
+   * Get current phone pairing status
+   */
+  async getPhonePairing(): Promise<{
+    paired: boolean;
+    phone?: string;
+    carrier?: string;
+    gateway_email?: string;
+    last_outbound?: string;
+    last_inbound?: string;
+    messages_today?: number;
+    paused?: boolean;
+    pause_reason?: string;
+    rate_limits?: {
+      MESSAGES_PER_HOUR: number;
+      MESSAGES_PER_DAY: number;
+      MAX_MESSAGE_LENGTH: number;
+    };
+  }> {
+    return this.request('GET', '/api/texting/pair');
+  }
+
+  /**
+   * Remove phone pairing
+   */
+  async unpairPhone(): Promise<{ success: boolean; message: string }> {
+    return this.request('DELETE', '/api/texting/pair');
+  }
+
+  /**
+   * Verify phone with code
+   */
+  async verifyPhone(code: string): Promise<{
+    success: boolean;
+    message: string;
+    phone?: string;
+    gateway_email?: string;
+  }> {
+    return this.request('POST', '/api/texting/verify', { code });
+  }
+
+  /**
+   * Send a text message (validates rate limits, returns gog command)
+   */
+  async sendText(message: string): Promise<{
+    success: boolean;
+    gateway_email: string;
+    message_length: number;
+    warning?: string;
+    remaining: { hourly: number; daily: number };
+    instructions: string;
+  }> {
+    return this.request('POST', '/api/texting/send', { message });
+  }
+
+  /**
+   * Get text message history
+   */
+  async getTexts(options?: {
+    since?: string;
+    limit?: number;
+    direction?: 'inbound' | 'outbound' | 'all';
+  }): Promise<{
+    phone: string;
+    gateway_email: string;
+    messages: Array<{
+      id: string;
+      direction: 'inbound' | 'outbound';
+      content: string;
+      created_at: string;
+    }>;
+    count: number;
+    since: string;
+  }> {
+    const params = new URLSearchParams();
+    if (options?.since) params.set('since', options.since);
+    if (options?.limit) params.set('limit', options.limit.toString());
+    if (options?.direction) params.set('direction', options.direction);
+
+    const query = params.toString();
+    return this.request('GET', `/api/texting/messages${query ? `?${query}` : ''}`);
+  }
+
+  /**
+   * Record an inbound text message (from Gmail polling)
+   */
+  async recordInboundText(
+    content: string,
+    gmailMessageId?: string
+  ): Promise<{
+    success: boolean;
+    duplicate?: boolean;
+    message: string;
+    unpaused?: boolean;
+  }> {
+    return this.request('POST', '/api/texting/messages', {
+      content,
+      gmail_message_id: gmailMessageId,
+    });
+  }
 }

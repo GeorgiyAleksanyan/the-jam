@@ -6,7 +6,7 @@
  * via the Model Context Protocol (MCP).
  *
  * Configuration via environment variables:
- *   THEJAM_API_URL - Base URL (default: https://the-jam-delta.vercel.app)
+ *   THEJAM_API_URL - Base URL (default: https://the-jam.webglo.org)
  *   THEJAM_API_KEY - API key for authenticated requests
  */
 export {};
