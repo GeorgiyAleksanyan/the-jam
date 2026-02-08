@@ -1,12 +1,14 @@
 /**
- * Select winner and pay from escrow
+ * Select winner and queue payout
  * POST: Select winner (challenge creator or admin only)
  * 
  * Flow:
  * 1. Creator/admin selects winning submission
- * 2. If escrow has funds → auto-pay winner on-chain
- * 3. Challenge status → closed
- * 4. GitHub issue closed with winner comment
+ * 2. Create pending_payout record (handles retry, no-wallet cases)
+ * 3. If escrow has funds + agent has wallet → attempt immediate payout
+ * 4. Challenge status → closed
+ * 5. GitHub issue closed with winner comment
+ * 6. Cron job will retry failed/no-wallet payouts
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -87,14 +89,14 @@ export async function POST(
     return NextResponse.json({ error: 'submission_id is required' }, { status: 400 });
   }
 
-  // Get submission
+  // Get submission with agent info
   const { data: submission, error: submissionError } = await supabaseAdmin
     .from('submissions')
     .select(`
       id,
       agent_id,
       status,
-      agents:agent_id (id, name, slug, wallet_address, wallet_chain)
+      agents:agent_id (id, name, slug, wallet_address, wallet_chain, owner_id)
     `)
     .eq('id', submission_id)
     .eq('challenge_id', challenge.id)
@@ -117,11 +119,38 @@ export async function POST(
   }
 
   const winner = submission.agents as any;
+  const prizePool = challenge.prize_pool || 0;
 
-  // Check escrow for funds and attempt payout
-  let payoutResult: { success: boolean; txHash?: string; error?: string } = { success: false };
+  // Calculate winner amount (95% after 5% platform fee)
+  const winnerAmount = prizePool * 0.95;
+
+  // Create pending payout record
+  const payoutStatus = winner.wallet_address ? 'pending' : 'no_wallet';
   
-  if (winner.wallet_address && process.env.ESCROW_ADMIN_PRIVATE_KEY) {
+  const { error: payoutError } = await supabaseAdmin
+    .from('pending_payouts')
+    .upsert({
+      challenge_id: challenge.id,
+      agent_id: submission.agent_id,
+      amount: winnerAmount,
+      status: payoutStatus,
+      attempts: 0,
+    }, {
+      onConflict: 'challenge_id',
+    });
+
+  if (payoutError) {
+    console.error('Failed to create pending payout:', payoutError);
+    // Continue anyway - we'll handle it manually if needed
+  }
+
+  // Attempt immediate payout if conditions are met
+  let payoutResult: { success: boolean; txHash?: string; error?: string; status: string } = { 
+    success: false, 
+    status: payoutStatus 
+  };
+  
+  if (winner.wallet_address && prizePool > 0 && process.env.ESCROW_ADMIN_PRIVATE_KEY) {
     try {
       const publicClient = createPublicClient({
         chain: base,
@@ -155,16 +184,45 @@ export async function POST(
         // Wait for confirmation
         await publicClient.waitForTransactionReceipt({ hash });
 
-        payoutResult = { success: true, txHash: hash };
+        payoutResult = { success: true, txHash: hash, status: 'paid' };
+
+        // Update pending payout
+        await supabaseAdmin
+          .from('pending_payouts')
+          .update({ 
+            status: 'paid', 
+            tx_hash: hash, 
+            paid_at: new Date().toISOString() 
+          })
+          .eq('challenge_id', challenge.id);
+
       } else if (paid) {
-        payoutResult = { success: false, error: 'Already paid' };
+        payoutResult = { success: true, status: 'already_paid', error: 'Already paid on-chain' };
       } else {
-        payoutResult = { success: false, error: 'No funds in escrow' };
+        payoutResult = { success: false, status: 'no_funds', error: 'No funds in escrow' };
       }
     } catch (err) {
       console.error('Escrow payout failed:', err);
-      payoutResult = { success: false, error: err instanceof Error ? err.message : 'Payout failed' };
+      payoutResult = { 
+        success: false, 
+        status: 'pending',
+        error: err instanceof Error ? err.message : 'Payout failed - will retry' 
+      };
+      
+      // Update pending payout with error
+      await supabaseAdmin
+        .from('pending_payouts')
+        .update({ 
+          error: payoutResult.error,
+          attempts: 1,
+        })
+        .eq('challenge_id', challenge.id);
     }
+  } else if (!winner.wallet_address) {
+    payoutResult.error = 'Winner has no wallet - will process when registered';
+  } else if (prizePool <= 0) {
+    payoutResult.error = 'No prize pool (unfunded challenge)';
+    payoutResult.status = 'no_funds';
   }
 
   // Update challenge with winner
@@ -205,9 +263,43 @@ export async function POST(
       .from('agents')
       .update({
         total_wins: (agentStats.total_wins || 0) + 1,
-        total_earnings: (agentStats.total_earnings || 0) + (payoutResult.success ? challenge.prize_pool : 0),
+        total_earnings: (agentStats.total_earnings || 0) + (payoutResult.success ? winnerAmount : 0),
       })
       .eq('id', submission.agent_id);
+  }
+
+  // Create notification for winner
+  if (winner.owner_id) {
+    const notifType = payoutResult.success ? 'payout_complete' : 
+                      payoutResult.status === 'no_wallet' ? 'wallet_needed' : 'challenge_won';
+    
+    const notifTitle = payoutResult.success ? '🎉 You Won + Got Paid!' :
+                       payoutResult.status === 'no_wallet' ? '🏆 You Won! (Wallet Needed)' : 
+                       '🏆 You Won!';
+    
+    const notifMessage = payoutResult.success 
+      ? `Congratulations! ${winner.name} won "${challenge.id}" and $${winnerAmount.toFixed(2)} USDC has been sent to your wallet!`
+      : payoutResult.status === 'no_wallet'
+      ? `${winner.name} won "${challenge.id}"! Register a wallet to receive $${winnerAmount.toFixed(2)} USDC.`
+      : `${winner.name} won "${challenge.id}"! Prize: $${winnerAmount.toFixed(2)} USDC (processing...)`;
+
+        try {
+      await supabaseAdmin.from('notifications').insert({
+        user_id: winner.owner_id,
+        agent_id: winner.id,
+        type: notifType,
+        title: notifTitle,
+        message: notifMessage,
+        data: {
+          challenge_id: challenge.id,
+          challenge_slug: slug,
+          amount: winnerAmount,
+          tx_hash: payoutResult.txHash,
+        },
+      });
+    } catch {
+      // Ignore if notifications table doesn't exist yet
+    }
   }
 
   // Close GitHub issue if linked
@@ -231,9 +323,14 @@ export async function POST(
 
       // Add winner comment
       if (response.ok) {
-        const payoutInfo = payoutResult.success 
-          ? `\n**Payout TX:** [View on Basescan](https://basescan.org/tx/${payoutResult.txHash})`
-          : '';
+        let payoutInfo = '';
+        if (payoutResult.success && payoutResult.txHash) {
+          payoutInfo = `\n**Payout TX:** [View on Basescan](https://basescan.org/tx/${payoutResult.txHash})`;
+        } else if (payoutResult.status === 'no_wallet') {
+          payoutInfo = `\n\n⚠️ **Payout Pending:** Winner needs to register a wallet at https://the-jam.webglo.org/agents/${winner.slug}/edit`;
+        } else if (payoutResult.status === 'pending') {
+          payoutInfo = `\n\n⏳ **Payout Processing:** Will be sent automatically once confirmed.`;
+        }
         
         await fetch(
           `https://api.github.com/repos/GeorgiyAleksanyan/the-jam/issues/${challenge.github_issue_id}/comments`,
@@ -246,7 +343,7 @@ export async function POST(
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              body: `## 🏆 Challenge Complete!\n\n**Winner:** ${winner.name} (@${winner.slug})\n**Prize:** $${challenge.prize_pool} USDC${payoutInfo}\n\nCongratulations! 🎉`,
+              body: `## 🏆 Challenge Complete!\n\n**Winner:** ${winner.name} (@${winner.slug})\n**Prize:** $${prizePool} USDC (Winner receives $${winnerAmount.toFixed(2)} after 5% platform fee)${payoutInfo}\n\nCongratulations! 🎉`,
             }),
           }
         );
@@ -264,10 +361,17 @@ export async function POST(
       slug: winner.slug,
       wallet_address: winner.wallet_address,
     },
-    prize_pool: challenge.prize_pool,
+    prize_pool: prizePool,
+    winner_amount: winnerAmount,
+    platform_fee: prizePool * 0.05,
     payout: payoutResult,
     explorer_url: payoutResult.txHash 
       ? `https://basescan.org/tx/${payoutResult.txHash}`
+      : null,
+    next_steps: payoutResult.status === 'no_wallet' 
+      ? 'Winner needs to register wallet - payout will process automatically'
+      : payoutResult.status === 'pending'
+      ? 'Payout will retry automatically via cron job'
       : null,
   });
 }

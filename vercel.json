@@ -7,6 +7,10 @@
     {
       "path": "/api/challenges/sync-cron",
       "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/cron/process-payouts",
+      "schedule": "*/30 * * * *"
     }
   ]
 }
