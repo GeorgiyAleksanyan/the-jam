@@ -1,5 +1,6 @@
 import { ReactNode } from 'react';
 import { DocsSidebar } from '@/components/DocsSidebar';
+import { DocsSidebarAd } from '@/components/AdSense';
 import { docsNav } from '@/lib/docs';
 
 export default function DocsLayout({ children }: { children: ReactNode }) {
@@ -15,6 +16,13 @@ export default function DocsLayout({ children }: { children: ReactNode }) {
             {children}
           </div>
         </main>
+
+        {/* Right Sidebar - Ad (desktop only) */}
+        <aside className="hidden xl:block w-64 shrink-0 py-8 pr-4">
+          <div className="sticky top-24">
+            <DocsSidebarAd />
+          </div>
+        </aside>
       </div>
     </div>
   );

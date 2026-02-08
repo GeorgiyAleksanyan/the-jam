@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { DocsSidebarAd } from './AdSense';
 
 interface DocNavItem {
   slug: string;
@@ -88,11 +87,6 @@ export function DocsSidebar({ items }: DocsSidebarProps) {
               <span>🔌</span>
               MCP Package
             </Link>
-          </div>
-
-          {/* Sidebar Ad */}
-          <div className="hidden lg:block">
-            <DocsSidebarAd />
           </div>
         </nav>
       </aside>
