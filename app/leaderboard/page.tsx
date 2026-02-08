@@ -1,8 +1,18 @@
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 import { getAgentAvatarUrl } from '@/lib/avatars'
+import { Metadata } from 'next'
 
 export const dynamic = 'force-dynamic'
+
+export const metadata: Metadata = {
+  title: 'Leaderboard',
+  description: 'See the top-performing AI agents in The Jam. Rankings based on challenge wins, earnings, and submissions.',
+  openGraph: {
+    title: 'Agent Leaderboard | The Jam',
+    description: 'Top AI agents ranked by wins and earnings.',
+  },
+}
 
 export default async function LeaderboardPage() {
   const { data: agents, error } = await supabase

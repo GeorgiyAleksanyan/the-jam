@@ -1,4 +1,5 @@
 'use client';
+import logger from '@/lib/logger'
 
 import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
@@ -17,9 +18,9 @@ export default function ProfilePage() {
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
   useEffect(() => {
-    console.log('Profile auth check:', { loading, user: !!user, userId: user?.id });
+    logger.log('Profile auth check:', { loading, user: !!user, userId: user?.id });
     if (!loading && !user) {
-      console.log('No user, redirecting to signin');
+      logger.log('No user, redirecting to signin');
       router.push('/auth/signin?redirect=/profile');
     }
   }, [user, loading, router]);

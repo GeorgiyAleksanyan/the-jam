@@ -1,4 +1,5 @@
 'use client';
+import logger from '@/lib/logger'
 
 import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
@@ -19,13 +20,13 @@ export default function HandleTokenPage() {
         const code = urlParams.get('code');
         const hash = window.location.hash;
         
-        console.log('HandleToken: Starting auth flow', { hasCode: !!code, hasHash: !!hash });
+        logger.log('HandleToken: Starting auth flow', { hasCode: !!code, hasHash: !!hash });
         
         // First, check if we already have a session (code may have been auto-consumed)
         const { data: { session: existingSession } } = await supabase.auth.getSession();
         
         if (existingSession) {
-          console.log('HandleToken: Already have session, redirecting immediately');
+          logger.log('HandleToken: Already have session, redirecting immediately');
           setStatus('Success! Redirecting...');
           
           // Store provider token if available
@@ -39,7 +40,7 @@ export default function HandleTokenPage() {
         
         // Handle PKCE flow (code in query string)
         if (code) {
-          console.log('HandleToken: Exchanging PKCE code');
+          logger.log('HandleToken: Exchanging PKCE code');
           setStatus('Exchanging authorization code...');
           
           const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
@@ -47,10 +48,10 @@ export default function HandleTokenPage() {
           if (exchangeError) {
             // Check if it's "code already used" - session might already exist
             if (exchangeError.message.includes('already') || exchangeError.message.includes('expired')) {
-              console.log('HandleToken: Code already used, checking for session');
+              logger.log('HandleToken: Code already used, checking for session');
               const { data: { session } } = await supabase.auth.getSession();
               if (session) {
-                console.log('HandleToken: Found session after code error, redirecting');
+                logger.log('HandleToken: Found session after code error, redirecting');
                 window.location.href = '/dashboard';
                 return;
               }
@@ -61,7 +62,7 @@ export default function HandleTokenPage() {
           }
           
           if (data.session) {
-            console.log('HandleToken: PKCE session created');
+            logger.log('HandleToken: PKCE session created');
             
             if (data.session.provider_token) {
               await storeGitHubToken(data.session.user.id, data.session.provider_token);
@@ -75,7 +76,7 @@ export default function HandleTokenPage() {
         
         // Handle implicit flow (tokens in hash)
         if (hash && hash.includes('access_token')) {
-          console.log('HandleToken: Processing hash tokens');
+          logger.log('HandleToken: Processing hash tokens');
           setStatus('Processing authentication tokens...');
           
           const params = new URLSearchParams(hash.substring(1));
@@ -112,13 +113,13 @@ export default function HandleTokenPage() {
         
         const { data: { session: finalSession } } = await supabase.auth.getSession();
         if (finalSession) {
-          console.log('HandleToken: Found session on retry');
+          logger.log('HandleToken: Found session on retry');
           window.location.href = '/dashboard';
           return;
         }
         
         // No session found
-        console.log('HandleToken: No session found, showing error');
+        logger.log('HandleToken: No session found, showing error');
         setError('Authentication failed. Please try again.');
         
       } catch (e: any) {
@@ -129,7 +130,7 @@ export default function HandleTokenPage() {
 
     async function storeGitHubToken(userId: string, token: string) {
       try {
-        console.log('storeGitHubToken: Storing token for user', userId);
+        logger.log('storeGitHubToken: Storing token for user', userId);
         const res = await fetch('/api/auth/store-github-token', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -146,9 +147,9 @@ export default function HandleTokenPage() {
 
     // Subscribe to auth changes - if we get SIGNED_IN, redirect immediately
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('HandleToken: Auth state changed:', event, !!session);
+      logger.log('HandleToken: Auth state changed:', event, !!session);
       if (event === 'SIGNED_IN' && session) {
-        console.log('HandleToken: SIGNED_IN event, redirecting');
+        logger.log('HandleToken: SIGNED_IN event, redirecting');
         window.location.href = '/dashboard';
       }
     });

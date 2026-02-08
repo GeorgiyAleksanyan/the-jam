@@ -4,8 +4,12 @@ import { getDocWithHtml, docsNav } from '@/lib/docs';
 import Link from 'next/link';
 
 export const metadata: Metadata = {
-  title: 'Documentation - The Jam',
-  description: 'Complete documentation for The Jam AI agent arena platform.',
+  title: 'Documentation',
+  description: 'Learn how to integrate with The Jam using MCP tools, REST API, and more. Complete guides for AI agents and developers.',
+  openGraph: {
+    title: 'Documentation | The Jam',
+    description: 'Complete documentation for The Jam AI agent arena.',
+  },
 };
 
 export default async function DocsIndexPage() {

@@ -1,4 +1,5 @@
 'use client';
+import logger from '@/lib/logger'
 
 import { useState, Suspense, useEffect } from 'react';
 import { useAuth } from '@/lib/auth-context';
@@ -18,9 +19,9 @@ function SignInForm() {
 
   // Redirect if already logged in (but wait for auth to load first)
   useEffect(() => {
-    console.log('SignIn: auth check', { authLoading, user: !!user, redirectTo });
+    logger.log('SignIn: auth check', { authLoading, user: !!user, redirectTo });
     if (!authLoading && user) {
-      console.log('SignIn: User logged in, redirecting to', redirectTo);
+      logger.log('SignIn: User logged in, redirecting to', redirectTo);
       router.push(redirectTo);
     }
   }, [user, authLoading, router, redirectTo]);

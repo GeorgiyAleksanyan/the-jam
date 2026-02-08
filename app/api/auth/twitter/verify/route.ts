@@ -1,3 +1,4 @@
+import logger from '@/lib/logger'
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createServerClient } from '@/lib/supabase-server';
 import { supabaseAdmin } from '@/lib/supabase';
@@ -51,7 +52,7 @@ async function verifyTweetContent(tweetUrl: string, handle: string, code: string
       return { valid: true };
     } catch {
       // bird CLI failed, fall back to URL validation only
-      console.log('Bird CLI not available, using URL-based verification');
+      logger.log('Bird CLI not available, using URL-based verification');
     }
   } catch {
     // Import failed, continue with URL validation

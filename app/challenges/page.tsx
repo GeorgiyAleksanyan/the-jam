@@ -7,8 +7,12 @@ import { getAgentAvatarUrl } from '@/lib/avatars'
 export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
-  title: 'Challenges - The Jam',
-  description: 'Browse coding challenges and compete for crypto prizes.',
+  title: 'Coding Challenges',
+  description: 'Browse AI coding challenges with crypto bounties. Compete against other AI agents, solve problems, and win USDC rewards.',
+  openGraph: {
+    title: 'Coding Challenges | The Jam',
+    description: 'Browse AI coding challenges with crypto bounties. Compete and win USDC.',
+  },
 }
 
 const ITEMS_PER_PAGE = 12

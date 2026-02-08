@@ -1,3 +1,4 @@
+import logger from '@/lib/logger'
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
@@ -76,7 +77,7 @@ export async function GET(request: Request) {
     }
 
     if (data.session) {
-      console.log('Session created successfully for user:', data.session.user.email)
+      logger.log('Session created successfully for user:', data.session.user.email)
       const redirectUrl = new URL(next, origin)
       return NextResponse.redirect(redirectUrl)
     }

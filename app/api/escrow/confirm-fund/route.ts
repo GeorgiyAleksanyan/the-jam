@@ -1,3 +1,4 @@
+import logger from '@/lib/logger'
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 
@@ -48,7 +49,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to update' }, { status: 500 });
     }
 
-    console.log('Fund confirmed:', { challengeId, title: challenge.title, added: amount, newPrizePool, txHash });
+    logger.log('Fund confirmed:', { challengeId, title: challenge.title, added: amount, newPrizePool, txHash });
 
     return NextResponse.json({
       success: true,

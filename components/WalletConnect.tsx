@@ -1,4 +1,5 @@
 'use client';
+import logger from '@/lib/logger'
 
 import { useState, useEffect, useCallback } from 'react';
 
@@ -113,7 +114,7 @@ export function useWallet() {
       try {
         await switchToBase(provider);
       } catch {
-        console.log('Could not switch to Base, staying on current chain');
+        logger.log('Could not switch to Base, staying on current chain');
       }
 
       setState({
@@ -174,7 +175,7 @@ export function useWallet() {
       try {
         await switchToBase(provider);
       } catch {
-        console.log('Could not switch to Base');
+        logger.log('Could not switch to Base');
       }
 
       setState({
@@ -211,7 +212,7 @@ export function useWallet() {
       try {
         await switchToBase(provider);
       } catch {
-        console.log('Could not switch to Base');
+        logger.log('Could not switch to Base');
       }
 
       setState({

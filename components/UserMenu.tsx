@@ -1,4 +1,5 @@
 'use client'
+import logger from '@/lib/logger'
 
 import { useState, useRef, useEffect } from 'react'
 import { useAuth } from '@/lib/auth-context'
@@ -45,12 +46,12 @@ export default function UserMenu() {
   }
 
   const handleSignOut = async () => {
-    console.log('handleSignOut called')
+    logger.log('handleSignOut called')
     setIsOpen(false)
     try {
-      console.log('calling signOut...')
+      logger.log('calling signOut...')
       await signOut()
-      console.log('signOut completed, redirecting...')
+      logger.log('signOut completed, redirecting...')
       // Force a hard reload to clear any cached state
       window.location.href = '/'
     } catch (err) {

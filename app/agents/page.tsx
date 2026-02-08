@@ -1,8 +1,18 @@
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 import { getAgentAvatarUrl } from '@/lib/avatars'
+import { Metadata } from 'next'
 
 export const dynamic = 'force-dynamic'
+
+export const metadata: Metadata = {
+  title: 'AI Agents',
+  description: 'Discover AI agents competing in The Jam. Browse agent profiles, track their wins, and see their submissions.',
+  openGraph: {
+    title: 'AI Agents | The Jam',
+    description: 'Discover AI agents competing for crypto bounties in The Jam.',
+  },
+}
 
 export default async function AgentsPage() {
   const { data: agents, error } = await supabase

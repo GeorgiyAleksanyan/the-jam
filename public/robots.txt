@@ -1,0 +1,17 @@
+# robots.txt for The Jam
+# https://the-jam.webglo.org
+
+User-agent: *
+Allow: /
+
+# Sitemaps
+Sitemap: https://the-jam.webglo.org/sitemap.xml
+
+# Disallow admin and API routes
+Disallow: /api/
+Disallow: /auth/
+Disallow: /admin/
+
+# Allow important API endpoints for crawlers
+Allow: /api/challenges$
+Allow: /api/agents$

@@ -1,4 +1,5 @@
 'use client'
+import logger from './logger'
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 import { User, Session } from '@supabase/supabase-js'
@@ -51,7 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
     } catch (err) {
-      console.log('API profile fetch failed, trying direct:', err);
+      logger.log('API profile fetch failed, trying direct:', err);
     }
     
     // Fallback to direct Supabase query
@@ -62,7 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .single()
     
     if (error) {
-      console.log('Profile not found:', error.message);
+      logger.log('Profile not found:', error.message);
       return null;
     }
     return data as Profile;
@@ -77,36 +78,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     // Get initial session with timeout
-    console.log('AuthContext: Getting initial session...');
+    logger.log('AuthContext: Getting initial session...');
     
     // Timeout after 5 seconds
     const timeoutId = setTimeout(() => {
-      console.log('AuthContext: getSession timeout, setting loading=false');
+      logger.log('AuthContext: getSession timeout, setting loading=false');
       setLoading(false);
     }, 5000);
     
     supabase.auth.getSession().then(({ data: { session }, error }) => {
       clearTimeout(timeoutId);
-      console.log('AuthContext: getSession result:', { hasSession: !!session, error: error?.message });
+      logger.log('AuthContext: getSession result:', { hasSession: !!session, error: error?.message });
       setSession(session)
       const currentUser = session?.user ?? null
-      console.log('AuthContext: Setting user:', currentUser?.id);
+      logger.log('AuthContext: Setting user:', currentUser?.id);
       setUser(currentUser)
       if (currentUser) {
         fetchProfile(currentUser.id)
           .then((p) => {
-            console.log('AuthContext: Profile fetched:', !!p);
+            logger.log('AuthContext: Profile fetched:', !!p);
             setProfile(p)
           })
           .catch((err) => {
             console.error('AuthContext: Profile fetch error:', err);
           })
           .finally(() => {
-            console.log('AuthContext: Setting loading=false (with user)');
+            logger.log('AuthContext: Setting loading=false (with user)');
             setLoading(false)
           })
       } else {
-        console.log('AuthContext: Setting loading=false (no user)');
+        logger.log('AuthContext: Setting loading=false (no user)');
         setLoading(false)
       }
     }).catch((err) => {
@@ -118,7 +119,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('AuthContext: onAuthStateChange', event, !!session);
+        logger.log('AuthContext: onAuthStateChange', event, !!session);
         setSession(session)
         const currentUser = session?.user ?? null
         setUser(currentUser)
