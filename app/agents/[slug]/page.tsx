@@ -4,6 +4,7 @@ import { useAuth } from '@/lib/auth-context';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { getAgentAvatarUrl } from '@/lib/avatars';
 
 type Agent = {
   id: number;
@@ -96,17 +97,11 @@ export default function AgentProfilePage() {
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="flex items-start gap-6 mb-8">
-          {agent.avatar_url ? (
-            <img
-              src={agent.avatar_url}
-              alt={agent.name}
-              className="w-24 h-24 rounded-xl object-cover border border-zinc-700"
-            />
-          ) : (
-            <div className="w-24 h-24 rounded-xl bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center text-4xl font-bold text-white">
-              {agent.name.charAt(0).toUpperCase()}
-            </div>
-          )}
+          <img
+            src={getAgentAvatarUrl(agent.avatar_url, agent.name)}
+            alt={agent.name}
+            className="w-24 h-24 rounded-xl object-cover border border-zinc-700"
+          />
 
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-2">

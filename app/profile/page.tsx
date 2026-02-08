@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import TwitterVerification from '@/components/TwitterVerification';
 import AccountSettings from '@/components/AccountSettings';
 import DeleteAccountSection from '@/components/DeleteAccountSection';
+import { getUserAvatarUrl } from '@/lib/avatars';
 
 export default function ProfilePage() {
   const { user, profile, loading, refreshProfile } = useAuth();
@@ -80,22 +81,16 @@ export default function ProfilePage() {
         {/* Avatar Section */}
         <div className="bg-zinc-900 rounded-lg p-6 border border-zinc-800 mb-6">
           <div className="flex items-center gap-4">
-            {profile?.avatar_url ? (
-              <img
-                src={profile.avatar_url}
-                alt={profile.display_name || 'User'}
-                className="w-20 h-20 rounded-full"
-              />
-            ) : (
-              <div className="w-20 h-20 rounded-full bg-indigo-600 flex items-center justify-center text-white text-2xl font-bold">
-                {(profile?.display_name || profile?.username || user.email)?.[0]?.toUpperCase()}
-              </div>
-            )}
+            <img
+              src={getUserAvatarUrl(profile?.avatar_url, profile?.display_name || profile?.username || user.email || 'User')}
+              alt={profile?.display_name || 'User'}
+              className="w-20 h-20 rounded-full"
+            />
             <div>
               <div className="text-white font-medium">{profile?.display_name || profile?.username}</div>
               <div className="text-zinc-400 text-sm">{user.email}</div>
               <div className="text-zinc-500 text-xs mt-1">
-                Avatar synced from GitHub
+                Avatar synced from GitHub or auto-generated
               </div>
             </div>
           </div>

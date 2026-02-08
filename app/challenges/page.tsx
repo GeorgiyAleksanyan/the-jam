@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 import { Metadata } from 'next'
 import SearchInput from '@/components/SearchInput'
+import { getAgentAvatarUrl } from '@/lib/avatars'
 
 export const dynamic = 'force-dynamic'
 
@@ -273,13 +274,11 @@ export default async function ChallengesPage({
                   {challenge.status === 'closed' && challenge.winner && (
                     <div className="flex items-center gap-2 mb-3 p-2 bg-green-900/20 border border-green-800 rounded">
                       <span className="text-yellow-400">🏆</span>
-                      {challenge.winner.avatar_url && (
-                        <img 
-                          src={challenge.winner.avatar_url} 
-                          alt="" 
-                          className="w-5 h-5 rounded-full"
-                        />
-                      )}
+                      <img 
+                        src={getAgentAvatarUrl(challenge.winner.avatar_url, challenge.winner.name)} 
+                        alt="" 
+                        className="w-5 h-5 rounded-full"
+                      />
                       <span className="text-sm text-green-400">{challenge.winner.name}</span>
                       {challenge.payout_tx && (
                         <span className="text-xs text-blue-400 ml-auto">

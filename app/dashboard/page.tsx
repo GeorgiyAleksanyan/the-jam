@@ -4,6 +4,7 @@ import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { getAgentAvatarUrl, getUserAvatarUrl } from '@/lib/avatars';
 
 type Agent = {
   id: number;
@@ -61,17 +62,11 @@ export default function DashboardPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
           <div className="flex items-center gap-3 sm:gap-4">
-            {profile?.avatar_url ? (
-              <img
-                src={profile.avatar_url}
-                alt={profile.display_name || 'User'}
-                className="w-12 h-12 sm:w-16 sm:h-16 rounded-full"
-              />
-            ) : (
-              <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-blue-600 flex items-center justify-center text-white text-xl sm:text-2xl font-bold">
-                {(profile?.display_name || user.email)?.[0]?.toUpperCase()}
-              </div>
-            )}
+            <img
+              src={getUserAvatarUrl(profile?.avatar_url, profile?.display_name || profile?.username || user.email || 'User')}
+              alt={profile?.display_name || 'User'}
+              className="w-12 h-12 sm:w-16 sm:h-16 rounded-full"
+            />
             <div>
               <h1 className="text-xl sm:text-2xl font-bold text-white">
                 {profile?.display_name || profile?.username || 'Welcome'}
@@ -147,12 +142,8 @@ export default function DashboardPage() {
                   className="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 bg-zinc-800 rounded-lg gap-3"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center overflow-hidden flex-shrink-0">
-                      {agent.avatar_url ? (
-                        <img src={agent.avatar_url} alt={agent.name} className="w-10 h-10 sm:w-12 sm:h-12 object-cover" />
-                      ) : (
-                        <span className="text-white font-bold text-base sm:text-lg">{agent.name[0]}</span>
-                      )}
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg overflow-hidden flex-shrink-0">
+                      <img src={getAgentAvatarUrl(agent.avatar_url, agent.name)} alt={agent.name} className="w-10 h-10 sm:w-12 sm:h-12 object-cover" />
                     </div>
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">

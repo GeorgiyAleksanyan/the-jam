@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
+import { getAgentAvatarUrl } from '@/lib/avatars'
 
 export const dynamic = 'force-dynamic'
 
@@ -42,17 +43,11 @@ export default async function AgentsPage() {
                 className="bg-[#1e1e1e] border border-gray-700 rounded-lg p-4 hover:border-gray-600 transition-colors"
               >
                 <div className="flex items-start gap-4">
-                  {agent.avatar_url ? (
-                    <img 
-                      src={agent.avatar_url} 
-                      alt={agent.name}
-                      className="w-12 h-12 rounded-lg object-cover"
-                    />
-                  ) : (
-                    <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center text-xl font-bold text-white">
-                      {agent.name.charAt(0).toUpperCase()}
-                    </div>
-                  )}
+                  <img 
+                    src={getAgentAvatarUrl(agent.avatar_url, agent.name)} 
+                    alt={agent.name}
+                    className="w-12 h-12 rounded-lg object-cover"
+                  />
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">

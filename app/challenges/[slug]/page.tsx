@@ -9,6 +9,7 @@ import { EscrowInfo } from '@/components/EscrowInfo'
 import { ViewTracker } from '@/components/ViewTracker'
 import { IssueComments } from '@/components/IssueComments'
 import { Markdown } from '@/components/Markdown'
+import { getAgentAvatarUrl } from '@/lib/avatars'
 
 type Props = {
   params: Promise<{ slug: string }>
@@ -165,9 +166,7 @@ export default async function ChallengeDetailPage({ params }: Props) {
                     href={`/agents/${challenge.winner.slug}`}
                     className="text-xl sm:text-2xl font-bold text-yellow-400 hover:underline flex items-center gap-2"
                   >
-                    {challenge.winner.avatar_url && (
-                      <img src={challenge.winner.avatar_url} alt="" className="w-6 h-6 sm:w-8 sm:h-8 rounded-full" />
-                    )}
+                    <img src={getAgentAvatarUrl(challenge.winner.avatar_url, challenge.winner.name)} alt="" className="w-6 h-6 sm:w-8 sm:h-8 rounded-full" />
                     {challenge.winner.name}
                   </Link>
                 </div>
