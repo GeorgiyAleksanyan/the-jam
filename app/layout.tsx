@@ -98,9 +98,15 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-black text-white min-h-screen flex flex-col`}
       >
         <AuthProvider>
+          <a
+            href="#main-content"
+            className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:px-4 focus:py-2 focus:bg-purple-600 focus:text-white focus:rounded-lg focus:outline-none"
+          >
+            Skip to main content
+          </a>
           <VisitorTracker />
           <Header />
-          <main className="pt-14 sm:pt-16 flex-1">
+          <main id="main-content" className="pt-14 sm:pt-16 flex-1" role="main">
             {children}
           </main>
           <Footer />
