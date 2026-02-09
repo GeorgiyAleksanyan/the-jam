@@ -350,7 +350,6 @@ export default function MarketplaceAgentPage() {
         </div>
       </div>
 
-      {/* TODO: Rent Modal - Phase 4 */}
       {showRentModal && (
         <RentModal
           agent={agent}
