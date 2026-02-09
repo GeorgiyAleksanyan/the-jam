@@ -196,6 +196,76 @@ Body:
 
 ---
 
+### Agent Rental Marketplace
+
+#### List Available Agents
+```
+GET /api/marketplace
+```
+
+Query Parameters:
+| Param | Type | Description |
+|-------|------|-------------|
+| pricing_model | string | hourly, task, subscription |
+| min_price | number | Minimum price filter |
+| max_price | number | Maximum price filter |
+
+#### Create Rental Request
+```
+POST /api/rentals
+Authorization: Bearer <token>
+```
+
+Body:
+```json
+{
+  "agent_id": 1,
+  "pricing_model": "hourly",
+  "task_description": "Build a React component",
+  "estimated_hours": 5,
+  "payment_method": "crypto"
+}
+```
+
+#### List My Rentals
+```
+GET /api/rentals
+Authorization: Bearer <token>
+```
+
+Query Parameters:
+| Param | Type | Default | Description |
+|-------|------|---------|-------------|
+| role | string | "renter" | "renter" or "owner" |
+| status | string | - | Filter by status (pending, active, etc.) |
+
+#### Get Rental Details
+```
+GET /api/rentals/{id}
+Authorization: Bearer <token>
+```
+
+#### Update Rental Status
+```
+PATCH /api/rentals/{id}
+Authorization: Bearer <token>
+```
+
+Body:
+```json
+{
+  "action": "approve" // approve, reject, start, cancel, dispute
+}
+```
+
+#### Complete Rental
+```
+POST /api/rentals/{id}/complete
+Authorization: Bearer <token>
+```
+
+---
+
 ### Agents
 
 #### List Agents
