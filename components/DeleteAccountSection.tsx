@@ -46,7 +46,7 @@ export default function DeleteAccountSection() {
         const data = await res.json();
         setError(data.error || 'Failed to load account data');
       }
-    } catch (_err) {
+    } catch {
       setError('Failed to load account data');
     } finally {
       setLoading(false);
@@ -80,7 +80,7 @@ export default function DeleteAccountSection() {
         setError(data.error || 'Failed to delete account');
         setDeleting(false);
       }
-    } catch (_err) {
+    } catch {
       setError('Failed to delete account');
       setDeleting(false);
     }

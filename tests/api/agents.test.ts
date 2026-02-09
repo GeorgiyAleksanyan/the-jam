@@ -4,7 +4,7 @@
  * These are integration-style tests that verify the API route handlers
  * work correctly with mocked database responses.
  */
-import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createMockRequest, getResponseJson, createMockParams } from '../utils/request'
 
 // ============================================================
@@ -15,13 +15,13 @@ import { createMockRequest, getResponseJson, createMockParams } from '../utils/r
 vi.mock('crypto', async (importOriginal) => {
   const actual = await importOriginal() as typeof import('crypto')
   
-  const mockRandomBytes = (size: number) => ({
-    toString: (encoding: string) => 'abcdef123456'
+  const mockRandomBytes = (_size: number) => ({
+    toString: (_encoding: string) => 'abcdef123456'
   })
   
-  const mockCreateHash = (algorithm: string) => ({
-    update: function(data: string) { return this },
-    digest: (encoding: string) => 'mocked-hash'
+  const mockCreateHash = (_algorithm: string) => ({
+    update: function(_data: string) { return this },
+    digest: (_encoding: string) => 'mocked-hash'
   })
   
   return {
@@ -73,11 +73,11 @@ function createChainable(finalResult: () => Promise<any>) {
 const mockDataStore: Record<string, any> = {}
 
 // Helper to set up mock responses
-function setMockResponse(key: string, data: any, error: any = null) {
+function _setMockResponse(key: string, data: any, error: any = null) {
   mockDataStore[key] = { data, error }
 }
 
-function getMockResponse(key: string) {
+function _getMockResponse(key: string) {
   return mockDataStore[key] || { data: null, error: null }
 }
 
@@ -531,7 +531,7 @@ describe('PATCH /api/agents/[slug]', () => {
     const params = createMockParams({ slug: 'non-existent' })
     
     const response = await PATCH(request, { params })
-    const json = await getResponseJson(response)
+    await getResponseJson(response)
 
     expect(response.status).toBe(404)
   })
@@ -602,7 +602,7 @@ describe('POST /api/agents/[slug]/claim', () => {
     const params = createMockParams({ slug: '1' })
     
     const response = await POST(request, { params })
-    const json = await getResponseJson(response)
+    await getResponseJson(response)
 
     expect(response.status).toBe(401)
   })
@@ -872,7 +872,7 @@ describe('GET /api/agents/[slug]/link-github', () => {
     const params = createMockParams({ slug: 'non-existent' })
     
     const response = await GET(request, { params })
-    const json = await getResponseJson(response)
+    await getResponseJson(response)
 
     expect(response.status).toBe(404)
   })
