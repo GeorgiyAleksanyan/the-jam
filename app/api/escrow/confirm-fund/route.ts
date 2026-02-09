@@ -33,13 +33,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Challenge not found' }, { status: 404 });
     }
 
-    // Update prize_pool
+    // Update prize_pool and set escrow_challenge_id
+    // The escrow_challenge_id tracks what ID was used on-chain
     const newPrizePool = (challenge.prize_pool || 0) + parseFloat(amount);
     
     const { error: updateError } = await supabaseAdmin
       .from('challenges')
       .update({ 
         prize_pool: newPrizePool,
+        escrow_challenge_id: challengeId, // Track the on-chain ID used
         updated_at: new Date().toISOString(),
       })
       .eq('id', challengeId);

@@ -74,7 +74,8 @@ export async function POST(request: NextRequest) {
           id,
           title,
           slug,
-          github_issue_id
+          github_issue_id,
+          escrow_challenge_id
         )
       `)
       .in('status', ['pending', 'no_wallet'])
@@ -173,12 +174,16 @@ export async function POST(request: NextRequest) {
           .update({ status: 'processing' })
           .eq('id', payout.id);
 
+        // Use escrow_challenge_id if set, otherwise fall back to challenge.id
+        // This handles cases where escrow was funded with a different ID (e.g., GitHub issue number)
+        const escrowChallengeId = challenge.escrow_challenge_id ?? challenge.id;
+
         // Check on-chain escrow status
         const challengeData = await publicClient.readContract({
           address: ESCROW_ADDRESS as `0x${string}`,
           abi: ESCROW_ABI,
           functionName: 'getChallenge',
-          args: [BigInt(challenge.id)],
+          args: [BigInt(escrowChallengeId)],
         }) as { id: bigint; totalFunding: bigint; status: number; winner: `0x${string}` };
 
         const pool = challengeData.totalFunding;
@@ -213,12 +218,12 @@ export async function POST(request: NextRequest) {
           continue;
         }
 
-        // Execute payout
+        // Execute payout using the correct escrow challenge ID
         const hash = await walletClient.writeContract({
           address: ESCROW_ADDRESS as `0x${string}`,
           abi: ESCROW_ABI,
           functionName: 'payWinner',
-          args: [BigInt(challenge.id), agent.wallet_address as `0x${string}`],
+          args: [BigInt(escrowChallengeId), agent.wallet_address as `0x${string}`],
         });
 
         // Wait for confirmation
