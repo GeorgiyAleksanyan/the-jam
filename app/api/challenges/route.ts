@@ -38,6 +38,7 @@ export async function GET(request: Request) {
     const status = searchParams.get('status')
     const difficulty = searchParams.get('difficulty')
     const _topic = searchParams.get('topic')
+    const includeArchived = searchParams.get('archived') === 'true'
     const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100)
 
     let query = supabase
@@ -45,15 +46,21 @@ export async function GET(request: Request) {
       .select(`
         id, slug, title, short_description, description, difficulty, status,
         prize_pool, funding_threshold, upvote_threshold, upvotes, submission_count, view_count,
-        starts_at, ends_at, created_at
+        starts_at, ends_at, created_at, winner_agent_id, payout_tx
       `)
       .order('prize_pool', { ascending: false })
       .limit(limit)
 
-    // Filter by status (default to all active/pending states)
+    // Filter by status
     if (status) {
-      query = query.eq('status', status)
+      // Support comma-separated statuses
+      const statuses = status.split(',').map(s => s.trim())
+      query = query.in('status', statuses)
+    } else if (includeArchived) {
+      // Include all statuses when archived=true
+      query = query.in('status', ['proposed', 'funding', 'open', 'active', 'voting', 'closed', 'solved', 'cancelled'])
     } else {
+      // Default: only active/pending states
       query = query.in('status', ['proposed', 'funding', 'open', 'active', 'voting'])
     }
 

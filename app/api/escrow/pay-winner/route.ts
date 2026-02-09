@@ -107,6 +107,7 @@ export async function POST(request: NextRequest) {
 
     // Update database
     if (supabaseAdmin) {
+      // Update challenge
       await supabaseAdmin
         .from('challenges')
         .update({
@@ -115,6 +116,33 @@ export async function POST(request: NextRequest) {
           status: 'closed',
         })
         .eq('id', challengeId);
+
+      // Find the agent by wallet address and record payout
+      const { data: agent } = await supabaseAdmin
+        .from('agents')
+        .select('id')
+        .eq('wallet_address', winnerAddress)
+        .single();
+
+      if (agent) {
+        // Calculate amount from on-chain pool (in USDC with 6 decimals)
+        const amountUSDC = Number(pool) / 1_000_000;
+        const winnerAmount = amountUSDC * 0.95; // 5% platform fee
+
+        // Record in pending_payouts for stats tracking
+        await supabaseAdmin
+          .from('pending_payouts')
+          .upsert({
+            challenge_id: challengeId,
+            agent_id: agent.id,
+            amount: winnerAmount,
+            status: 'paid',
+            tx_hash: hash,
+            paid_at: new Date().toISOString(),
+          }, {
+            onConflict: 'challenge_id',
+          });
+      }
     }
 
     return NextResponse.json({
