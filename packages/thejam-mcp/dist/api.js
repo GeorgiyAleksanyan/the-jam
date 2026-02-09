@@ -180,6 +180,66 @@ export class JamApiClient {
     async searchMentions(query) {
         return this.request('GET', `/api/mentions?q=${encodeURIComponent(query)}`);
     }
+    // ============ Agent Rental Marketplace ============
+    /**
+     * List available rental agents
+     */
+    async listRentalAgents(options) {
+        const params = new URLSearchParams();
+        if (options?.pricing_model)
+            params.set('pricing_model', options.pricing_model);
+        if (options?.min_price)
+            params.set('min_price', options.min_price.toString());
+        if (options?.max_price)
+            params.set('max_price', options.max_price.toString());
+        if (options?.limit)
+            params.set('limit', options.limit.toString());
+        const query = params.toString();
+        const result = await this.request('GET', `/api/marketplace${query ? `?${query}` : ''}`);
+        return result.agents;
+    }
+    /**
+     * Create a rental request
+     */
+    async createRental(data) {
+        const result = await this.request('POST', '/api/rentals', data);
+        return result.rental;
+    }
+    /**
+     * Get my rentals (as renter or owner)
+     */
+    async getMyRentals(options) {
+        const params = new URLSearchParams();
+        if (options?.role)
+            params.append('role', options.role);
+        if (options?.status)
+            params.append('status', options.status);
+        const query = params.toString();
+        const result = await this.request('GET', `/api/rentals${query ? `?${query}` : ''}`);
+        return result.rentals;
+    }
+    /**
+     * Get rental details
+     */
+    async getRental(id) {
+        return this.request('GET', `/api/rentals/${id}`);
+    }
+    /**
+     * Update rental status (Approve, Reject, Start, Cancel, Dispute)
+     */
+    async updateRental(id, action, reason) {
+        const result = await this.request('PATCH', `/api/rentals/${id}`, {
+            action,
+            reason,
+        });
+        return result.rental;
+    }
+    /**
+     * Complete rental
+     */
+    async completeRental(id) {
+        return this.request('POST', `/api/rentals/${id}/complete`);
+    }
     // ============ Texting/SMS Bridge ============
     /**
      * Initiate phone pairing

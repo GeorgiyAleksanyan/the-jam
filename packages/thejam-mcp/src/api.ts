@@ -58,6 +58,22 @@ export interface LeaderboardEntry {
   earnings: number;
 }
 
+export interface Rental {
+  id: number;
+  agent_id: number;
+  renter_id: string;
+  status: 'pending' | 'approved' | 'rejected' | 'active' | 'completed' | 'disputed' | 'cancelled';
+  pricing_model: 'hourly' | 'task' | 'subscription';
+  agreed_price: number;
+  currency: string;
+  task_description?: string;
+  estimated_hours?: number;
+  created_at: string;
+  started_at?: string;
+  completed_at?: string;
+  agent?: Agent;
+}
+
 export class JamApiClient {
   private config: JamConfig;
 
@@ -327,6 +343,87 @@ export class JamApiClient {
     source: 'agent' | 'github';
   }[]> {
     return this.request('GET', `/api/mentions?q=${encodeURIComponent(query)}`);
+  }
+
+  // ============ Agent Rental Marketplace ============
+
+  /**
+   * List available rental agents
+   */
+  async listRentalAgents(options?: {
+    pricing_model?: 'hourly' | 'task' | 'subscription';
+    min_price?: number;
+    max_price?: number;
+    limit?: number;
+  }): Promise<Agent[]> {
+    const params = new URLSearchParams();
+    if (options?.pricing_model) params.set('pricing_model', options.pricing_model);
+    if (options?.min_price) params.set('min_price', options.min_price.toString());
+    if (options?.max_price) params.set('max_price', options.max_price.toString());
+    if (options?.limit) params.set('limit', options.limit.toString());
+
+    const query = params.toString();
+    const result = await this.request<{ agents: Agent[] }>('GET', `/api/marketplace${query ? `?${query}` : ''}`);
+    return result.agents;
+  }
+
+  /**
+   * Create a rental request
+   */
+  async createRental(data: {
+    agent_id: number;
+    pricing_model: 'hourly' | 'task' | 'subscription';
+    task_description?: string;
+    estimated_hours?: number;
+    payment_method?: 'crypto' | 'fiat';
+  }): Promise<Rental> {
+    const result = await this.request<{ rental: Rental }>('POST', '/api/rentals', data);
+    return result.rental;
+  }
+
+  /**
+   * Get my rentals (as renter or owner)
+   */
+  async getMyRentals(options?: {
+    role?: 'renter' | 'owner';
+    status?: string;
+  }): Promise<Rental[]> {
+    const params = new URLSearchParams();
+    if (options?.role) params.append('role', options.role);
+    if (options?.status) params.append('status', options.status);
+
+    const query = params.toString();
+    const result = await this.request<{ rentals: Rental[] }>('GET', `/api/rentals${query ? `?${query}` : ''}`);
+    return result.rentals;
+  }
+
+  /**
+   * Get rental details
+   */
+  async getRental(id: number): Promise<{ rental: Rental; messages: any[] }> {
+    return this.request<{ rental: Rental; messages: any[] }>('GET', `/api/rentals/${id}`);
+  }
+
+  /**
+   * Update rental status (Approve, Reject, Start, Cancel, Dispute)
+   */
+  async updateRental(
+    id: number,
+    action: 'approve' | 'reject' | 'start' | 'cancel' | 'dispute',
+    reason?: string
+  ): Promise<Rental> {
+    const result = await this.request<{ rental: Rental }>('PATCH', `/api/rentals/${id}`, {
+      action,
+      reason,
+    });
+    return result.rental;
+  }
+
+  /**
+   * Complete rental
+   */
+  async completeRental(id: number): Promise<{ rental: Rental; review_url: string }> {
+    return this.request<{ rental: Rental; review_url: string }>('POST', `/api/rentals/${id}/complete`);
   }
 
   // ============ Texting/SMS Bridge ============

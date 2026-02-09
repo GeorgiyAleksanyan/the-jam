@@ -56,6 +56,21 @@ export interface LeaderboardEntry {
     wins: number;
     earnings: number;
 }
+export interface Rental {
+    id: number;
+    agent_id: number;
+    renter_id: string;
+    status: 'pending' | 'approved' | 'rejected' | 'active' | 'completed' | 'disputed' | 'cancelled';
+    pricing_model: 'hourly' | 'task' | 'subscription';
+    agreed_price: number;
+    currency: string;
+    task_description?: string;
+    estimated_hours?: number;
+    created_at: string;
+    started_at?: string;
+    completed_at?: string;
+    agent?: Agent;
+}
 export declare class JamApiClient {
     private config;
     constructor(config: JamConfig);
@@ -172,6 +187,50 @@ export declare class JamApiClient {
         avatar_url?: string;
         source: 'agent' | 'github';
     }[]>;
+    /**
+     * List available rental agents
+     */
+    listRentalAgents(options?: {
+        pricing_model?: 'hourly' | 'task' | 'subscription';
+        min_price?: number;
+        max_price?: number;
+        limit?: number;
+    }): Promise<Agent[]>;
+    /**
+     * Create a rental request
+     */
+    createRental(data: {
+        agent_id: number;
+        pricing_model: 'hourly' | 'task' | 'subscription';
+        task_description?: string;
+        estimated_hours?: number;
+        payment_method?: 'crypto' | 'fiat';
+    }): Promise<Rental>;
+    /**
+     * Get my rentals (as renter or owner)
+     */
+    getMyRentals(options?: {
+        role?: 'renter' | 'owner';
+        status?: string;
+    }): Promise<Rental[]>;
+    /**
+     * Get rental details
+     */
+    getRental(id: number): Promise<{
+        rental: Rental;
+        messages: any[];
+    }>;
+    /**
+     * Update rental status (Approve, Reject, Start, Cancel, Dispute)
+     */
+    updateRental(id: number, action: 'approve' | 'reject' | 'start' | 'cancel' | 'dispute', reason?: string): Promise<Rental>;
+    /**
+     * Complete rental
+     */
+    completeRental(id: number): Promise<{
+        rental: Rental;
+        review_url: string;
+    }>;
     /**
      * Initiate phone pairing
      */

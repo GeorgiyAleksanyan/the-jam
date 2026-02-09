@@ -296,6 +296,134 @@ const tools = [
             required: ['query'],
         },
     },
+    // ============ Agent Rental Tools ============
+    {
+        name: 'list_rental_agents',
+        description: 'List agents available for hire. Filter by pricing model and budget.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                pricing_model: {
+                    type: 'string',
+                    enum: ['hourly', 'task', 'subscription'],
+                    description: 'Filter by pricing model',
+                },
+                min_price: {
+                    type: 'number',
+                    description: 'Minimum price filter',
+                },
+                max_price: {
+                    type: 'number',
+                    description: 'Maximum price filter',
+                },
+                limit: {
+                    type: 'number',
+                    description: 'Maximum agents to return',
+                },
+            },
+        },
+    },
+    {
+        name: 'request_rental',
+        description: 'Create a rental request to hire an agent. Requires API key.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                agent_id: {
+                    type: 'number',
+                    description: 'The ID of the agent to hire',
+                },
+                pricing_model: {
+                    type: 'string',
+                    enum: ['hourly', 'task', 'subscription'],
+                    description: 'The pricing model for this rental',
+                },
+                task_description: {
+                    type: 'string',
+                    description: 'Description of the task or work required',
+                },
+                estimated_hours: {
+                    type: 'number',
+                    description: 'Estimated hours (required for hourly model)',
+                },
+                payment_method: {
+                    type: 'string',
+                    enum: ['crypto', 'fiat'],
+                    description: 'Preferred payment method (default: crypto)',
+                },
+            },
+            required: ['agent_id', 'pricing_model'],
+        },
+    },
+    {
+        name: 'get_my_rentals',
+        description: 'List your rentals (as renter or owner). Requires API key.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                role: {
+                    type: 'string',
+                    enum: ['renter', 'owner'],
+                    description: 'Filter by your role (default: renter)',
+                },
+                status: {
+                    type: 'string',
+                    description: 'Filter by rental status (pending, active, etc.)',
+                },
+            },
+        },
+    },
+    {
+        name: 'get_rental',
+        description: 'Get details of a specific rental including messages. Requires API key.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                id: {
+                    type: 'number',
+                    description: 'The rental ID',
+                },
+            },
+            required: ['id'],
+        },
+    },
+    {
+        name: 'update_rental',
+        description: 'Update the status of a rental (approve, reject, start, cancel, dispute). Requires API key.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                id: {
+                    type: 'number',
+                    description: 'The rental ID',
+                },
+                action: {
+                    type: 'string',
+                    enum: ['approve', 'reject', 'start', 'cancel', 'dispute'],
+                    description: 'The action to perform',
+                },
+                reason: {
+                    type: 'string',
+                    description: 'Reason for cancellation or dispute (optional)',
+                },
+            },
+            required: ['id', 'action'],
+        },
+    },
+    {
+        name: 'complete_rental',
+        description: 'Mark a rental as complete and release funds. Requires API key.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                id: {
+                    type: 'number',
+                    description: 'The rental ID',
+                },
+            },
+            required: ['id'],
+        },
+    },
     // ============ Texting/SMS Tools ============
     {
         name: 'pair_phone',
@@ -403,7 +531,7 @@ const tools = [
 // Create MCP server
 const server = new Server({
     name: 'thejam-mcp',
-    version: '0.1.0',
+    version: '0.3.1',
 }, {
     capabilities: {
         tools: {},
@@ -727,6 +855,142 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                         {
                             type: 'text',
                             text: JSON.stringify(results, null, 2),
+                        },
+                    ],
+                };
+            }
+            // ============ Agent Rental Handlers ============
+            case 'list_rental_agents': {
+                const agents = await client.listRentalAgents({
+                    pricing_model: args?.pricing_model,
+                    min_price: args?.min_price,
+                    max_price: args?.max_price,
+                    limit: args?.limit,
+                });
+                return {
+                    content: [
+                        {
+                            type: 'text',
+                            text: JSON.stringify(agents, null, 2),
+                        },
+                    ],
+                };
+            }
+            case 'request_rental': {
+                if (!API_KEY) {
+                    return {
+                        content: [
+                            {
+                                type: 'text',
+                                text: 'Error: API key required for rentals. Set THEJAM_API_KEY environment variable.',
+                            },
+                        ],
+                        isError: true,
+                    };
+                }
+                const result = await client.createRental({
+                    agent_id: args?.agent_id,
+                    pricing_model: args?.pricing_model,
+                    task_description: args?.task_description,
+                    estimated_hours: args?.estimated_hours,
+                    payment_method: args?.payment_method,
+                });
+                return {
+                    content: [
+                        {
+                            type: 'text',
+                            text: JSON.stringify(result, null, 2),
+                        },
+                    ],
+                };
+            }
+            case 'get_my_rentals': {
+                if (!API_KEY) {
+                    return {
+                        content: [
+                            {
+                                type: 'text',
+                                text: 'Error: API key required for rentals. Set THEJAM_API_KEY environment variable.',
+                            },
+                        ],
+                        isError: true,
+                    };
+                }
+                const rentals = await client.getMyRentals({
+                    role: args?.role,
+                    status: args?.status,
+                });
+                return {
+                    content: [
+                        {
+                            type: 'text',
+                            text: JSON.stringify(rentals, null, 2),
+                        },
+                    ],
+                };
+            }
+            case 'get_rental': {
+                if (!API_KEY) {
+                    return {
+                        content: [
+                            {
+                                type: 'text',
+                                text: 'Error: API key required for rentals. Set THEJAM_API_KEY environment variable.',
+                            },
+                        ],
+                        isError: true,
+                    };
+                }
+                const rental = await client.getRental(args?.id);
+                return {
+                    content: [
+                        {
+                            type: 'text',
+                            text: JSON.stringify(rental, null, 2),
+                        },
+                    ],
+                };
+            }
+            case 'update_rental': {
+                if (!API_KEY) {
+                    return {
+                        content: [
+                            {
+                                type: 'text',
+                                text: 'Error: API key required for rentals. Set THEJAM_API_KEY environment variable.',
+                            },
+                        ],
+                        isError: true,
+                    };
+                }
+                const result = await client.updateRental(args?.id, args?.action, args?.reason);
+                return {
+                    content: [
+                        {
+                            type: 'text',
+                            text: JSON.stringify(result, null, 2),
+                        },
+                    ],
+                };
+            }
+            case 'complete_rental': {
+                if (!API_KEY) {
+                    return {
+                        content: [
+                            {
+                                type: 'text',
+                                text: 'Error: API key required for rentals. Set THEJAM_API_KEY environment variable.',
+                            },
+                        ],
+                        isError: true,
+                    };
+                }
+                const result = await client.completeRental(args?.id);
+                return {
+                    content: [
+                        {
+                            type: 'text',
+                            text: JSON.stringify(result, null, 2),
                         },
                     ],
                 };
