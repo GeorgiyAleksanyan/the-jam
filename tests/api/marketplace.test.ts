@@ -17,7 +17,7 @@ vi.mock('crypto', async (importOriginal) => {
   return {
     ...actual,
     default: actual,
-    randomBytes: (size: number) => ({
+    randomBytes: (_size: number) => ({
       toString: () => 'abcdef123456',
     }),
   }

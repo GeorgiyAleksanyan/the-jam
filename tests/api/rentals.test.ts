@@ -15,15 +15,15 @@ import { createMockRequest, getResponseJson, createMockParams } from '../utils/r
 vi.mock('crypto', async (importOriginal) => {
   const actual = (await importOriginal()) as typeof import('crypto')
 
-  const mockRandomBytes = (size: number) => ({
-    toString: (encoding: string) => 'abcdef123456',
+  const mockRandomBytes = (_size: number) => ({
+    toString: (_encoding: string) => 'abcdef123456',
   })
 
-  const mockCreateHash = (algorithm: string) => ({
-    update: function (data: string) {
+  const mockCreateHash = (_algorithm: string) => ({
+    update: function (_data: string) {
       return this
     },
-    digest: (encoding: string) => 'mocked-hash',
+    digest: (_encoding: string) => 'mocked-hash',
   })
 
   return {

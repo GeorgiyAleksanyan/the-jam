@@ -17,7 +17,7 @@ vi.mock('crypto', async (importOriginal) => {
   return {
     ...actual,
     default: actual,
-    randomBytes: (size: number) => ({
+    randomBytes: (_size: number) => ({
       toString: () => 'abcdef123456',
     }),
   }
@@ -256,7 +256,7 @@ describe('GET /api/mcp/rentals/[id]', () => {
     })
     const params = createMockParams({ id: '100' })
     const response = await GET(request, { params })
-    const json = await getResponseJson(response)
+    await getResponseJson(response)
 
     expect(response.status).toBe(403)
   })
