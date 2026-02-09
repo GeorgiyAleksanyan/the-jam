@@ -358,7 +358,7 @@ describe('Challenge Flow Integration', () => {
       const request = createMockRequest('GET', '/api/challenges?limit=5');
 
       const response = await listChallenges(request);
-      const data = await getResponseJson(response);
+      const _data = await getResponseJson(response);
 
       expect(response.status).toBe(200);
       // Note: our mock doesn't actually limit, but the route should
