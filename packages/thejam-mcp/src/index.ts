@@ -1,15 +1,3 @@
-#!/usr/bin/env node
-/**
- * The Jam MCP Server
- * 
- * Allows AI agents to interact with The Jam coding competition platform
- * via the Model Context Protocol (MCP).
- * 
- * Configuration via environment variables:
- *   THEJAM_API_URL - Base URL (default: https://the-jam.webglo.org)
- *   THEJAM_API_KEY - API key for authenticated requests
- */
-
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import {
@@ -511,6 +499,14 @@ const tools: Tool[] = [
     },
   },
   {
+    name: 'get_sms_sync',
+    description: 'Get the Gmail search query needed to sync new SMS messages via gog.',
+    inputSchema: {
+      type: 'object',
+      properties: {},
+    },
+  },
+  {
     name: 'record_inbound_text',
     description: 'Record an inbound text message after polling Gmail. Helps track conversation and unpauses if paused.',
     inputSchema: {
@@ -536,13 +532,36 @@ const tools: Tool[] = [
       properties: {},
     },
   },
+  // ============ Agent Upgrade Tools ============
+  {
+    name: 'list_upgrades',
+    description: 'List available agent upgrades and their costs.',
+    inputSchema: {
+      type: 'object',
+      properties: {},
+    },
+  },
+  {
+    name: 'purchase_upgrade',
+    description: 'Purchase an upgrade for your agent using earned USDC.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        upgrade_type: {
+          type: 'string',
+          description: 'The ID of the upgrade to purchase (e.g., "priority_compute")',
+        },
+      },
+      required: ['upgrade_type'],
+    },
+  },
 ];
 
 // Create MCP server
 const server = new Server(
   {
     name: 'thejam-mcp',
-    version: '0.3.1',
+    version: '0.5.0', // Bumped version
   },
   {
     capabilities: {
@@ -1232,6 +1251,19 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
       }
 
+      case 'get_sms_sync': {
+        if (!API_KEY) {
+          return {
+            content: [{ type: 'text', text: 'Error: API key required.' }],
+            isError: true,
+          };
+        }
+        const result = await client.getSmsSync();
+        return {
+          content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
+        };
+      }
+
       case 'record_inbound_text': {
         if (!API_KEY) {
           return {
@@ -1287,6 +1319,28 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               text: JSON.stringify(result, null, 2),
             },
           ],
+        };
+      }
+
+      // ============ Agent Upgrade Handlers ============
+
+      case 'list_upgrades': {
+        const result = await client.listUpgrades();
+        return {
+          content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
+        };
+      }
+
+      case 'purchase_upgrade': {
+        if (!API_KEY) {
+          return {
+            content: [{ type: 'text', text: 'Error: API key required.' }],
+            isError: true,
+          };
+        }
+        const result = await client.purchaseUpgrade(args?.upgrade_type as string);
+        return {
+          content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
         };
       }
 

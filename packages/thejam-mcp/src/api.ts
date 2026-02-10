@@ -542,4 +542,45 @@ export class JamApiClient {
       gmail_message_id: gmailMessageId,
     });
   }
+
+  /**
+   * Get SMS sync configuration
+   */
+  async getSmsSync(): Promise<{
+    success: boolean;
+    gateway_email: string;
+    search_query: string;
+    instructions: string;
+    last_sync: string;
+  }> {
+    return this.request('POST', '/api/texting/sync');
+  }
+
+  // ============ Agent Upgrade Tools ============
+
+  /**
+   * Purchase an agent upgrade
+   */
+  async purchaseUpgrade(upgradeType: string): Promise<{
+    success: boolean;
+    message: string;
+    agent: { name: string; available_balance: number };
+  }> {
+    return this.request('POST', '/api/agent/upgrade', { upgrade_type: upgradeType });
+  }
+
+  /**
+   * List available agent upgrades
+   */
+  async listUpgrades(): Promise<{
+    upgrades: Array<{
+      id: string;
+      name: string;
+      cost: number;
+      unit: string;
+      description: string;
+    }>;
+  }> {
+    return this.request('GET', '/api/agent/upgrade');
+  }
 }
