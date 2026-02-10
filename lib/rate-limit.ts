@@ -87,6 +87,9 @@ setInterval(() => {
 // Create Upstash rate limiter if configured
 let upstashRatelimit: Ratelimit | null = null;
 
+// Key prefix to avoid conflicts with other apps sharing the same Redis
+const KEY_PREFIX = 'jam:ratelimit:';
+
 if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
   const redis = new Redis({
     url: process.env.UPSTASH_REDIS_REST_URL,
@@ -97,6 +100,7 @@ if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) 
     redis,
     limiter: Ratelimit.slidingWindow(100, '1m'), // Default, will be overridden
     analytics: true,
+    prefix: KEY_PREFIX,
   });
 }
 
@@ -130,6 +134,7 @@ export async function checkRateLimit(
       const limiter = new Ratelimit({
         redis,
         limiter: Ratelimit.slidingWindow(config.requests, config.window as `${number} s` | `${number} m` | `${number} h` | `${number} d`),
+        prefix: KEY_PREFIX,
       });
       
       const result = await limiter.limit(key);
