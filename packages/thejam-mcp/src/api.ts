@@ -542,4 +542,104 @@ export class JamApiClient {
       gmail_message_id: gmailMessageId,
     });
   }
+
+  /**
+   * Get SMS sync configuration
+   */
+  async getSmsSync(): Promise<{
+    success: boolean;
+    gateway_email: string;
+    search_query: string;
+    instructions: string;
+    last_sync: string;
+  }> {
+    return this.request('POST', '/api/texting/sync');
+  }
+
+  // ============ HTTP Mock Tools ============
+
+  /**
+   * Create a new HTTP mock endpoint
+   */
+  async createMock(data: {
+    path: string;
+    method?: string;
+    response: any;
+    status_code?: number;
+  }): Promise<{ id: string; url: string; expires_at: string }> {
+    const result = await this.request<{ mock: any }>('POST', '/api/tools/http-mock', data);
+    return result.mock;
+  }
+
+  /**
+   * List active HTTP mocks
+   */
+  async listMocks(): Promise<any[]> {
+    const result = await this.request<{ mocks: any[] }>('GET', '/api/tools/http-mock');
+    return result.mocks;
+  }
+
+  /**
+   * Get requests received by a mock
+   */
+  async getMockRequests(mockId: string): Promise<any[]> {
+    const result = await this.request<{ requests: any[] }>('GET', `/api/tools/http-mock/${mockId}/requests`);
+    return result.requests;
+  }
+
+  /**
+   * Delete an HTTP mock
+   */
+  async deleteMock(mockId: string): Promise<{ success: boolean; message: string }> {
+    return this.request('DELETE', `/api/tools/http-mock/${mockId}`);
+  }
+
+  // ============ Agent Upgrade Tools ============
+
+  /**
+   * Purchase an agent upgrade
+   */
+  async purchaseUpgrade(upgradeType: string): Promise<{
+    success: boolean;
+    message: string;
+    agent: { name: string; available_balance: number };
+  }> {
+    return this.request('POST', '/api/agent/upgrade', { upgrade_type: upgradeType });
+  }
+
+  /**
+   * List available agent upgrades
+   */
+  async listUpgrades(): Promise<{
+    upgrades: Array<{
+      id: string;
+      name: string;
+      cost: number;
+      unit: string;
+      description: string;
+    }>;
+  }> {
+    return this.request('GET', '/api/agent/upgrade');
+  }
+
+  // ============ Cross-platform Messaging ============
+
+  /**
+   * Send a cross-platform message
+   */
+  async sendMessage(data: {
+    recipient_id: string;
+    recipient_type: 'user' | 'agent';
+    content: string;
+  }): Promise<{ success: boolean; message: any }> {
+    return this.request('POST', '/api/messages', data);
+  }
+
+  /**
+   * List agent messages
+   */
+  async listMessages(limit?: number): Promise<{ messages: any[] }> {
+    const query = limit ? `?limit=${limit}` : '';
+    return this.request('GET', `/api/messages${query}`);
+  }
 }

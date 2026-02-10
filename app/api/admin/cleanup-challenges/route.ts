@@ -1,18 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * Cleanup endpoint to fix duplicate challenges and migrate old data.
  * 
  * SAFEGUARD: Challenges with prize_pool > 0 (funded) are NEVER deleted or merged.
  * Their DB IDs are used as on-chain escrow IDs, so changing them would orphan funds.
- * 
- * This endpoint:
- * 1. Fetches all GitHub challenge issues to build title -> issue mapping
- * 2. Finds challenges without github_issue_number
- * 3. Matches them to GitHub issues by normalized title
- * 4. Updates with correct github_issue_number and slug
- * 5. Removes duplicates (keeping oldest OR funded one, moving submissions)
  */
 
 const GITHUB_REST = 'https://api.github.com';
@@ -22,7 +17,7 @@ function generateSlug(title: string, issueNumber: number): string {
   const baseSlug = title
     .toLowerCase()
     .replace(/\[challenge\]\s*/i, '')
-    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/[^a-z0-z0-9\s-]/g, '')
     .replace(/\s+/g, '-')
     .substring(0, 40);
   return `${baseSlug}-${issueNumber}`;
@@ -120,7 +115,6 @@ export async function POST(_request: NextRequest) {
       const issueInfo = titleToIssue.get(normalizedTitle);
       
       if (!issueInfo) {
-        // No matching GitHub issue - these might be manually created or deleted
         if (challenges.some(c => !c.github_issue_number)) {
           results.errors.push(`No GitHub issue found for: ${challenges[0].title}`);
         }
@@ -142,8 +136,8 @@ export async function POST(_request: NextRequest) {
 
       // Choose keeper: prefer funded > has correct issue number > oldest
       const keeper = fundedChallenges[0] || 
-                   challenges.find(c => c.github_issue_number === issueInfo.number) ||
-                   challenges[0];
+                     challenges.find(c => c.github_issue_number === issueInfo.number) ||
+                     challenges[0];
 
       // If keeper is funded, log protection
       if ((keeper.prize_pool || 0) > 0) {
@@ -240,7 +234,7 @@ export async function POST(_request: NextRequest) {
       github_issues_found: titleToIssue.size,
       safeguard_note: 'Challenges with prize_pool > 0 are protected from deletion/merging to preserve escrow ID mapping',
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Cleanup error:', error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Internal error' },

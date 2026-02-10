@@ -511,6 +511,14 @@ const tools: Tool[] = [
     },
   },
   {
+    name: 'get_sms_sync',
+    description: 'Get the Gmail search query needed to sync new SMS messages via gog.',
+    inputSchema: {
+      type: 'object',
+      properties: {},
+    },
+  },
+  {
     name: 'record_inbound_text',
     description: 'Record an inbound text message after polling Gmail. Helps track conversation and unpauses if paused.',
     inputSchema: {
@@ -536,13 +544,137 @@ const tools: Tool[] = [
       properties: {},
     },
   },
+  // ============ HTTP Mock Tools ============
+  {
+    name: 'create_mock',
+    description: 'Create a temporary mock HTTP endpoint that returns a specified response. Mocks expire after 1 hour.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        path: {
+          type: 'string',
+          description: 'The path for the mock endpoint (e.g., "/api/webhook")',
+        },
+        method: {
+          type: 'string',
+          enum: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+          description: 'The HTTP method to mock (default: GET)',
+        },
+        response: {
+          type: 'object',
+          description: 'The JSON response body to return',
+        },
+        status_code: {
+          type: 'number',
+          description: 'The HTTP status code to return (default: 200)',
+        },
+      },
+      required: ['path', 'response'],
+    },
+  },
+  {
+    name: 'list_mocks',
+    description: 'List your active mock endpoints and their usage statistics.',
+    inputSchema: {
+      type: 'object',
+      properties: {},
+    },
+  },
+  {
+    name: 'get_mock_requests',
+    description: 'Get a list of requests received by a specific mock endpoint. Includes headers and body.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        mock_id: {
+          type: 'string',
+          description: 'The unique ID of the mock endpoint',
+        },
+      },
+      required: ['mock_id'],
+    },
+  },
+  {
+    name: 'delete_mock',
+    description: 'Delete a mock endpoint immediately.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        mock_id: {
+          type: 'string',
+          description: 'The unique ID of the mock endpoint',
+        },
+      },
+      required: ['mock_id'],
+    },
+  },
+  // ============ Agent Upgrade Tools ============
+  {
+    name: 'list_upgrades',
+    description: 'List available agent upgrades and their costs.',
+    inputSchema: {
+      type: 'object',
+      properties: {},
+    },
+  },
+  {
+    name: 'purchase_upgrade',
+    description: 'Purchase an upgrade for your agent using earned USDC.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        upgrade_type: {
+          type: 'string',
+          description: 'The ID of the upgrade to purchase (e.g., "priority_compute")',
+        },
+      },
+      required: ['upgrade_type'],
+    },
+  },
+  // ============ Cross-platform Messaging Tools ============
+  {
+    name: 'list_messages',
+    description: 'List messages received or sent by the agent.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        limit: {
+          type: 'number',
+          description: 'Maximum messages to return (default: 50)',
+        },
+      },
+    },
+  },
+  {
+    name: 'send_message',
+    description: 'Send a message to a human user or another agent.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        recipient_id: {
+          type: 'string',
+          description: 'The ID of the recipient (user ID or agent ID)',
+        },
+        recipient_type: {
+          type: 'string',
+          enum: ['user', 'agent'],
+          description: 'The type of recipient',
+        },
+        content: {
+          type: 'string',
+          description: 'The message content',
+        },
+      },
+      required: ['recipient_id', 'recipient_type', 'content'],
+    },
+  },
 ];
 
 // Create MCP server
 const server = new Server(
   {
     name: 'thejam-mcp',
-    version: '0.3.1',
+    version: '0.6.0',
   },
   {
     capabilities: {
@@ -930,7 +1062,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case 'list_rental_agents': {
         const agents = await client.listRentalAgents({
-          pricing_model: args?.pricing_model as 'hourly' | 'task' | 'subscription' | undefined,
+          pricing_model: args?.pricing_model as string | undefined,
           min_price: args?.min_price as number | undefined,
           max_price: args?.max_price as number | undefined,
           limit: args?.limit as number | undefined,
@@ -959,13 +1091,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           };
         }
 
-        const result = await client.createRental({
-          agent_id: args?.agent_id as number,
-          pricing_model: args?.pricing_model as 'hourly' | 'task' | 'subscription',
-          task_description: args?.task_description as string | undefined,
-          estimated_hours: args?.estimated_hours as number | undefined,
-          payment_method: args?.payment_method as 'crypto' | 'fiat' | undefined,
-        });
+        const result = await client.createRental(args);
 
         return {
           content: [
@@ -990,10 +1116,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           };
         }
 
-        const rentals = await client.getMyRentals({
-          role: args?.role as 'renter' | 'owner' | undefined,
-          status: args?.status as string | undefined,
-        });
+        const rentals = await client.getMyRentals(args);
 
         return {
           content: [
@@ -1045,7 +1168,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
         const result = await client.updateRental(
           args?.id as number,
-          args?.action as 'approve' | 'reject' | 'start' | 'cancel' | 'dispute',
+          args?.action as string,
           args?.reason as string | undefined
         );
 
@@ -1216,17 +1339,38 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           };
         }
 
-        const texts = await client.getTexts({
-          since: args?.since as string | undefined,
-          limit: args?.limit as number | undefined,
-          direction: args?.direction as 'inbound' | 'outbound' | 'all' | undefined,
-        });
+        const texts = await client.getTexts(args);
 
         return {
           content: [
             {
               type: 'text',
               text: JSON.stringify(texts, null, 2),
+            },
+          ],
+        };
+      }
+
+      case 'get_sms_sync': {
+        if (!API_KEY) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: 'Error: API key required for texting. Set THEJAM_API_KEY environment variable.',
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        const result = await client.getSmsSync();
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
             },
           ],
         };
@@ -1287,6 +1431,127 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               text: JSON.stringify(result, null, 2),
             },
           ],
+        };
+      }
+
+      // ============ HTTP Mock Handlers ============
+
+      case 'create_mock': {
+        if (!API_KEY) {
+          return {
+            content: [{ type: 'text', text: 'Error: API key required.' }],
+            isError: true,
+          };
+        }
+
+        const result = await client.createMock({
+          path: args?.path as string,
+          method: (args?.method as string) || 'GET',
+          response: args?.response,
+          status_code: (args?.status_code as number) || 200,
+        });
+
+        return {
+          content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
+        };
+      }
+
+      case 'list_mocks': {
+        if (!API_KEY) {
+          return {
+            content: [{ type: 'text', text: 'Error: API key required.' }],
+            isError: true,
+          };
+        }
+
+        const mocks = await client.listMocks();
+
+        return {
+          content: [{ type: 'text', text: JSON.stringify(mocks, null, 2) }],
+        };
+      }
+
+      case 'get_mock_requests': {
+        if (!API_KEY) {
+          return {
+            content: [{ type: 'text', text: 'Error: API key required.' }],
+            isError: true,
+          };
+        }
+
+        const requests = await client.getMockRequests(args?.mock_id as string);
+
+        return {
+          content: [{ type: 'text', text: JSON.stringify(requests, null, 2) }],
+        };
+      }
+
+      case 'delete_mock': {
+        if (!API_KEY) {
+          return {
+            content: [{ type: 'text', text: 'Error: API key required.' }],
+            isError: true,
+          };
+        }
+
+        const result = await client.deleteMock(args?.mock_id as string);
+
+        return {
+          content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
+        };
+      }
+
+      // ============ Agent Upgrade Handlers ============
+
+      case 'list_upgrades': {
+        const result = await client.listUpgrades();
+        return {
+          content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
+        };
+      }
+
+      case 'purchase_upgrade': {
+        if (!API_KEY) {
+          return {
+            content: [{ type: 'text', text: 'Error: API key required.' }],
+            isError: true,
+          };
+        }
+        const result = await client.purchaseUpgrade(args?.upgrade_type as string);
+        return {
+          content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
+        };
+      }
+
+      // ============ Cross-platform Messaging Handlers ============
+
+      case 'list_messages': {
+        if (!API_KEY) {
+          return {
+            content: [{ type: 'text', text: 'Error: API key required.' }],
+            isError: true,
+          };
+        }
+        const messages = await client.listMessages(args?.limit as number | undefined);
+        return {
+          content: [{ type: 'text', text: JSON.stringify(messages, null, 2) }],
+        };
+      }
+
+      case 'send_message': {
+        if (!API_KEY) {
+          return {
+            content: [{ type: 'text', text: 'Error: API key required.' }],
+            isError: true,
+          };
+        }
+        const result = await client.sendMessage({
+          recipient_id: args?.recipient_id as string,
+          recipient_type: args?.recipient_type as 'user' | 'agent',
+          content: args?.content as string,
+        });
+        return {
+          content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
         };
       }
 
