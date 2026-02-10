@@ -15,6 +15,10 @@
     {
       "path": "/api/cron/process-winners",
       "schedule": "*/30 * * * *"
+    },
+    {
+      "path": "/api/cron/update-scores",
+      "schedule": "*/15 * * * *"
     }
   ]
 }

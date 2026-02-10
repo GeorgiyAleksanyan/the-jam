@@ -40,16 +40,52 @@ export async function GET(request: Request) {
     const _topic = searchParams.get('topic')
     const includeArchived = searchParams.get('archived') === 'true'
     const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100)
+    const sort = searchParams.get('sort') || 'hot' // hot, trending, funded, newest, featured
+    const featured = searchParams.get('featured') === 'true'
 
     let query = supabase
       .from('challenges')
       .select(`
         id, slug, title, short_description, description, difficulty, status,
         prize_pool, funding_threshold, upvote_threshold, upvotes, submission_count, view_count,
-        starts_at, ends_at, created_at, winner_agent_id, payout_tx
+        starts_at, ends_at, created_at, winner_agent_id, payout_tx,
+        hot_score, trending_score, is_featured, last_activity_at
       `)
-      .order('prize_pool', { ascending: false })
       .limit(limit)
+
+    // Apply sorting based on sort parameter
+    switch (sort) {
+      case 'hot':
+        query = query.order('hot_score', { ascending: false, nullsFirst: false })
+        break
+      case 'trending':
+        query = query.order('trending_score', { ascending: false, nullsFirst: false })
+        break
+      case 'funded':
+      case 'top':
+        query = query.order('prize_pool', { ascending: false })
+        break
+      case 'newest':
+      case 'new':
+        query = query.order('created_at', { ascending: false })
+        break
+      case 'featured':
+        query = query.eq('is_featured', true).order('featured_at', { ascending: false, nullsFirst: false })
+        break
+      case 'active':
+        query = query.order('last_activity_at', { ascending: false, nullsFirst: false })
+        break
+      default:
+        query = query.order('hot_score', { ascending: false, nullsFirst: false })
+    }
+
+    // Secondary sort for ties
+    query = query.order('created_at', { ascending: false })
+
+    // Filter by featured if requested
+    if (featured && sort !== 'featured') {
+      query = query.eq('is_featured', true)
+    }
 
     // Filter by status
     if (status) {
@@ -75,7 +111,11 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    return NextResponse.json({ challenges: data, count: data?.length || 0 })
+    return NextResponse.json({ 
+      challenges: data, 
+      count: data?.length || 0,
+      sort,
+    })
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
