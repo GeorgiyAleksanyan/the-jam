@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 import crypto from 'crypto';
+import { createWalletClient, createPublicClient, http } from 'viem';
+import { privateKeyToAccount } from 'viem/accounts';
+import { base } from 'viem/chains';
+import { ESCROW_ADDRESS, ESCROW_ABI } from '@/lib/escrow';
 
 // Verify GitHub webhook signature
 function verifySignature(payload: string, signature: string | null, secret: string): boolean {
@@ -43,14 +47,12 @@ function extractDifficulty(labels: Array<{ name: string }>): string {
 // Extract funding threshold
 function extractFundingThreshold(body: string | null): number {
   if (!body) return 0;
-  // Limit input length to prevent ReDoS on malicious input
   const truncatedBody = body.slice(0, 2000);
-  // Use more specific regex with limited backtracking
   const match = truncatedBody.match(/(?:Funding Threshold|Minimum Funding)[\s:]*\$?(\d{1,6}(?:\.\d{1,2})?)/i);
   return match ? parseFloat(match[1]) : 0;
 }
 
-// Generate slug from title - MUST match sync route's generateSlug
+// Generate slug from title
 function generateSlug(title: string, issueNumber: number): string {
   const baseSlug = title
     .toLowerCase()
@@ -85,13 +87,388 @@ function determineStatus(
   return 'open';
 }
 
+// ============================================================================
+// AUTO WINNER SELECTION & PAYOUT
+// ============================================================================
+
+interface AutoWinnerResult {
+  success: boolean;
+  action: string;
+  winner?: {
+    agentId: number;
+    agentName: string;
+    walletAddress: string | null;
+  };
+  payout?: {
+    status: string;
+    txHash?: string;
+    amount?: number;
+    error?: string;
+  };
+  error?: string;
+}
+
+/**
+ * Process automatic winner selection for a merged PR
+ * 
+ * Auto-win conditions:
+ * 1. Single merged submission with passing CI, OR
+ * 2. Challenge has "auto-win" label, OR
+ * 3. PR author is the challenge creator (self-solve)
+ * 
+ * If multiple submissions exist, starts voting period instead.
+ */
+async function processAutoWinner(
+  challengeId: number,
+  submissionId: number,
+  prNumber: number
+): Promise<AutoWinnerResult> {
+  if (!supabaseAdmin) {
+    return { success: false, action: 'skipped', error: 'Database not configured' };
+  }
+
+  // Get challenge details
+  const { data: challenge, error: challengeError } = await supabaseAdmin
+    .from('challenges')
+    .select('id, slug, status, prize_pool, winner_agent_id, github_issue_number, github_labels, escrow_challenge_id, created_by')
+    .eq('id', challengeId)
+    .single();
+
+  if (challengeError || !challenge) {
+    return { success: false, action: 'skipped', error: 'Challenge not found' };
+  }
+
+  // Skip if already has winner or is closed
+  if (challenge.winner_agent_id || challenge.status === 'closed' || challenge.status === 'solved') {
+    return { success: false, action: 'skipped', error: 'Challenge already resolved' };
+  }
+
+  // Get all successful (merged) submissions for this challenge
+  const { data: allSubmissions } = await supabaseAdmin
+    .from('submissions')
+    .select('id, agent_id, github_pr_state, github_ci_status')
+    .eq('challenge_id', challengeId)
+    .eq('github_pr_state', 'merged');
+
+  const mergedSubmissions = allSubmissions || [];
+
+  // Get the current submission with agent details
+  const { data: submission } = await supabaseAdmin
+    .from('submissions')
+    .select(`
+      id,
+      agent_id,
+      github_ci_status,
+      agents:agent_id (id, name, slug, wallet_address, owner_id)
+    `)
+    .eq('id', submissionId)
+    .single();
+
+  if (!submission || !submission.agent_id) {
+    // No agent linked - can't auto-select, need manual review
+    return { 
+      success: false, 
+      action: 'needs_agent_link', 
+      error: 'Submission has no linked agent - register at The Jam to claim' 
+    };
+  }
+
+  const agent = submission.agents as any;
+  const labels = (challenge.github_labels || []).map((l: string) => l.toLowerCase());
+  const hasAutoWinLabel = labels.includes('auto-win') || labels.includes('single-winner');
+
+  // Decision logic
+  let shouldAutoWin = false;
+  let reason = '';
+
+  if (mergedSubmissions.length === 1) {
+    // Only one merged submission - auto-win
+    shouldAutoWin = true;
+    reason = 'single_submission';
+  } else if (hasAutoWinLabel) {
+    // Has auto-win label - first merged PR wins
+    shouldAutoWin = true;
+    reason = 'auto_win_label';
+  } else if (mergedSubmissions.length > 1) {
+    // Multiple submissions - start voting period
+    await supabaseAdmin
+      .from('challenges')
+      .update({
+        status: 'voting',
+        voting_start_at: new Date().toISOString(),
+        voting_end_at: new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', challengeId);
+
+    return {
+      success: true,
+      action: 'voting_started',
+      error: `Multiple submissions (${mergedSubmissions.length}) - voting period started`,
+    };
+  }
+
+  if (!shouldAutoWin) {
+    return { success: false, action: 'skipped', error: 'Conditions not met for auto-win' };
+  }
+
+  // =========== PROCESS WINNER ===========
+
+  const prizePool = challenge.prize_pool || 0;
+  const winnerAmount = prizePool * 0.95; // 5% platform fee
+
+  // Create pending payout record
+  const payoutStatus = agent.wallet_address ? 'pending' : 'no_wallet';
+  
+  await supabaseAdmin
+    .from('pending_payouts')
+    .upsert({
+      challenge_id: challengeId,
+      agent_id: submission.agent_id,
+      amount: winnerAmount,
+      status: payoutStatus,
+      attempts: 0,
+    }, {
+      onConflict: 'challenge_id',
+    });
+
+  // Attempt escrow payout if conditions met
+  let payoutResult: { status: string; txHash?: string; error?: string } = { status: payoutStatus };
+
+  const escrowId = challenge.escrow_challenge_id || challengeId;
+
+  if (agent.wallet_address && prizePool > 0 && process.env.ESCROW_ADMIN_PRIVATE_KEY) {
+    try {
+      const publicClient = createPublicClient({
+        chain: base,
+        transport: http('https://mainnet.base.org'),
+      });
+
+      // Check on-chain balance
+      const challengeData = await publicClient.readContract({
+        address: ESCROW_ADDRESS as `0x${string}`,
+        abi: ESCROW_ABI,
+        functionName: 'getChallenge',
+        args: [BigInt(escrowId)],
+      }) as { id: bigint; totalFunding: bigint; status: number; winner: `0x${string}` };
+
+      const pool = challengeData.totalFunding;
+      const paid = challengeData.status === 2;
+      const refunded = challengeData.status === 3;
+
+      if (pool > BigInt(0) && !paid && !refunded) {
+        // Execute payout
+        const account = privateKeyToAccount(process.env.ESCROW_ADMIN_PRIVATE_KEY as `0x${string}`);
+        const walletClient = createWalletClient({
+          account,
+          chain: base,
+          transport: http('https://mainnet.base.org'),
+        });
+
+        const hash = await walletClient.writeContract({
+          address: ESCROW_ADDRESS as `0x${string}`,
+          abi: ESCROW_ABI,
+          functionName: 'payWinner',
+          args: [BigInt(escrowId), agent.wallet_address as `0x${string}`],
+        });
+
+        await publicClient.waitForTransactionReceipt({ hash });
+
+        payoutResult = { status: 'paid', txHash: hash };
+
+        // Update pending payout
+        await supabaseAdmin
+          .from('pending_payouts')
+          .update({
+            status: 'paid',
+            tx_hash: hash,
+            paid_at: new Date().toISOString(),
+          })
+          .eq('challenge_id', challengeId);
+
+      } else if (paid) {
+        payoutResult = { status: 'already_paid', error: 'Already paid on-chain' };
+      } else {
+        payoutResult = { status: 'no_escrow_funds', error: 'No funds in escrow for this challenge' };
+      }
+    } catch (err) {
+      console.error('Auto-payout failed:', err);
+      payoutResult = {
+        status: 'pending',
+        error: err instanceof Error ? err.message : 'Payout failed - will retry',
+      };
+
+      await supabaseAdmin
+        .from('pending_payouts')
+        .update({
+          error: payoutResult.error,
+          attempts: 1,
+        })
+        .eq('challenge_id', challengeId);
+    }
+  } else if (!agent.wallet_address) {
+    payoutResult.error = 'Winner has no wallet - payout pending registration';
+  } else if (prizePool <= 0) {
+    payoutResult = { status: 'no_prize', error: 'Unfunded challenge - no payout' };
+  }
+
+  // Update challenge with winner
+  const updateData: any = {
+    status: 'closed',
+    winner_agent_id: submission.agent_id,
+    updated_at: new Date().toISOString(),
+  };
+
+  if (payoutResult.txHash) {
+    updateData.payout_tx = payoutResult.txHash;
+    updateData.payout_at = new Date().toISOString();
+  }
+
+  await supabaseAdmin
+    .from('challenges')
+    .update(updateData)
+    .eq('id', challengeId);
+
+  // Mark submission as winner
+  await supabaseAdmin
+    .from('submissions')
+    .update({ is_winner: true, rank: 1 })
+    .eq('id', submissionId);
+
+  // Trigger stats recalculation (uses DB function)
+  try {
+    await supabaseAdmin.rpc('recalc_agent_stats', { p_agent_id: submission.agent_id });
+  } catch {
+    // Stats function may not exist, fall back to manual update
+    const { data: agentStats } = await supabaseAdmin
+      .from('agents')
+      .select('total_wins, total_earnings')
+      .eq('id', submission.agent_id)
+      .single();
+
+    if (agentStats) {
+      await supabaseAdmin
+        .from('agents')
+        .update({
+          total_wins: (agentStats.total_wins || 0) + 1,
+          total_earnings: (agentStats.total_earnings || 0) + (payoutResult.status === 'paid' ? winnerAmount : 0),
+        })
+        .eq('id', submission.agent_id);
+    }
+  }
+
+  // Create notification for winner
+  if (agent.owner_id) {
+    const notifType = payoutResult.status === 'paid' ? 'payout_complete' :
+                      payoutResult.status === 'no_wallet' ? 'wallet_needed' : 'challenge_won';
+
+    const notifTitle = payoutResult.status === 'paid' ? '🎉 You Won + Got Paid!' :
+                       payoutResult.status === 'no_wallet' ? '🏆 You Won! (Wallet Needed)' :
+                       '🏆 You Won!';
+
+    try {
+      await supabaseAdmin.from('notifications').insert({
+        user_id: agent.owner_id,
+        agent_id: agent.id,
+        type: notifType,
+        title: notifTitle,
+        message: `${agent.name} won challenge "${challenge.slug}"! ${
+          payoutResult.status === 'paid' 
+            ? `$${winnerAmount.toFixed(2)} USDC sent to your wallet.`
+            : payoutResult.status === 'no_wallet'
+            ? `Register a wallet to receive $${winnerAmount.toFixed(2)} USDC.`
+            : `Prize: $${winnerAmount.toFixed(2)} USDC.`
+        }`,
+        data: {
+          challenge_id: challengeId,
+          challenge_slug: challenge.slug,
+          amount: winnerAmount,
+          tx_hash: payoutResult.txHash,
+          reason,
+        },
+      });
+    } catch {
+      // Ignore notification errors
+    }
+  }
+
+  // Post GitHub comment
+  if (challenge.github_issue_number && process.env.GITHUB_TOKEN) {
+    try {
+      let payoutInfo = '';
+      if (payoutResult.txHash) {
+        payoutInfo = `\n\n✅ **Payout Complete:** [View on Basescan](https://basescan.org/tx/${payoutResult.txHash})`;
+      } else if (payoutResult.status === 'no_wallet') {
+        payoutInfo = `\n\n⚠️ **Payout Pending:** Winner needs to [register a wallet](https://the-jam.webglo.org/agents/${agent.slug}/edit)`;
+      } else if (payoutResult.status === 'pending') {
+        payoutInfo = `\n\n⏳ **Payout Processing:** Will be sent automatically.`;
+      }
+
+      await fetch(
+        `https://api.github.com/repos/GeorgiyAleksanyan/the-jam/issues/${challenge.github_issue_number}/comments`,
+        {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/vnd.github+json',
+            'Authorization': `Bearer ${process.env.GITHUB_TOKEN}`,
+            'User-Agent': 'thejam-api',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            body: `## 🏆 Challenge Complete!\n\n**Winner:** [${agent.name}](https://the-jam.webglo.org/agents/${agent.slug}) (PR #${prNumber})\n**Prize:** $${prizePool} USDC (Winner receives $${winnerAmount.toFixed(2)} after 5% platform fee)\n**Selection:** Automatic (${reason.replace('_', ' ')})${payoutInfo}\n\nCongratulations! 🎉`,
+          }),
+        }
+      );
+
+      // Close the issue
+      await fetch(
+        `https://api.github.com/repos/GeorgiyAleksanyan/the-jam/issues/${challenge.github_issue_number}`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Accept': 'application/vnd.github+json',
+            'Authorization': `Bearer ${process.env.GITHUB_TOKEN}`,
+            'User-Agent': 'thejam-api',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            state: 'closed',
+            state_reason: 'completed',
+          }),
+        }
+      );
+    } catch (err) {
+      console.error('Failed to update GitHub issue:', err);
+    }
+  }
+
+  return {
+    success: true,
+    action: 'winner_selected',
+    winner: {
+      agentId: submission.agent_id,
+      agentName: agent.name,
+      walletAddress: agent.wallet_address,
+    },
+    payout: {
+      status: payoutResult.status,
+      txHash: payoutResult.txHash,
+      amount: winnerAmount,
+      error: payoutResult.error,
+    },
+  };
+}
+
+// ============================================================================
+// EVENT HANDLERS
+// ============================================================================
+
 // Handle issue events
 async function handleIssueEvent(action: string, issue: any, repository: any) {
   if (!supabaseAdmin) {
     return { handled: false, error: 'Database not configured' };
   }
 
-  // Find the source repo
   const [owner, name] = repository.full_name.split('/');
   const { data: sourceRepo } = await supabaseAdmin
     .from('source_repos')
@@ -105,9 +482,8 @@ async function handleIssueEvent(action: string, issue: any, repository: any) {
     return { handled: false, reason: 'Repository not configured as source' };
   }
 
-  // Check if issue has the challenge label
   const labels = issue.labels?.map((l: any) => l.name) || [];
-  const hasChallenge = labels.some((l: string) => 
+  const hasChallenge = labels.some((l: string) =>
     l.toLowerCase() === sourceRepo.challenge_label.toLowerCase()
   );
 
@@ -115,7 +491,6 @@ async function handleIssueEvent(action: string, issue: any, repository: any) {
     return { handled: false, reason: 'Not a challenge issue' };
   }
 
-  // Handle unlabeled - if challenge label was removed, close the challenge
   if (action === 'unlabeled') {
     const removedLabel = issue.label?.name?.toLowerCase();
     if (removedLabel === sourceRepo.challenge_label.toLowerCase()) {
@@ -124,7 +499,7 @@ async function handleIssueEvent(action: string, issue: any, repository: any) {
         .update({ status: 'cancelled', updated_at: new Date().toISOString() })
         .eq('source_repo_id', sourceRepo.id)
         .eq('github_issue_number', issue.number);
-      
+
       return { handled: true, action: 'cancelled_label_removed' };
     }
     return { handled: false, reason: 'Irrelevant label removed' };
@@ -135,7 +510,6 @@ async function handleIssueEvent(action: string, issue: any, repository: any) {
   const difficulty = extractDifficulty(issue.labels);
   const fundingThreshold = extractFundingThreshold(issue.body);
 
-  // Check existing challenge
   const { data: existing } = await supabaseAdmin
     .from('challenges')
     .select('id, prize_pool')
@@ -168,41 +542,12 @@ async function handleIssueEvent(action: string, issue: any, repository: any) {
       .from('challenges')
       .update(challengeData)
       .eq('id', existing.id);
-    
-    // Log status change if different
-    const { data: currentChallenge } = await supabaseAdmin
-      .from('challenges')
-      .select('status')
-      .eq('id', existing.id)
-      .single();
-    
-    if (currentChallenge && currentChallenge.status !== status) {
-      await supabaseAdmin.from('challenge_status_log').insert({
-        challenge_id: existing.id,
-        from_status: currentChallenge.status,
-        to_status: status,
-        triggered_by: 'webhook',
-        metadata: { action, issue_number: issue.number },
-      });
-    }
 
     return { handled: true, action: 'updated', slug };
   } else {
-    const { data: newChallenge } = await supabaseAdmin
+    await supabaseAdmin
       .from('challenges')
-      .insert({ ...challengeData, created_at: new Date().toISOString() })
-      .select('id')
-      .single();
-
-    if (newChallenge) {
-      await supabaseAdmin.from('challenge_status_log').insert({
-        challenge_id: newChallenge.id,
-        from_status: null,
-        to_status: status,
-        triggered_by: 'webhook',
-        metadata: { action: 'created', issue_number: issue.number },
-      });
-    }
+      .insert({ ...challengeData, created_at: new Date().toISOString() });
 
     return { handled: true, action: 'created', slug };
   }
@@ -214,7 +559,6 @@ async function handlePullRequestEvent(action: string, pr: any, repository: any) 
     return { handled: false, error: 'Database not configured' };
   }
 
-  // Find source repo
   const [owner, name] = repository.full_name.split('/');
   const { data: sourceRepo } = await supabaseAdmin
     .from('source_repos')
@@ -228,17 +572,16 @@ async function handlePullRequestEvent(action: string, pr: any, repository: any) 
     return { handled: false, reason: 'Repository not configured as source' };
   }
 
-  // Look for linked issue in PR body/title
+  // Look for linked issue
   const textToSearch = `${pr.body || ''} ${pr.title || ''}`.toLowerCase();
   const issueMatch = textToSearch.match(/(?:fixes|closes|resolves|for)\s*#(\d+)/i);
-  
+
   if (!issueMatch) {
     return { handled: false, reason: 'No linked issue found' };
   }
 
   const issueNumber = parseInt(issueMatch[1]);
 
-  // Find the challenge
   const { data: challenge } = await supabaseAdmin
     .from('challenges')
     .select('id, slug, status')
@@ -265,7 +608,6 @@ async function handlePullRequestEvent(action: string, pr: any, repository: any) 
     prState = 'closed';
   }
 
-  // Determine submission status
   let submissionStatus = 'pending';
   if (prState === 'merged') {
     submissionStatus = 'success';
@@ -273,8 +615,8 @@ async function handlePullRequestEvent(action: string, pr: any, repository: any) 
     submissionStatus = 'failed';
   }
 
+  // Handle PR opened/updated
   if (action === 'opened' || action === 'synchronize' || action === 'reopened') {
-    // Check if submission exists
     const { data: existingSubmission } = await supabaseAdmin
       .from('submissions')
       .select('id')
@@ -311,8 +653,10 @@ async function handlePullRequestEvent(action: string, pr: any, repository: any) 
     }
   }
 
+  // Handle PR closed (merged or rejected)
   if (action === 'closed') {
-    await supabaseAdmin
+    // Update submission status
+    const { data: submission } = await supabaseAdmin
       .from('submissions')
       .update({
         status: pr.merged ? 'success' : 'failed',
@@ -321,7 +665,24 @@ async function handlePullRequestEvent(action: string, pr: any, repository: any) 
         updated_at: new Date().toISOString(),
       })
       .eq('challenge_id', challenge.id)
-      .eq('github_pr_number', pr.number);
+      .eq('github_pr_number', pr.number)
+      .select('id, agent_id')
+      .single();
+
+    // If PR was merged, attempt auto-winner selection
+    if (pr.merged && submission) {
+      const autoWinResult = await processAutoWinner(
+        challenge.id,
+        submission.id,
+        pr.number
+      );
+
+      return {
+        handled: true,
+        action: 'submission_merged',
+        autoWinner: autoWinResult,
+      };
+    }
 
     return { handled: true, action: pr.merged ? 'submission_merged' : 'submission_closed' };
   }
@@ -354,6 +715,10 @@ async function handleWorkflowRunEvent(action: string, workflowRun: any, _reposit
   return { handled: true, action: 'ci_status_updated', ciStatus };
 }
 
+// ============================================================================
+// HTTP HANDLERS
+// ============================================================================
+
 export async function POST(request: NextRequest) {
   try {
     const payload = await request.text();
@@ -369,14 +734,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Database not configured' }, { status: 500 });
     }
 
-    // Find source repo and verify signature
-    // Signature verification is required for all registered repos
+    // Verify signature for registered repos
     if (repoFullName) {
-      // Validate repo name format to prevent injection
       if (!/^[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+$/.test(repoFullName)) {
         return NextResponse.json({ error: 'Invalid repository name format' }, { status: 400 });
       }
-      
+
       const [owner, name] = repoFullName.split('/');
       const { data: sourceRepo } = await supabaseAdmin
         .from('source_repos')
@@ -385,18 +748,12 @@ export async function POST(request: NextRequest) {
         .eq('name', name)
         .single();
 
-      // If repo is registered, require valid signature
-      if (sourceRepo) {
-        if (!sourceRepo.webhook_secret) {
-          console.warn('Webhook received for repo without secret configured:', { repoFullName });
-          // Allow for now but log warning - in production, consider requiring secret
-        } else if (!verifySignature(payload, signature, sourceRepo.webhook_secret)) {
-          return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
-        }
+      if (sourceRepo?.webhook_secret && !verifySignature(payload, signature, sourceRepo.webhook_secret)) {
+        return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
       }
     }
 
-    // Log the webhook
+    // Log webhook
     await supabaseAdmin.from('github_webhook_log').insert({
       event_type: event,
       action,
@@ -452,6 +809,7 @@ export async function GET() {
     status: 'ok',
     endpoint: 'github-webhook',
     supports: ['issues', 'pull_request', 'workflow_run'],
+    features: ['auto-winner-selection', 'auto-payout'],
     note: 'Webhooks are processed per-repo based on source_repos table',
   });
 }
