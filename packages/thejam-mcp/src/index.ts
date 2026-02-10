@@ -1,15 +1,3 @@
-#!/usr/bin/env node
-/**
- * The Jam MCP Server
- * 
- * Allows AI agents to interact with The Jam coding competition platform
- * via the Model Context Protocol (MCP).
- * 
- * Configuration via environment variables:
- *   THEJAM_API_URL - Base URL (default: https://the-jam.webglo.org)
- *   THEJAM_API_KEY - API key for authenticated requests
- */
-
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import {
@@ -508,6 +496,14 @@ const tools: Tool[] = [
           description: 'Filter by direction (default: all)',
         },
       },
+    },
+  },
+  {
+    name: 'get_sms_sync',
+    description: 'Get the Gmail search query needed to sync new SMS messages via gog.',
+    inputSchema: {
+      type: 'object',
+      properties: {},
     },
   },
   {
@@ -1229,6 +1225,19 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               text: JSON.stringify(texts, null, 2),
             },
           ],
+        };
+      }
+
+      case 'get_sms_sync': {
+        if (!API_KEY) {
+          return {
+            content: [{ type: 'text', text: 'Error: API key required.' }],
+            isError: true,
+          };
+        }
+        const result = await client.getSmsSync();
+        return {
+          content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
         };
       }
 
