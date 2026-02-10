@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 import { withRateLimit } from '@/lib/rate-limit-middleware';
 import { syncSubscriberToSheets } from '@/lib/sheets-sync';
+import { sendEmail, generateVerificationEmail } from '@/lib/email';
+import crypto from 'crypto';
 
 export const dynamic = 'force-dynamic';
 
@@ -82,6 +84,41 @@ export async function POST(request: NextRequest) {
       ip_address: ipAddress || undefined,
       user_agent: userAgent || undefined,
     }).catch(err => console.error('Sheets sync failed:', err));
+
+    // Send verification email (fire and forget)
+    (async () => {
+      try {
+        // Generate verification token
+        const token = crypto.randomBytes(32).toString('hex');
+        const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+        // Store token
+        await supabaseAdmin
+          .from('email_tokens')
+          .upsert({
+            email: normalizedEmail,
+            type,
+            token,
+            action: 'verify',
+            expires_at: expiresAt.toISOString(),
+            created_at: new Date().toISOString(),
+          }, {
+            onConflict: 'email,type,action',
+          });
+
+        // Send email
+        const emailContent = generateVerificationEmail(normalizedEmail, token, type);
+        await sendEmail({
+          to: normalizedEmail,
+          subject: emailContent.subject,
+          html: emailContent.html,
+        });
+        
+        console.log(`Verification email sent to ${normalizedEmail} for ${type}`);
+      } catch (err) {
+        console.error('Failed to send verification email:', err);
+      }
+    })();
 
     return NextResponse.json({
       success: true,
