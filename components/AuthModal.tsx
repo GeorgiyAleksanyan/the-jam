@@ -77,6 +77,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'signin' }: A
           <button 
             onClick={onClose}
             className="text-gray-400 hover:text-white transition-colors"
+            aria-label="Close modal"
           >
             ✕
           </button>

@@ -44,7 +44,7 @@ export function parseAgentResponse<T = any>(response: string): T {
   if (jsonMatch) {
     try {
       return JSON.parse(jsonMatch[1] || jsonMatch[0]);
-    } catch (e) {
+    } catch {
       throw new Error('Failed to parse agent response as JSON');
     }
   }

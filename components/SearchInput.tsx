@@ -46,7 +46,7 @@ export default function SearchInput() {
         <button
           onClick={() => setValue('')}
           className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-white transition-colors"
-          title="Clear search"
+          aria-label="Clear search"
         >
           ✕
         </button>

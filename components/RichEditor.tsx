@@ -284,6 +284,8 @@ const RichEditor = forwardRef<RichEditorRef, RichEditorProps>(({
             onClick={() => editor.chain().focus().toggleBold().run()}
             className={`p-1.5 rounded hover:bg-zinc-800 ${editor.isActive('bold') ? 'bg-zinc-700' : ''}`}
             title="Bold (Ctrl+B)"
+            aria-label="Bold"
+            aria-pressed={editor.isActive('bold')}
           >
             <span className="font-bold text-sm">B</span>
           </button>
@@ -292,6 +294,8 @@ const RichEditor = forwardRef<RichEditorRef, RichEditorProps>(({
             onClick={() => editor.chain().focus().toggleItalic().run()}
             className={`p-1.5 rounded hover:bg-zinc-800 ${editor.isActive('italic') ? 'bg-zinc-700' : ''}`}
             title="Italic (Ctrl+I)"
+            aria-label="Italic"
+            aria-pressed={editor.isActive('italic')}
           >
             <span className="italic text-sm">I</span>
           </button>
@@ -300,6 +304,8 @@ const RichEditor = forwardRef<RichEditorRef, RichEditorProps>(({
             onClick={() => editor.chain().focus().toggleCode().run()}
             className={`p-1.5 rounded hover:bg-zinc-800 ${editor.isActive('code') ? 'bg-zinc-700' : ''}`}
             title="Code"
+            aria-label="Inline code"
+            aria-pressed={editor.isActive('code')}
           >
             <span className="font-mono text-sm">{`<>`}</span>
           </button>
@@ -308,6 +314,8 @@ const RichEditor = forwardRef<RichEditorRef, RichEditorProps>(({
             onClick={() => editor.chain().focus().toggleCodeBlock().run()}
             className={`p-1.5 rounded hover:bg-zinc-800 ${editor.isActive('codeBlock') ? 'bg-zinc-700' : ''}`}
             title="Code Block"
+            aria-label="Code block"
+            aria-pressed={editor.isActive('codeBlock')}
           >
             <span className="font-mono text-xs">{'```'}</span>
           </button>
@@ -316,6 +324,8 @@ const RichEditor = forwardRef<RichEditorRef, RichEditorProps>(({
             onClick={() => editor.chain().focus().toggleBlockquote().run()}
             className={`p-1.5 rounded hover:bg-zinc-800 ${editor.isActive('blockquote') ? 'bg-zinc-700' : ''}`}
             title="Quote"
+            aria-label="Blockquote"
+            aria-pressed={editor.isActive('blockquote')}
           >
             <span className="text-sm">"</span>
           </button>
@@ -324,6 +334,8 @@ const RichEditor = forwardRef<RichEditorRef, RichEditorProps>(({
             onClick={() => editor.chain().focus().toggleBulletList().run()}
             className={`p-1.5 rounded hover:bg-zinc-800 ${editor.isActive('bulletList') ? 'bg-zinc-700' : ''}`}
             title="Bullet List"
+            aria-label="Bullet list"
+            aria-pressed={editor.isActive('bulletList')}
           >
             <span className="text-sm">•</span>
           </button>

@@ -294,7 +294,7 @@ export function DonateModal({ isOpen, onClose }: DonateModalProps) {
         {/* Header */}
         <div className="px-6 py-4 border-b border-zinc-700 flex items-center justify-between">
           <h2 className="text-xl font-semibold">Support The Jam 💚</h2>
-          <button onClick={handleClose} className="text-zinc-500 hover:text-white">
+          <button onClick={handleClose} className="text-zinc-500 hover:text-white" aria-label="Close donation modal">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>

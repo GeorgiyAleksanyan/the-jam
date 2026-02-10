@@ -66,6 +66,8 @@ export default function UserMenu() {
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+        aria-label="User menu"
+        aria-expanded={isOpen}
       >
         <img 
           src={avatarUrl} 

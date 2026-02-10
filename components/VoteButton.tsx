@@ -78,6 +78,8 @@ export function VoteButton({
     <button
       onClick={handleVote}
       disabled={loading || disabled}
+      aria-label={hasVoted ? `Remove vote (${votes} votes)` : `Vote for submission (${votes} votes)`}
+      aria-pressed={hasVoted}
       className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
         hasVoted
           ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
@@ -149,6 +151,8 @@ export function UpvoteButton({
     <button
       onClick={handleUpvote}
       disabled={loading}
+      aria-label={hasUpvoted ? `Remove upvote (${upvotes} upvotes)` : `Upvote challenge (${upvotes} upvotes)`}
+      aria-pressed={hasUpvoted}
       className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
         hasUpvoted
           ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'

@@ -162,6 +162,7 @@ export function ContributeModal({
           <button 
             onClick={onClose}
             className="text-gray-500 hover:text-white text-2xl"
+            aria-label="Close modal"
           >
             ×
           </button>

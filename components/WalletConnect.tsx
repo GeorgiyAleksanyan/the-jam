@@ -292,6 +292,8 @@ export function WalletButton({ onConnect, className = '' }: WalletButtonProps) {
         <button
           onClick={() => setShowMenu(!showMenu)}
           className={`flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg font-medium hover:opacity-90 transition-opacity ${className}`}
+          aria-label={`Wallet menu: ${truncateAddress(address)} on ${chain}`}
+          aria-expanded={showMenu}
         >
           <span className="text-xs opacity-70">{chain?.toUpperCase()}</span>
           <span>{truncateAddress(address)}</span>
@@ -312,6 +314,7 @@ export function WalletButton({ onConnect, className = '' }: WalletButtonProps) {
                 setShowMenu(false);
               }}
               className="w-full px-3 py-2 text-left text-red-400 hover:bg-zinc-700 transition-colors"
+              aria-label="Disconnect wallet"
             >
               Disconnect
             </button>
@@ -326,6 +329,8 @@ export function WalletButton({ onConnect, className = '' }: WalletButtonProps) {
       <button
         onClick={() => setShowMenu(!showMenu)}
         disabled={loading}
+        aria-label={loading ? 'Connecting wallet...' : 'Connect wallet'}
+        aria-expanded={showMenu}
         className={`flex items-center gap-2 px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg font-medium hover:border-purple-500 transition-colors ${loading ? 'opacity-50' : ''} ${className}`}
       >
         {loading ? (
