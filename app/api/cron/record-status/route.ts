@@ -12,16 +12,17 @@ interface ServiceCheck {
 
 /**
  * Cron endpoint to record health status
- * Called every 5 minutes by Vercel Cron or external service
+ * Called every 5 minutes by Vercel Cron
  * 
  * GET /api/cron/record-status
  */
 export async function GET(request: Request) {
-  // Verify cron secret if set
+  // Vercel Cron sends this header, or check CRON_SECRET
   const authHeader = request.headers.get('authorization');
   const cronSecret = process.env.CRON_SECRET;
+  const isVercelCron = request.headers.get('x-vercel-cron') === '1';
   
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+  if (!isVercelCron && cronSecret && authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
