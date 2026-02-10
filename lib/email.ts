@@ -35,8 +35,10 @@ function getTransporter() {
 }
 
 // Sender configuration
-// For Gmail SMTP, we send from the auth account. Alias requires "Send mail as" to be verified.
+// EMAIL_FROM_ADDRESS can be an alias (e.g., noreply@the-jam.webglo.org)
+// The alias must be verified in Gmail "Send mail as" settings
 const DEFAULT_FROM_NAME = 'The Jam';
+const DEFAULT_FROM_EMAIL = 'noreply@the-jam.webglo.org';
 
 interface EmailOptions {
   to: string;
@@ -48,8 +50,8 @@ interface EmailOptions {
 
 /**
  * Send an email via Gmail SMTP
- * The FROM address will be GMAIL_USER (the auth account)
- * To use an alias, that alias must be verified in Gmail "Send mail as" settings
+ * Auth: GMAIL_USER (e.g., info@webglo.org)
+ * From: EMAIL_FROM_ADDRESS (e.g., noreply@the-jam.webglo.org) - must be a verified alias
  */
 export async function sendEmail(options: EmailOptions): Promise<boolean> {
   const transport = getTransporter();
@@ -60,11 +62,11 @@ export async function sendEmail(options: EmailOptions): Promise<boolean> {
   }
   
   const fromName = process.env.EMAIL_FROM_NAME || DEFAULT_FROM_NAME;
-  // Use GMAIL_USER as sender - this is the authenticated account
-  const fromEmail = process.env.GMAIL_USER;
+  // Use EMAIL_FROM_ADDRESS if set, otherwise fall back to GMAIL_USER
+  const fromEmail = process.env.EMAIL_FROM_ADDRESS || process.env.GMAIL_USER || DEFAULT_FROM_EMAIL;
   
   if (!fromEmail) {
-    console.error('GMAIL_USER not configured');
+    console.error('No sender email configured');
     return false;
   }
   
