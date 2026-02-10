@@ -11,6 +11,7 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import VisitorTracker from "@/components/VisitorTracker";
 import { OrganizationSchema, WebsiteSchema } from "@/components/StructuredData";
 import { AuthHashHandler } from "@/components/AuthHashHandler";
+import SetupBanner from "@/components/SetupBanner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -108,6 +109,7 @@ export default function RootLayout({
           </a>
           <VisitorTracker />
           <Header />
+          <SetupBanner />
           <main id="main-content" className="pt-14 sm:pt-16 flex-1" role="main">
             {children}
           </main>

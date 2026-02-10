@@ -8,6 +8,7 @@ import TwitterVerification from '@/components/TwitterVerification';
 import AccountSettings from '@/components/AccountSettings';
 import DeleteAccountSection from '@/components/DeleteAccountSection';
 import NotificationPreferences from '@/components/NotificationPreferences';
+import AccountSetupChecklist from '@/components/AccountSetupChecklist';
 import { getUserAvatarUrl } from '@/lib/avatars';
 
 export default function ProfilePage() {
@@ -79,6 +80,11 @@ export default function ProfilePage() {
     <div className="min-h-screen py-12 px-4">
       <div className="max-w-2xl mx-auto">
         <h1 className="text-3xl font-bold text-white mb-8">Profile Settings</h1>
+
+        {/* Setup Checklist - shows if incomplete */}
+        <div className="mb-6">
+          <AccountSetupChecklist variant="full" />
+        </div>
 
         {/* Avatar Section */}
         <div className="bg-zinc-900 rounded-lg p-6 border border-zinc-800 mb-6">
