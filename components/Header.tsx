@@ -26,14 +26,12 @@ export default function Header() {
     setMobileMenuOpen(false)
   }
 
-  const navLinks = [
+  const navLinks: { href: string; label: string; badge?: string }[] = [
     { href: '/challenges', label: 'Challenges' },
-    { href: '/marketplace', label: '🏪 Marketplace' },
     { href: '/agents', label: 'Agents' },
-    { href: '/rentals', label: 'My Rentals' },
     { href: '/leaderboard', label: 'Leaderboard' },
+    { href: '/marketplace', label: 'Marketplace', badge: 'Soon' },
     { href: '/docs', label: 'Docs' },
-    { href: '/donate', label: '💚 Donate' },
   ]
 
   return (
@@ -53,9 +51,14 @@ export default function Header() {
                 <Link 
                   key={link.href}
                   href={link.href} 
-                  className="text-gray-400 hover:text-white transition-colors text-sm"
+                  className="text-gray-400 hover:text-white transition-colors text-sm flex items-center gap-1"
                 >
                   {link.label}
+                  {link.badge && (
+                    <span className="text-[10px] px-1.5 py-0.5 bg-purple-500/20 text-purple-400 rounded">
+                      {link.badge}
+                    </span>
+                  )}
                 </Link>
               ))}
             </nav>
@@ -116,9 +119,14 @@ export default function Header() {
                   key={link.href}
                   href={link.href} 
                   onClick={() => setMobileMenuOpen(false)}
-                  className="block py-2 text-gray-300 hover:text-white transition-colors"
+                  className="flex items-center gap-2 py-2 text-gray-300 hover:text-white transition-colors"
                 >
                   {link.label}
+                  {link.badge && (
+                    <span className="text-[10px] px-1.5 py-0.5 bg-purple-500/20 text-purple-400 rounded">
+                      {link.badge}
+                    </span>
+                  )}
                 </Link>
               ))}
               {!user && (

@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { EmailSignup } from '@/components/EmailSignup';
 
 // Mock agents for preview
 const PREVIEW_AGENTS = [
@@ -46,10 +45,15 @@ export default function MarketplacePage() {
 
     setSubmitting(true);
     try {
-      const response = await fetch('/api/marketplace/waitlist', {
+      const response = await fetch('/api/email-signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ 
+          email,
+          type: 'marketplace_waitlist',
+          source: 'marketplace_page',
+          gdprConsent: true,
+        }),
       });
 
       if (response.ok) {

@@ -5,9 +5,22 @@ import { useState } from 'react';
 interface EmailSignupProps {
   className?: string;
   variant?: 'inline' | 'card';
+  type?: 'newsletter' | 'marketplace_waitlist' | 'challenge_updates' | 'agent_updates';
+  source?: string;
+  placeholder?: string;
+  buttonText?: string;
+  successMessage?: string;
 }
 
-export function EmailSignup({ className = '', variant = 'inline' }: EmailSignupProps) {
+export function EmailSignup({ 
+  className = '', 
+  variant = 'inline',
+  type = 'newsletter',
+  source = 'website',
+  placeholder = 'your@email.com',
+  buttonText = 'Subscribe',
+  successMessage = 'Thanks! You\'re on the list.',
+}: EmailSignupProps) {
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [message, setMessage] = useState('');
@@ -24,12 +37,15 @@ export function EmailSignup({ className = '', variant = 'inline' }: EmailSignupP
     setStatus('loading');
 
     try {
-      // For now, we'll store signups in Supabase
-      // In production, you might want to integrate with Mailchimp, ConvertKit, etc.
-      const res = await fetch('/api/newsletter', {
+      const res = await fetch('/api/email-signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ 
+          email, 
+          type,
+          source,
+          gdprConsent: true,
+        }),
       });
 
       const data = await res.json();
@@ -39,7 +55,7 @@ export function EmailSignup({ className = '', variant = 'inline' }: EmailSignupP
       }
 
       setStatus('success');
-      setMessage('Thanks! You\'re on the list.');
+      setMessage(successMessage);
       setEmail('');
     } catch (err: any) {
       setStatus('error');
@@ -59,7 +75,7 @@ export function EmailSignup({ className = '', variant = 'inline' }: EmailSignupP
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@example.com"
+            placeholder={placeholder}
             className="w-full px-4 py-3 bg-zinc-900 border border-zinc-700 rounded-lg focus:border-blue-500 focus:outline-none"
             disabled={status === 'loading' || status === 'success'}
           />
@@ -68,13 +84,17 @@ export function EmailSignup({ className = '', variant = 'inline' }: EmailSignupP
             disabled={status === 'loading' || status === 'success'}
             className="w-full py-3 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 rounded-lg font-medium transition-colors"
           >
-            {status === 'loading' ? 'Subscribing...' : status === 'success' ? '✓ Subscribed!' : 'Subscribe'}
+            {status === 'loading' ? 'Subscribing...' : status === 'success' ? '✓ Subscribed!' : buttonText}
           </button>
           {message && (
             <p className={`text-sm ${status === 'error' ? 'text-red-400' : 'text-green-400'}`}>
               {message}
             </p>
           )}
+          <p className="text-xs text-zinc-500 text-center">
+            By subscribing, you agree to our{' '}
+            <a href="/privacy" className="underline hover:text-zinc-400">Privacy Policy</a>.
+          </p>
         </form>
       </div>
     );
@@ -87,8 +107,8 @@ export function EmailSignup({ className = '', variant = 'inline' }: EmailSignupP
         type="email"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
-        placeholder="your@email.com"
-        className="flex-1 px-4 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-sm focus:border-blue-500 focus:outline-none"
+        placeholder={placeholder}
+        className="flex-1 px-4 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-sm focus:border-blue-500 focus:outline-none min-w-0"
         disabled={status === 'loading' || status === 'success'}
       />
       <button
@@ -96,7 +116,7 @@ export function EmailSignup({ className = '', variant = 'inline' }: EmailSignupP
         disabled={status === 'loading' || status === 'success'}
         className="px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 rounded-lg text-sm font-medium transition-colors whitespace-nowrap"
       >
-        {status === 'loading' ? '...' : status === 'success' ? '✓' : 'Subscribe'}
+        {status === 'loading' ? '...' : status === 'success' ? '✓' : buttonText}
       </button>
     </form>
   );
