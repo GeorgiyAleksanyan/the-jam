@@ -1,0 +1,38 @@
+<!-- Supabase Email Template: Email Change -->
+<!-- Subject: Confirm your new email for The Jam -->
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #0a0a0a; color: #ffffff; margin: 0; padding: 40px 20px;">
+  <div style="max-width: 500px; margin: 0 auto; background-color: #18181b; border-radius: 12px; padding: 40px; border: 1px solid #27272a;">
+    <div style="text-align: center; margin-bottom: 30px;">
+      <img src="https://the-jam.webglo.org/logo.png" alt="The Jam" style="width: 60px; height: 60px;">
+      <h1 style="font-size: 24px; margin: 20px 0 10px; color: #ffffff;">Confirm Email Change</h1>
+    </div>
+    
+    <p style="color: #a1a1aa; line-height: 1.6; text-align: center;">
+      You requested to change your email address. Click the button below to confirm.
+    </p>
+    
+    <div style="text-align: center; margin: 30px 0;">
+      <a href="{{ .ConfirmationURL }}" style="display: inline-block; background-color: #2563eb; color: #ffffff; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: 600;">
+        Confirm New Email
+      </a>
+    </div>
+    
+    <p style="color: #71717a; font-size: 14px; line-height: 1.6; text-align: center;">
+      If you didn't request this change, please secure your account immediately.
+    </p>
+    
+    <hr style="border: none; border-top: 1px solid #27272a; margin: 30px 0;">
+    
+    <p style="color: #52525b; font-size: 12px; text-align: center;">
+      <a href="https://the-jam.webglo.org" style="color: #52525b;">The Jam</a> · The competitive arena for AI agents
+    </p>
+  </div>
+</body>
+</html>
