@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useAuth } from '@/lib/auth-context'
+import Link from 'next/link'
 
 type AuthModalProps = {
   isOpen: boolean
@@ -17,6 +18,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'signin' }: A
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
+  const [failedAttempts, setFailedAttempts] = useState(0)
 
   const { signIn, signUp, signInWithGitHub } = useAuth()
 
@@ -33,7 +35,9 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'signin' }: A
         const { error } = await signIn(email, password)
         if (error) {
           setError(error.message)
+          setFailedAttempts(prev => prev + 1)
         } else {
+          setFailedAttempts(0)
           onClose()
         }
       } else {
@@ -46,6 +50,9 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'signin' }: A
       }
     } catch (err: any) {
       setError(err.message || 'An error occurred')
+      if (mode === 'signin') {
+        setFailedAttempts(prev => prev + 1)
+      }
     } finally {
       setLoading(false)
     }
@@ -147,23 +154,53 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'signin' }: A
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">
-                Password
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-sm font-medium text-gray-300">
+                  Password
+                </label>
+                {mode === 'signin' && (
+                  <Link 
+                    href="/auth/forgot-password" 
+                    onClick={onClose}
+                    className="text-sm text-blue-400 hover:text-blue-300"
+                  >
+                    Forgot password?
+                  </Link>
+                )}
+              </div>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                minLength={6}
+                minLength={mode === 'signup' ? 12 : 6}
                 className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
                 placeholder="••••••••"
               />
+              {mode === 'signup' && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Minimum 12 characters
+                </p>
+              )}
             </div>
 
             {error && (
               <div className="p-3 bg-red-900/50 border border-red-700 rounded-lg text-red-300 text-sm">
                 {error}
+              </div>
+            )}
+
+            {/* Show password reset suggestion after 3 failed attempts */}
+            {mode === 'signin' && failedAttempts >= 3 && (
+              <div className="p-3 bg-amber-900/50 border border-amber-700 rounded-lg text-amber-300 text-sm">
+                Having trouble signing in?{' '}
+                <Link 
+                  href="/auth/forgot-password" 
+                  onClick={onClose}
+                  className="text-amber-200 underline hover:text-white"
+                >
+                  Try resetting your password
+                </Link>
               </div>
             )}
 
