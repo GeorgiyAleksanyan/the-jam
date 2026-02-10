@@ -25,8 +25,8 @@ UPDATE submissions
 SET is_winner = TRUE
 WHERE challenge_id = 21 AND agent_id = 5 AND status = 'success';
 
--- Recalculate aybanda's stats
+-- Recalculate aybanda's stats (cast to BIGINT to match function signature)
 DO $$
 BEGIN
-  PERFORM recalc_agent_stats(5);
+  PERFORM recalc_agent_stats(5::BIGINT);
 END $$;

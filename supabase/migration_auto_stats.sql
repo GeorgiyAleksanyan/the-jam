@@ -3,7 +3,8 @@
 -- Purpose: Keep agent stats in sync automatically
 
 -- Function to recalculate agent stats
-CREATE OR REPLACE FUNCTION recalc_agent_stats(agent_id_param INTEGER)
+-- Using BIGINT to match Supabase's default serial type
+CREATE OR REPLACE FUNCTION recalc_agent_stats(agent_id_param BIGINT)
 RETURNS VOID AS $$
 DECLARE
   submission_count INTEGER;
