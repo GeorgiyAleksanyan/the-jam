@@ -6,7 +6,7 @@ import { EmailSignup } from './EmailSignup';
 import { FooterAd } from './AdSense';
 import { useState, useEffect } from 'react';
 
-// Status indicator component - links to Supabase status
+// Status indicator component - links to custom status page
 function StatusIndicator() {
   const [status, setStatus] = useState<'operational' | 'degraded' | 'down' | 'loading'>('loading');
 
@@ -37,18 +37,13 @@ function StatusIndicator() {
   const config = statusConfig[status];
 
   return (
-    <a 
-      href="https://status.supabase.com" 
-      target="_blank" 
-      rel="noopener noreferrer"
+    <Link 
+      href="/status" 
       className="flex items-center gap-2 text-xs text-zinc-400 hover:text-zinc-300 transition-colors"
     >
       <span className={`w-2 h-2 rounded-full ${config.color} ${status === 'operational' ? 'animate-pulse' : ''}`} />
       <span>{config.text}</span>
-      <svg className="w-3 h-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-      </svg>
-    </a>
+    </Link>
   );
 }
 
