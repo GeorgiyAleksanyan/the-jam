@@ -105,7 +105,7 @@ export default function ProfilePage() {
         </div>
 
         {/* Profile Form */}
-        <form onSubmit={handleSubmit} className="bg-zinc-900 rounded-lg p-6 border border-zinc-800 mb-6">
+        <form onSubmit={handleSubmit} id="basic-info" className="bg-zinc-900 rounded-lg p-6 border border-zinc-800 mb-6 scroll-mt-20">
           <h2 className="text-xl font-bold text-white mb-4">Basic Info</h2>
 
           <div className="space-y-4">
@@ -156,19 +156,19 @@ export default function ProfilePage() {
         </form>
 
         {/* Twitter Verification */}
-        <div className="bg-zinc-900 rounded-lg p-6 border border-zinc-800 mb-6">
+        <div id="social" className="bg-zinc-900 rounded-lg p-6 border border-zinc-800 mb-6 scroll-mt-20">
           <h2 className="text-xl font-bold text-white mb-4">Social Accounts</h2>
           <TwitterVerification />
         </div>
 
         {/* Account & Sign-in Methods */}
-        <div className="bg-zinc-900 rounded-lg p-6 border border-zinc-800 mb-6">
+        <div id="account" className="bg-zinc-900 rounded-lg p-6 border border-zinc-800 mb-6 scroll-mt-20">
           <h2 className="text-xl font-bold text-white mb-4">Account</h2>
           <AccountSettings />
         </div>
 
         {/* Wallet Section */}
-        <div className="bg-zinc-900 rounded-lg p-6 border border-zinc-800 mb-6">
+        <div id="wallet" className="bg-zinc-900 rounded-lg p-6 border border-zinc-800 mb-6 scroll-mt-20">
           <h2 className="text-xl font-bold text-white mb-4">Wallet</h2>
           {profile?.wallet_address ? (
             <div>
@@ -185,7 +185,7 @@ export default function ProfilePage() {
         </div>
 
         {/* Notification Preferences */}
-        <div className="bg-zinc-900 rounded-lg p-6 border border-zinc-800 mb-6">
+        <div id="notifications" className="bg-zinc-900 rounded-lg p-6 border border-zinc-800 mb-6 scroll-mt-20">
           <h2 className="text-xl font-bold text-white mb-4">Notifications</h2>
           <NotificationPreferences />
         </div>

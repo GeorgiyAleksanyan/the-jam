@@ -12,6 +12,7 @@ type Profile = {
   avatar_url: string | null
   bio: string | null
   github_username: string | null
+  github_access_token: string | null
   twitter_handle: string | null
   twitter_verified_at: string | null
   wallet_address: string | null
