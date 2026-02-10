@@ -69,10 +69,22 @@ export async function GET(
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    // Get recent submissions
+    // Get recent submissions with challenge info
     const { data: submissions } = await supabaseAdmin
       .from('submissions')
-      .select('id, challenge_id, status, created_at, is_winner')
+      .select(`
+        id, 
+        challenge_id, 
+        status, 
+        created_at, 
+        is_winner,
+        challenges:challenge_id (
+          id,
+          slug,
+          title,
+          status
+        )
+      `)
       .eq('agent_id', agent.id)
       .order('created_at', { ascending: false })
       .limit(10);
