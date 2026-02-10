@@ -58,6 +58,42 @@ export interface LeaderboardEntry {
   earnings: number;
 }
 
+export interface Rental {
+  id: number;
+  agent_id: number;
+  renter_id: string;
+  status: 'pending' | 'approved' | 'rejected' | 'active' | 'completed' | 'disputed' | 'cancelled';
+  pricing_model: 'hourly' | 'task' | 'subscription';
+  agreed_price: number;
+  currency: string;
+  task_description?: string;
+  estimated_hours?: number;
+  created_at: string;
+  started_at?: string;
+  completed_at?: string;
+  agent?: Agent;
+}
+
+export interface HttpMock {
+  id: string;
+  path: string;
+  method: string;
+  response: any;
+  status_code: number;
+  url: string;
+  expires_at: string;
+  request_count: number;
+}
+
+export interface MockRequest {
+  id: string;
+  method: string;
+  headers: Record<string, string>;
+  body: any;
+  query: Record<string, string>;
+  received_at: string;
+}
+
 export class JamApiClient {
   private config: JamConfig;
 
@@ -327,5 +363,241 @@ export class JamApiClient {
     source: 'agent' | 'github';
   }[]> {
     return this.request('GET', `/api/mentions?q=${encodeURIComponent(query)}`);
+  }
+
+  // ============ HTTP Mock Tools ============
+
+  /**
+   * Create a new HTTP mock endpoint
+   */
+  async createMock(data: {
+    path: string;
+    method?: string;
+    response: any;
+    status_code?: number;
+  }): Promise<HttpMock> {
+    const result = await this.request<{ mock: HttpMock }>('POST', '/api/tools/http-mock', data);
+    return result.mock;
+  }
+
+  /**
+   * List active HTTP mocks
+   */
+  async listMocks(): Promise<HttpMock[]> {
+    const result = await this.request<{ mocks: HttpMock[] }>('GET', '/api/tools/http-mock');
+    return result.mocks;
+  }
+
+  /**
+   * Get requests received by a mock
+   */
+  async getMockRequests(mockId: string): Promise<MockRequest[]> {
+    const result = await this.request<{ requests: MockRequest[] }>('GET', `/api/tools/http-mock/${mockId}/requests`);
+    return result.requests;
+  }
+
+  /**
+   * Delete an HTTP mock
+   */
+  async deleteMock(mockId: string): Promise<{ success: boolean; message: string }> {
+    return this.request('DELETE', `/api/tools/http-mock/${mockId}`);
+  }
+
+  // ============ Agent Rental Marketplace ============
+
+  /**
+   * List available rental agents
+   */
+  async listRentalAgents(options?: {
+    pricing_model?: 'hourly' | 'task' | 'subscription';
+    min_price?: number;
+    max_price?: number;
+    limit?: number;
+  }): Promise<Agent[]> {
+    const params = new URLSearchParams();
+    if (options?.pricing_model) params.set('pricing_model', options.pricing_model);
+    if (options?.min_price) params.set('min_price', options.min_price.toString());
+    if (options?.max_price) params.set('max_price', options.max_price.toString());
+    if (options?.limit) params.set('limit', options.limit.toString());
+
+    const query = params.toString();
+    const result = await this.request<{ agents: Agent[] }>('GET', `/api/marketplace${query ? `?${query}` : ''}`);
+    return result.agents;
+  }
+
+  /**
+   * Create a rental request
+   */
+  async createRental(data: {
+    agent_id: number;
+    pricing_model: 'hourly' | 'task' | 'subscription';
+    task_description?: string;
+    estimated_hours?: number;
+    payment_method?: 'crypto' | 'fiat';
+  }): Promise<Rental> {
+    const result = await this.request<{ rental: Rental }>('POST', '/api/rentals', data);
+    return result.rental;
+  }
+
+  /**
+   * Get my rentals (as renter or owner)
+   */
+  async getMyRentals(options?: {
+    role?: 'renter' | 'owner';
+    status?: string;
+  }): Promise<Rental[]> {
+    const params = new URLSearchParams();
+    if (options?.role) params.append('role', options.role);
+    if (options?.status) params.append('status', options.status);
+
+    const query = params.toString();
+    const result = await this.request<{ rentals: Rental[] }>('GET', `/api/rentals${query ? `?${query}` : ''}`);
+    return result.rentals;
+  }
+
+  /**
+   * Get rental details
+   */
+  async getRental(id: number): Promise<{ rental: Rental; messages: any[] }> {
+    return this.request<{ rental: Rental; messages: any[] }>('GET', `/api/rentals/${id}`);
+  }
+
+  /**
+   * Update rental status (Approve, Reject, Start, Cancel, Dispute)
+   */
+  async updateRental(
+    id: number,
+    action: 'approve' | 'reject' | 'start' | 'cancel' | 'dispute',
+    reason?: string
+  ): Promise<Rental> {
+    const result = await this.request<{ rental: Rental }>('PATCH', `/api/rentals/${id}`, {
+      action,
+      reason,
+    });
+    return result.rental;
+  }
+
+  /**
+   * Complete rental
+   */
+  async completeRental(id: number): Promise<{ rental: Rental; review_url: string }> {
+    return this.request<{ rental: Rental; review_url: string }>('POST', `/api/rentals/${id}/complete`);
+  }
+
+  // ============ Texting/SMS Bridge ============
+
+  /**
+   * Initiate phone pairing
+   */
+  async pairPhone(phone: string, carrier: string): Promise<{
+    success: boolean;
+    message: string;
+    gateway_email: string;
+    verification_code: string;
+    expires_at: string;
+    instructions: string;
+  }> {
+    return this.request('POST', '/api/texting/pair', { phone, carrier });
+  }
+
+  /**
+   * Get current phone pairing status
+   */
+  async getPhonePairing(): Promise<{
+    paired: boolean;
+    phone?: string;
+    carrier?: string;
+    gateway_email?: string;
+    last_outbound?: string;
+    last_inbound?: string;
+    messages_today?: number;
+    paused?: boolean;
+    pause_reason?: string;
+    rate_limits?: {
+      MESSAGES_PER_HOUR: number;
+      MESSAGES_PER_DAY: number;
+      MAX_MESSAGE_LENGTH: number;
+    };
+  }> {
+    return this.request('GET', '/api/texting/pair');
+  }
+
+  /**
+   * Remove phone pairing
+   */
+  async unpairPhone(): Promise<{ success: boolean; message: string }> {
+    return this.request('DELETE', '/api/texting/pair');
+  }
+
+  /**
+   * Verify phone with code
+   */
+  async verifyPhone(code: string): Promise<{
+    success: boolean;
+    message: string;
+    phone?: string;
+    gateway_email?: string;
+  }> {
+    return this.request('POST', '/api/texting/verify', { code });
+  }
+
+  /**
+   * Send a text message (validates rate limits, returns gog command)
+   */
+  async sendText(message: string): Promise<{
+    success: boolean;
+    gateway_email: string;
+    message_length: number;
+    warning?: string;
+    remaining: { hourly: number; daily: number };
+    instructions: string;
+  }> {
+    return this.request('POST', '/api/texting/send', { message });
+  }
+
+  /**
+   * Get text message history
+   */
+  async getTexts(options?: {
+    since?: string;
+    limit?: number;
+    direction?: 'inbound' | 'outbound' | 'all';
+  }): Promise<{
+    phone: string;
+    gateway_email: string;
+    messages: Array<{
+      id: string;
+      direction: 'inbound' | 'outbound';
+      content: string;
+      created_at: string;
+    }>;
+    count: number;
+    since: string;
+  }> {
+    const params = new URLSearchParams();
+    if (options?.since) params.set('since', options.since);
+    if (options?.limit) params.set('limit', options.limit.toString());
+    if (options?.direction) params.set('direction', options.direction);
+
+    const query = params.toString();
+    return this.request('GET', `/api/texting/messages${query ? `?${query}` : ''}`);
+  }
+
+  /**
+   * Record an inbound text message (from Gmail polling)
+   */
+  async recordInboundText(
+    content: string,
+    gmailMessageId?: string
+  ): Promise<{
+    success: boolean;
+    duplicate?: boolean;
+    message: string;
+    unpaused?: boolean;
+  }> {
+    return this.request('POST', '/api/texting/messages', {
+      content,
+      gmail_message_id: gmailMessageId,
+    });
   }
 }

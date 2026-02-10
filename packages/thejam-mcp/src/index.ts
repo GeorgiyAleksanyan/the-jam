@@ -1,15 +1,3 @@
-#!/usr/bin/env node
-/**
- * The Jam MCP Server
- * 
- * Allows AI agents to interact with The Jam coding competition platform
- * via the Model Context Protocol (MCP).
- * 
- * Configuration via environment variables:
- *   THEJAM_API_URL - Base URL (default: https://the-jam-delta.vercel.app)
- *   THEJAM_API_KEY - API key for authenticated requests
- */
-
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import {
@@ -21,7 +9,7 @@ import {
 import { JamApiClient } from './api.js';
 
 // Configuration
-const API_URL = process.env.THEJAM_API_URL || 'https://the-jam-delta.vercel.app';
+const API_URL = process.env.THEJAM_API_URL || 'https://the-jam.webglo.org';
 const API_KEY = process.env.THEJAM_API_KEY;
 
 // Initialize API client
@@ -305,13 +293,308 @@ const tools: Tool[] = [
       required: ['query'],
     },
   },
+  // ============ HTTP Mock Tools ============
+  {
+    name: 'create_mock',
+    description: 'Create a temporary mock HTTP endpoint that returns a specified response. Mocks expire after 1 hour.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        path: {
+          type: 'string',
+          description: 'The path for the mock endpoint (e.g., "/api/webhook")',
+        },
+        method: {
+          type: 'string',
+          enum: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+          description: 'The HTTP method to mock (default: GET)',
+        },
+        response: {
+          type: 'object',
+          description: 'The JSON response body to return',
+        },
+        status_code: {
+          type: 'number',
+          description: 'The HTTP status code to return (default: 200)',
+        },
+      },
+      required: ['path', 'response'],
+    },
+  },
+  {
+    name: 'list_mocks',
+    description: 'List your active mock endpoints and their usage statistics.',
+    inputSchema: {
+      type: 'object',
+      properties: {},
+    },
+  },
+  {
+    name: 'get_mock_requests',
+    description: 'Get a list of requests received by a specific mock endpoint. Includes headers and body.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        mock_id: {
+          type: 'string',
+          description: 'The unique ID of the mock endpoint',
+        },
+      },
+      required: ['mock_id'],
+    },
+  },
+  {
+    name: 'delete_mock',
+    description: 'Delete a mock endpoint immediately.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        mock_id: {
+          type: 'string',
+          description: 'The unique ID of the mock endpoint',
+        },
+      },
+      required: ['mock_id'],
+    },
+  },
+  // ============ Agent Rental Tools ============
+  {
+    name: 'list_rental_agents',
+    description: 'List agents available for hire. Filter by pricing model and budget.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        pricing_model: {
+          type: 'string',
+          enum: ['hourly', 'task', 'subscription'],
+          description: 'Filter by pricing model',
+        },
+        min_price: {
+          type: 'number',
+          description: 'Minimum price filter',
+        },
+        max_price: {
+          type: 'number',
+          description: 'Maximum price filter',
+        },
+        limit: {
+          type: 'number',
+          description: 'Maximum agents to return',
+        },
+      },
+    },
+  },
+  {
+    name: 'request_rental',
+    description: 'Create a rental request to hire an agent. Requires API key.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        agent_id: {
+          type: 'number',
+          description: 'The ID of the agent to hire',
+        },
+        pricing_model: {
+          type: 'string',
+          enum: ['hourly', 'task', 'subscription'],
+          description: 'The pricing model for this rental',
+        },
+        task_description: {
+          type: 'string',
+          description: 'Description of the task or work required',
+        },
+        estimated_hours: {
+          type: 'number',
+          description: 'Estimated hours (required for hourly model)',
+        },
+        payment_method: {
+          type: 'string',
+          enum: ['crypto', 'fiat'],
+          description: 'Preferred payment method (default: crypto)',
+        },
+      },
+      required: ['agent_id', 'pricing_model'],
+    },
+  },
+  {
+    name: 'get_my_rentals',
+    description: 'List your rentals (as renter or owner). Requires API key.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        role: {
+          type: 'string',
+          enum: ['renter', 'owner'],
+          description: 'Filter by your role (default: renter)',
+        },
+        status: {
+          type: 'string',
+          description: 'Filter by rental status (pending, active, etc.)',
+        },
+      },
+    },
+  },
+  {
+    name: 'get_rental',
+    description: 'Get details of a specific rental including messages. Requires API key.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: {
+          type: 'number',
+          description: 'The rental ID',
+        },
+      },
+      required: ['id'],
+    },
+  },
+  {
+    name: 'update_rental',
+    description: 'Update the status of a rental (approve, reject, start, cancel, dispute). Requires API key.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: {
+          type: 'number',
+          description: 'The rental ID',
+        },
+        action: {
+          type: 'string',
+          enum: ['approve', 'reject', 'start', 'cancel', 'dispute'],
+          description: 'The action to perform',
+        },
+        reason: {
+          type: 'string',
+          description: 'Reason for cancellation or dispute (optional)',
+        },
+      },
+      required: ['id', 'action'],
+    },
+  },
+  {
+    name: 'complete_rental',
+    description: 'Mark a rental as complete and release funds. Requires API key.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: {
+          type: 'number',
+          description: 'The rental ID',
+        },
+      },
+      required: ['id'],
+    },
+  },
+  // ============ Texting/SMS Tools ============
+  {
+    name: 'pair_phone',
+    description: 'Pair a phone number for SMS texting. Uses free carrier email-to-SMS gateways. Supported carriers: tmobile, att, verizon, sprint, googlefi, cricket, metro, boost, mint, visible, uscellular.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        phone: {
+          type: 'string',
+          description: 'Phone number (10-digit US number, e.g., "+1 555 123 4567" or "5551234567")',
+        },
+        carrier: {
+          type: 'string',
+          description: 'Mobile carrier (tmobile, att, verizon, sprint, googlefi, etc)',
+        },
+      },
+      required: ['phone', 'carrier'],
+    },
+  },
+  {
+    name: 'verify_phone',
+    description: 'Complete phone pairing by entering the verification code sent via SMS.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        code: {
+          type: 'string',
+          description: 'The 6-digit verification code received via SMS',
+        },
+      },
+      required: ['code'],
+    },
+  },
+  {
+    name: 'texting_status',
+    description: 'Check current phone pairing status and rate limits.',
+    inputSchema: {
+      type: 'object',
+      properties: {},
+    },
+  },
+  {
+    name: 'send_text',
+    description: 'Send an SMS text message to the paired phone number. Returns the gog command to execute.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        message: {
+          type: 'string',
+          description: 'The message to send (keep under 160 chars for single SMS)',
+        },
+      },
+      required: ['message'],
+    },
+  },
+  {
+    name: 'get_texts',
+    description: 'Get text message history (sent and received).',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        since: {
+          type: 'string',
+          description: 'Time range (e.g., "1h", "24h", "7d" or ISO timestamp)',
+        },
+        limit: {
+          type: 'number',
+          description: 'Maximum messages to return (default: 50)',
+        },
+        direction: {
+          type: 'string',
+          enum: ['inbound', 'outbound', 'all'],
+          description: 'Filter by direction (default: all)',
+        },
+      },
+    },
+  },
+  {
+    name: 'record_inbound_text',
+    description: 'Record an inbound text message after polling Gmail. Helps track conversation and unpauses if paused.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        content: {
+          type: 'string',
+          description: 'The message content from the inbound SMS',
+        },
+        gmail_message_id: {
+          type: 'string',
+          description: 'Gmail message ID for deduplication',
+        },
+      },
+      required: ['content'],
+    },
+  },
+  {
+    name: 'unpair_phone',
+    description: 'Remove the current phone pairing.',
+    inputSchema: {
+      type: 'object',
+      properties: {},
+    },
+  },
 ];
 
 // Create MCP server
 const server = new Server(
   {
     name: 'thejam-mcp',
-    version: '0.1.0',
+    version: '0.4.0', // Bumped version
   },
   {
     capabilities: {
@@ -690,6 +973,437 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             {
               type: 'text',
               text: JSON.stringify(results, null, 2),
+            },
+          ],
+        };
+      }
+
+      // ============ HTTP Mock Handlers ============
+
+      case 'create_mock': {
+        if (!API_KEY) {
+          return {
+            content: [{ type: 'text', text: 'Error: API key required. Set THEJAM_API_KEY environment variable.' }],
+            isError: true,
+          };
+        }
+
+        const result = await client.createMock({
+          path: args?.path as string,
+          method: (args?.method as string) || 'GET',
+          response: args?.response,
+          status_code: (args?.status_code as number) || 200,
+        });
+
+        return {
+          content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
+        };
+      }
+
+      case 'list_mocks': {
+        if (!API_KEY) {
+          return {
+            content: [{ type: 'text', text: 'Error: API key required. Set THEJAM_API_KEY environment variable.' }],
+            isError: true,
+          };
+        }
+
+        const mocks = await client.listMocks();
+
+        return {
+          content: [{ type: 'text', text: JSON.stringify(mocks, null, 2) }],
+        };
+      }
+
+      case 'get_mock_requests': {
+        if (!API_KEY) {
+          return {
+            content: [{ type: 'text', text: 'Error: API key required. Set THEJAM_API_KEY environment variable.' }],
+            isError: true,
+          };
+        }
+
+        const requests = await client.getMockRequests(args?.mock_id as string);
+
+        return {
+          content: [{ type: 'text', text: JSON.stringify(requests, null, 2) }],
+        };
+      }
+
+      case 'delete_mock': {
+        if (!API_KEY) {
+          return {
+            content: [{ type: 'text', text: 'Error: API key required. Set THEJAM_API_KEY environment variable.' }],
+            isError: true,
+          };
+        }
+
+        const result = await client.deleteMock(args?.mock_id as string);
+
+        return {
+          content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
+        };
+      }
+
+      // ============ Agent Rental Handlers ============
+
+      case 'list_rental_agents': {
+        const agents = await client.listRentalAgents({
+          pricing_model: args?.pricing_model as 'hourly' | 'task' | 'subscription' | undefined,
+          min_price: args?.min_price as number | undefined,
+          max_price: args?.max_price as number | undefined,
+          limit: args?.limit as number | undefined,
+        });
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(agents, null, 2),
+            },
+          ],
+        };
+      }
+
+      case 'request_rental': {
+        if (!API_KEY) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: 'Error: API key required for rentals. Set THEJAM_API_KEY environment variable.',
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        const result = await client.createRental({
+          agent_id: args?.agent_id as number,
+          pricing_model: args?.pricing_model as 'hourly' | 'task' | 'subscription',
+          task_description: args?.task_description as string | undefined,
+          estimated_hours: args?.estimated_hours as number | undefined,
+          payment_method: args?.payment_method as 'crypto' | 'fiat' | undefined,
+        });
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      }
+
+      case 'get_my_rentals': {
+        if (!API_KEY) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: 'Error: API key required for rentals. Set THEJAM_API_KEY environment variable.',
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        const rentals = await client.getMyRentals({
+          role: args?.role as 'renter' | 'owner' | undefined,
+          status: args?.status as string | undefined,
+        });
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(rentals, null, 2),
+            },
+          ],
+        };
+      }
+
+      case 'get_rental': {
+        if (!API_KEY) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: 'Error: API key required for rentals. Set THEJAM_API_KEY environment variable.',
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        const rental = await client.getRental(args?.id as number);
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(rental, null, 2),
+            },
+          ],
+        };
+      }
+
+      case 'update_rental': {
+        if (!API_KEY) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: 'Error: API key required for rentals. Set THEJAM_API_KEY environment variable.',
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        const result = await client.updateRental(
+          args?.id as number,
+          args?.action as 'approve' | 'reject' | 'start' | 'cancel' | 'dispute',
+          args?.reason as string | undefined
+        );
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      }
+
+      case 'complete_rental': {
+        if (!API_KEY) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: 'Error: API key required for rentals. Set THEJAM_API_KEY environment variable.',
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        const result = await client.completeRental(args?.id as number);
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      }
+
+      // ============ Texting/SMS Handlers ============
+
+      case 'pair_phone': {
+        if (!API_KEY) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: 'Error: API key required for texting. Set THEJAM_API_KEY environment variable.',
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        const phone = args?.phone as string;
+        const carrier = args?.carrier as string;
+
+        if (!phone || !carrier) {
+          throw new Error('Missing required parameters: phone and carrier');
+        }
+
+        const result = await client.pairPhone(phone, carrier);
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      }
+
+      case 'verify_phone': {
+        if (!API_KEY) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: 'Error: API key required for texting. Set THEJAM_API_KEY environment variable.',
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        const code = args?.code as string;
+        if (!code) {
+          throw new Error('Missing required parameter: code');
+        }
+
+        const result = await client.verifyPhone(code);
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      }
+
+      case 'texting_status': {
+        if (!API_KEY) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: 'Error: API key required for texting. Set THEJAM_API_KEY environment variable.',
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        const status = await client.getPhonePairing();
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(status, null, 2),
+            },
+          ],
+        };
+      }
+
+      case 'send_text': {
+        if (!API_KEY) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: 'Error: API key required for texting. Set THEJAM_API_KEY environment variable.',
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        const message = args?.message as string;
+        if (!message) {
+          throw new Error('Missing required parameter: message');
+        }
+
+        const result = await client.sendText(message);
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      }
+
+      case 'get_texts': {
+        if (!API_KEY) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: 'Error: API key required for texting. Set THEJAM_API_KEY environment variable.',
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        const texts = await client.getTexts({
+          since: args?.since as string | undefined,
+          limit: args?.limit as number | undefined,
+          direction: args?.direction as 'inbound' | 'outbound' | 'all' | undefined,
+        });
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(texts, null, 2),
+            },
+          ],
+        };
+      }
+
+      case 'record_inbound_text': {
+        if (!API_KEY) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: 'Error: API key required for texting. Set THEJAM_API_KEY environment variable.',
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        const content = args?.content as string;
+        if (!content) {
+          throw new Error('Missing required parameter: content');
+        }
+
+        const result = await client.recordInboundText(
+          content,
+          args?.gmail_message_id as string | undefined
+        );
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      }
+
+      case 'unpair_phone': {
+        if (!API_KEY) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: 'Error: API key required for texting. Set THEJAM_API_KEY environment variable.',
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        const result = await client.unpairPhone();
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
             },
           ],
         };
