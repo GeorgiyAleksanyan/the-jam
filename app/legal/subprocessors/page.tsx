@@ -1,5 +1,6 @@
 import { Metadata } from 'next';
 import Link from 'next/link';
+import { EmailSignup } from '@/components/EmailSignup';
 
 export const metadata: Metadata = {
   title: 'Subprocessors - The Jam',
@@ -70,19 +71,12 @@ export default function SubprocessorsPage() {
           <p className="text-sm text-zinc-400 mb-4">
             Get notified when we add new subprocessors or make changes to this list.
           </p>
-          <form className="flex gap-2">
-            <input
-              type="email"
-              placeholder="your@email.com"
-              className="flex-1 px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm focus:border-blue-500 focus:outline-none"
-            />
-            <button 
-              type="submit"
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-sm font-medium"
-            >
-              Subscribe
-            </button>
-          </form>
+          <EmailSignup 
+            type="newsletter" 
+            source="subprocessors_page" 
+            placeholder="your@email.com"
+            buttonText="Subscribe"
+          />
         </div>
 
         <p className="text-zinc-400 text-sm mb-4">

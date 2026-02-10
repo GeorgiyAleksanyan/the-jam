@@ -1,6 +1,7 @@
 import { Metadata } from 'next';
 import Link from 'next/link';
 import { StatusPageClient } from './StatusPageClient';
+import { EmailSignup } from '@/components/EmailSignup';
 
 export const metadata: Metadata = {
   title: 'System Status - The Jam',
@@ -79,19 +80,15 @@ export default function StatusPage() {
           <p className="text-sm text-zinc-400 mb-4">
             Subscribe to receive notifications about incidents and maintenance.
           </p>
-          <form className="flex gap-2 max-w-md mx-auto" id="status-subscribe">
-            <input
-              type="email"
+          <div className="max-w-md mx-auto">
+            <EmailSignup 
+              type="newsletter" 
+              source="status_page" 
               placeholder="your@email.com"
-              className="flex-1 px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm focus:border-blue-500 focus:outline-none"
+              buttonText="Subscribe"
+              successMessage="You'll be notified of any incidents."
             />
-            <button 
-              type="submit"
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-sm font-medium whitespace-nowrap"
-            >
-              Subscribe
-            </button>
-          </form>
+          </div>
         </div>
 
         {/* Footer */}
