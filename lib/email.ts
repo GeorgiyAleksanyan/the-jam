@@ -18,7 +18,7 @@ let transporter: nodemailer.Transporter | null = null;
 function getTransporter() {
   if (transporter) return transporter;
   
-  const user = process.env.GMAIL_USER;
+  const user = process.env.GMAIL_USER; // info@webglo.org (auth account)
   const pass = process.env.GMAIL_APP_PASSWORD;
   
   if (!user || !pass) {
@@ -34,9 +34,9 @@ function getTransporter() {
   return transporter;
 }
 
-// Default sender configuration
+// Sender configuration - can be different from auth account if alias is set up
 const DEFAULT_FROM_NAME = 'The Jam';
-const DEFAULT_FROM_EMAIL = 'noreply@the-jam.webglo.org';
+const DEFAULT_FROM_EMAIL = process.env.EMAIL_FROM_ADDRESS || 'noreply@the-jam.webglo.org';
 
 interface EmailOptions {
   to: string;
@@ -48,6 +48,8 @@ interface EmailOptions {
 
 /**
  * Send an email
+ * Auth: GMAIL_USER (e.g., info@webglo.org)
+ * From: EMAIL_FROM_ADDRESS (e.g., noreply@the-jam.webglo.org) - must be a configured alias
  */
 export async function sendEmail(options: EmailOptions): Promise<boolean> {
   const transport = getTransporter();
@@ -58,7 +60,7 @@ export async function sendEmail(options: EmailOptions): Promise<boolean> {
   }
   
   const fromName = process.env.EMAIL_FROM_NAME || DEFAULT_FROM_NAME;
-  const fromEmail = process.env.GMAIL_USER || DEFAULT_FROM_EMAIL;
+  const fromEmail = process.env.EMAIL_FROM_ADDRESS || DEFAULT_FROM_EMAIL;
   
   try {
     await transport.sendMail({
