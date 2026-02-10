@@ -7,31 +7,16 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { getAuthenticatedUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-
-async function getUser(request: NextRequest) {
-  const authHeader = request.headers.get('authorization');
-  if (!authHeader?.startsWith('Bearer ')) return null;
-
-  const token = authHeader.replace('Bearer ', '');
-  const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-    global: { headers: { Authorization: `Bearer ${token}` } },
-  });
-
-  const { data: { user } } = await supabase.auth.getUser();
-  return user;
-}
 
 // GET /api/notifications - Get user's notifications
 export async function GET(request: NextRequest) {
-  const user = await getUser(request);
-  if (!user) {
+  const authResult = await getAuthenticatedUser(request);
+  if (!authResult.user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+  const user = authResult.user;
 
   if (!supabaseAdmin) {
     return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
@@ -87,10 +72,11 @@ export async function GET(request: NextRequest) {
 // PATCH /api/notifications - Mark notifications as read
 // Body: { ids: number[] } or { all: true }
 export async function PATCH(request: NextRequest) {
-  const user = await getUser(request);
-  if (!user) {
+  const authResult = await getAuthenticatedUser(request);
+  if (!authResult.user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+  const user = authResult.user;
 
   if (!supabaseAdmin) {
     return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
@@ -121,10 +107,11 @@ export async function PATCH(request: NextRequest) {
 // DELETE /api/notifications - Delete notifications
 // Body: { ids: number[] } or { all: true }
 export async function DELETE(request: NextRequest) {
-  const user = await getUser(request);
-  if (!user) {
+  const authResult = await getAuthenticatedUser(request);
+  if (!authResult.user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+  const user = authResult.user;
 
   if (!supabaseAdmin) {
     return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });

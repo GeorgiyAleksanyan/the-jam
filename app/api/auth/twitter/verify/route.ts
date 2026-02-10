@@ -1,6 +1,6 @@
 import logger from '@/lib/logger'
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient as createServerClient } from '@/lib/supabase-server';
+import { getAuthenticatedUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 
 // Extract tweet ID from URL
@@ -83,17 +83,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get current user from session using unified server client
-    const supabase = await createServerClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    // Get current user from session using unified auth helper
+    const authResult = await getAuthenticatedUser(request);
 
-    if (authError || !user) {
-      console.error('Twitter verify auth error:', authError?.message || 'No user session found');
+    if (!authResult.user) {
+      console.error('Twitter verify auth error:', authResult.error || 'No user session found', {
+        method: authResult.method,
+        hasCookies: request.headers.get('cookie') ? 'yes' : 'no',
+        hasBearer: request.headers.get('authorization') ? 'yes' : 'no',
+      });
       return NextResponse.json(
-        { error: 'Unauthorized', details: authError?.message || 'Auth session missing!' },
+        { error: 'Unauthorized', details: authResult.error || 'Auth session missing!' },
         { status: 401 }
       );
     }
+
+    const user = authResult.user;
 
     // Check pending verification
     const { data: verification, error: verifyError } = await supabaseAdmin!

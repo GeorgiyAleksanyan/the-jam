@@ -1,22 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase-server';
-import { supabaseAdmin } from '@/lib/supabase';
+import { getAuthenticatedUser, unauthorized } from '@/lib/auth';
+import { supabaseAdmin, supabase } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
 
 export async function PATCH(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const authResult = await getAuthenticatedUser(request);
 
-    if (authError || !user) {
-      console.error('Profile PATCH auth error:', authError?.message || 'No user session found');
+    if (!authResult.user) {
+      console.error('Profile PATCH auth failed:', {
+        method: authResult.method,
+        error: authResult.error,
+        hasCookies: request.headers.get('cookie') ? 'yes' : 'no',
+        hasBearer: request.headers.get('authorization') ? 'yes' : 'no',
+      });
       return NextResponse.json({ 
         error: 'Unauthorized', 
-        details: authError?.message || 'No user session found'
+        details: authResult.error || 'No user session found',
+        method: authResult.method,
       }, { status: 401 });
     }
 
+    const user = authResult.user;
     const body = await request.json();
     const { display_name, bio, wallet_address, wallet_chain } = body;
 
@@ -47,14 +53,15 @@ export async function PATCH(request: NextRequest) {
   }
 }
 
-export async function GET(_request: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const authResult = await getAuthenticatedUser(request);
 
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!authResult.user) {
+      return unauthorized('Unauthorized', { method: authResult.method });
     }
+
+    const user = authResult.user;
 
     // Use admin client to bypass RLS
     const client = supabaseAdmin || supabase;
