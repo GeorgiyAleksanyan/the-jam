@@ -34,9 +34,9 @@ function getTransporter() {
   return transporter;
 }
 
-// Sender configuration - can be different from auth account if alias is set up
+// Sender configuration
+// For Gmail SMTP, we send from the auth account. Alias requires "Send mail as" to be verified.
 const DEFAULT_FROM_NAME = 'The Jam';
-const DEFAULT_FROM_EMAIL = process.env.EMAIL_FROM_ADDRESS || 'noreply@the-jam.webglo.org';
 
 interface EmailOptions {
   to: string;
@@ -47,9 +47,9 @@ interface EmailOptions {
 }
 
 /**
- * Send an email
- * Auth: GMAIL_USER (e.g., info@webglo.org)
- * From: EMAIL_FROM_ADDRESS (e.g., noreply@the-jam.webglo.org) - must be a configured alias
+ * Send an email via Gmail SMTP
+ * The FROM address will be GMAIL_USER (the auth account)
+ * To use an alias, that alias must be verified in Gmail "Send mail as" settings
  */
 export async function sendEmail(options: EmailOptions): Promise<boolean> {
   const transport = getTransporter();
@@ -60,10 +60,16 @@ export async function sendEmail(options: EmailOptions): Promise<boolean> {
   }
   
   const fromName = process.env.EMAIL_FROM_NAME || DEFAULT_FROM_NAME;
-  const fromEmail = process.env.EMAIL_FROM_ADDRESS || DEFAULT_FROM_EMAIL;
+  // Use GMAIL_USER as sender - this is the authenticated account
+  const fromEmail = process.env.GMAIL_USER;
+  
+  if (!fromEmail) {
+    console.error('GMAIL_USER not configured');
+    return false;
+  }
   
   try {
-    await transport.sendMail({
+    const info = await transport.sendMail({
       from: options.from || `"${fromName}" <${fromEmail}>`,
       to: options.to,
       subject: options.subject,
@@ -71,10 +77,10 @@ export async function sendEmail(options: EmailOptions): Promise<boolean> {
       text: options.text || options.html.replace(/<[^>]*>/g, ''),
     });
     
-    console.log(`Email sent to ${options.to}: ${options.subject}`);
+    console.log(`Email sent to ${options.to}: ${options.subject} (messageId: ${info.messageId})`);
     return true;
-  } catch (error) {
-    console.error('Failed to send email:', error);
+  } catch (error: any) {
+    console.error('Failed to send email:', error.message || error);
     return false;
   }
 }
