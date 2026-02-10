@@ -16,6 +16,18 @@ interface HealthResponse {
   services: Record<string, ServiceCheck>;
 }
 
+interface HistoryDay {
+  date: string;
+  overall: 'ok' | 'degraded' | 'error';
+  services: Record<string, 'ok' | 'degraded' | 'error'>;
+}
+
+interface HistoryResponse {
+  days: number;
+  history: HistoryDay[];
+  uptime: Record<string, { up: number; total: number; percent: number }>;
+}
+
 interface ServiceConfig {
   key: string;
   name: string;
@@ -189,24 +201,7 @@ function OverallStatus({ services }: { services: ServiceStatus[] }) {
   );
 }
 
-// Generate mock uptime history (in production, this would come from a monitoring service)
-function generateUptimeHistory(currentStatus: StatusType): StatusType[] {
-  const history: StatusType[] = [];
-  for (let i = 0; i < 90; i++) {
-    // Simulate mostly operational with occasional issues
-    const rand = Math.random();
-    if (rand > 0.98) {
-      history.push('degraded');
-    } else if (rand > 0.995) {
-      history.push('down');
-    } else {
-      history.push('operational');
-    }
-  }
-  // Today's status matches current
-  history[history.length - 1] = currentStatus;
-  return history;
-}
+// Removed generateUptimeHistory - now using real data from API
 
 export function StatusPageClient() {
   const [services, setServices] = useState<ServiceStatus[]>(
@@ -217,7 +212,44 @@ export function StatusPageClient() {
     }))
   );
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  const [historyLoaded, setHistoryLoaded] = useState(false);
 
+  // Fetch historical uptime data
+  useEffect(() => {
+    const fetchHistory = async () => {
+      try {
+        const response = await fetch('/api/status/history?days=90');
+        if (response.ok) {
+          const data: HistoryResponse = await response.json();
+          
+          // Update services with real uptime history
+          setServices(prev => prev.map(service => {
+            const history: StatusType[] = data.history.map(day => {
+              const status = day.services[service.key];
+              if (status === 'error') return 'down';
+              if (status === 'degraded') return 'degraded';
+              return 'operational';
+            });
+            
+            // Pad with 'operational' if we don't have 90 days yet
+            while (history.length < 90) {
+              history.unshift('operational');
+            }
+            
+            return { ...service, uptimeHistory: history };
+          }));
+          
+          setHistoryLoaded(true);
+        }
+      } catch (e) {
+        console.error('Failed to fetch history:', e);
+      }
+    };
+
+    fetchHistory();
+  }, []);
+
+  // Check current health
   useEffect(() => {
     const checkHealth = async () => {
       try {
@@ -226,7 +258,7 @@ export function StatusPageClient() {
         if (response.ok) {
           const data: HealthResponse = await response.json();
           
-          setServices(SERVICES.map(serviceConfig => {
+          setServices(prev => prev.map(serviceConfig => {
             const check = data.services[serviceConfig.key];
             let status: StatusType = 'operational';
             
@@ -238,18 +270,20 @@ export function StatusPageClient() {
               status = 'degraded';
             }
             
+            // Preserve existing uptime history
+            const existing = prev.find(p => p.key === serviceConfig.key);
+            
             return {
               ...serviceConfig,
               status,
               latency: check?.latencyMs,
-              uptimeHistory: generateUptimeHistory(status),
+              uptimeHistory: existing?.uptimeHistory || Array(90).fill('operational'),
             };
           }));
         } else {
           setServices(prev => prev.map(s => ({ 
             ...s, 
             status: 'degraded' as StatusType,
-            uptimeHistory: generateUptimeHistory('degraded'),
           })));
         }
         
@@ -258,7 +292,6 @@ export function StatusPageClient() {
         setServices(prev => prev.map(s => ({ 
           ...s, 
           status: 'down' as StatusType,
-          uptimeHistory: generateUptimeHistory('down'),
         })));
         setLastUpdated(new Date());
       }
