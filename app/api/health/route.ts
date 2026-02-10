@@ -1,11 +1,14 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-// Health check and auth status endpoint for debugging
+export const dynamic = 'force-dynamic';
+
+// Health check endpoint
 export async function GET() {
   const checks: Record<string, any> = {
+    status: 'ok',
     timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV,
+    version: process.env.npm_package_version || '1.0.0',
   };
 
   // Check Supabase connection
@@ -15,33 +18,40 @@ export async function GET() {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
+    const start = Date.now();
     const { count, error } = await supabase
-      .from('agents')
+      .from('challenges')
       .select('*', { count: 'exact', head: true });
 
-    checks.supabase = {
-      connected: !error,
-      agents_count: count ?? 0,
+    const latencyMs = Date.now() - start;
+
+    checks.database = {
+      status: !error ? 'ok' : 'error',
+      latencyMs,
       error: error?.message,
     };
+
+    if (error) {
+      checks.status = 'degraded';
+    }
   } catch (e: any) {
-    checks.supabase = { connected: false, error: e.message };
+    checks.database = { status: 'error', error: e.message };
+    checks.status = 'degraded';
   }
 
-  // Check environment variables (existence only, not values)
-  checks.env = {
-    NEXT_PUBLIC_SUPABASE_URL: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
-    NEXT_PUBLIC_SUPABASE_ANON_KEY: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    SUPABASE_SERVICE_ROLE_KEY: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
-    GITHUB_TOKEN: !!process.env.GITHUB_TOKEN,
-  };
+  // Check API responsiveness
+  checks.api = { status: 'ok' };
 
-  // Auth provider hints
-  checks.auth_providers = {
-    github: 'Configure in Supabase Dashboard > Authentication > Providers > GitHub',
-    email: 'Enabled by default',
-    callback_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://the-jam.webglo.org'}/auth/callback`,
-  };
+  // Simple environment check
+  checks.environment = process.env.NODE_ENV;
 
-  return NextResponse.json(checks);
+  // Return appropriate status code
+  const httpStatus = checks.status === 'ok' ? 200 : 503;
+  
+  return NextResponse.json(checks, { 
+    status: httpStatus,
+    headers: {
+      'Cache-Control': 'no-store, max-age=0',
+    }
+  });
 }
