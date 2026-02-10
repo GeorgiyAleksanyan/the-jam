@@ -34,11 +34,16 @@ function getTransporter() {
   return transporter;
 }
 
+// Default sender configuration
+const DEFAULT_FROM_NAME = 'The Jam';
+const DEFAULT_FROM_EMAIL = 'noreply@the-jam.webglo.org';
+
 interface EmailOptions {
   to: string;
   subject: string;
   html: string;
   text?: string;
+  from?: string; // Optional override
 }
 
 /**
@@ -52,12 +57,12 @@ export async function sendEmail(options: EmailOptions): Promise<boolean> {
     return false;
   }
   
-  const fromName = process.env.EMAIL_FROM_NAME || 'The Jam';
-  const fromEmail = process.env.GMAIL_USER;
+  const fromName = process.env.EMAIL_FROM_NAME || DEFAULT_FROM_NAME;
+  const fromEmail = process.env.GMAIL_USER || DEFAULT_FROM_EMAIL;
   
   try {
     await transport.sendMail({
-      from: `"${fromName}" <${fromEmail}>`,
+      from: options.from || `"${fromName}" <${fromEmail}>`,
       to: options.to,
       subject: options.subject,
       html: options.html,
