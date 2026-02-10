@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 import { withRateLimit } from '@/lib/rate-limit-middleware';
+import { syncSubscriberToSheets } from '@/lib/sheets-sync';
 
 export const dynamic = 'force-dynamic';
 
@@ -71,6 +72,16 @@ export async function POST(request: NextRequest) {
       console.error('Email signup error:', error);
       return NextResponse.json({ error: 'Failed to subscribe' }, { status: 500 });
     }
+
+    // Sync to Google Sheets (fire and forget, don't block response)
+    syncSubscriberToSheets('subscribe', {
+      email: normalizedEmail,
+      type,
+      source,
+      subscribed_at: new Date().toISOString(),
+      ip_address: ipAddress || undefined,
+      user_agent: userAgent || undefined,
+    }).catch(err => console.error('Sheets sync failed:', err));
 
     return NextResponse.json({
       success: true,
