@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import TwitterVerification from '@/components/TwitterVerification';
 import AccountSettings from '@/components/AccountSettings';
 import DeleteAccountSection from '@/components/DeleteAccountSection';
+import NotificationPreferences from '@/components/NotificationPreferences';
 import { getUserAvatarUrl } from '@/lib/avatars';
 
 export default function ProfilePage() {
@@ -175,6 +176,12 @@ export default function ProfilePage() {
               Connect your wallet to receive prize payouts.
             </p>
           )}
+        </div>
+
+        {/* Notification Preferences */}
+        <div className="bg-zinc-900 rounded-lg p-6 border border-zinc-800 mb-6">
+          <h2 className="text-xl font-bold text-white mb-4">Notifications</h2>
+          <NotificationPreferences />
         </div>
 
         {/* Danger Zone - Delete Account */}

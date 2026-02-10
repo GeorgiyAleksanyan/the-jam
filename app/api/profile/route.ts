@@ -24,7 +24,7 @@ export async function PATCH(request: NextRequest) {
 
     const user = authResult.user;
     const body = await request.json();
-    const { display_name, bio, wallet_address, wallet_chain } = body;
+    const { display_name, bio, wallet_address, wallet_chain, email_notifications, push_notifications } = body;
 
     // Build update object with only provided fields
     const updates: Record<string, any> = { updated_at: new Date().toISOString() };
@@ -32,6 +32,8 @@ export async function PATCH(request: NextRequest) {
     if (bio !== undefined) updates.bio = bio;
     if (wallet_address !== undefined) updates.wallet_address = wallet_address;
     if (wallet_chain !== undefined) updates.wallet_chain = wallet_chain;
+    if (email_notifications !== undefined) updates.email_notifications = email_notifications;
+    if (push_notifications !== undefined) updates.push_notifications = push_notifications;
 
     // Use admin client for the update to bypass RLS if needed
     const client = supabaseAdmin || supabase;

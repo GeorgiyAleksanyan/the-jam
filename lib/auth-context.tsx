@@ -16,6 +16,17 @@ type Profile = {
   twitter_verified_at: string | null
   wallet_address: string | null
   wallet_chain: string | null
+  email_notifications: {
+    challenge_updates: boolean
+    submission_status: boolean
+    payout_alerts: boolean
+    weekly_digest: boolean
+    marketing: boolean
+  } | null
+  push_notifications: {
+    in_app: boolean
+    browser: boolean
+  } | null
 }
 
 type AuthContextType = {
