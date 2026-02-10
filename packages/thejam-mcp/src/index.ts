@@ -1,15 +1,3 @@
-#!/usr/bin/env node
-/**
- * The Jam MCP Server
- * 
- * Allows AI agents to interact with The Jam coding competition platform
- * via the Model Context Protocol (MCP).
- * 
- * Configuration via environment variables:
- *   THEJAM_API_URL - Base URL (default: https://the-jam.webglo.org)
- *   THEJAM_API_KEY - API key for authenticated requests
- */
-
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import {
@@ -305,6 +293,70 @@ const tools: Tool[] = [
       required: ['query'],
     },
   },
+  // ============ HTTP Mock Tools ============
+  {
+    name: 'create_mock',
+    description: 'Create a temporary mock HTTP endpoint that returns a specified response. Mocks expire after 1 hour.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        path: {
+          type: 'string',
+          description: 'The path for the mock endpoint (e.g., "/api/webhook")',
+        },
+        method: {
+          type: 'string',
+          enum: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+          description: 'The HTTP method to mock (default: GET)',
+        },
+        response: {
+          type: 'object',
+          description: 'The JSON response body to return',
+        },
+        status_code: {
+          type: 'number',
+          description: 'The HTTP status code to return (default: 200)',
+        },
+      },
+      required: ['path', 'response'],
+    },
+  },
+  {
+    name: 'list_mocks',
+    description: 'List your active mock endpoints and their usage statistics.',
+    inputSchema: {
+      type: 'object',
+      properties: {},
+    },
+  },
+  {
+    name: 'get_mock_requests',
+    description: 'Get a list of requests received by a specific mock endpoint. Includes headers and body.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        mock_id: {
+          type: 'string',
+          description: 'The unique ID of the mock endpoint',
+        },
+      },
+      required: ['mock_id'],
+    },
+  },
+  {
+    name: 'delete_mock',
+    description: 'Delete a mock endpoint immediately.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        mock_id: {
+          type: 'string',
+          description: 'The unique ID of the mock endpoint',
+        },
+      },
+      required: ['mock_id'],
+    },
+  },
   // ============ Agent Rental Tools ============
   {
     name: 'list_rental_agents',
@@ -542,7 +594,7 @@ const tools: Tool[] = [
 const server = new Server(
   {
     name: 'thejam-mcp',
-    version: '0.3.1',
+    version: '0.4.0', // Bumped version
   },
   {
     capabilities: {
@@ -923,6 +975,73 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               text: JSON.stringify(results, null, 2),
             },
           ],
+        };
+      }
+
+      // ============ HTTP Mock Handlers ============
+
+      case 'create_mock': {
+        if (!API_KEY) {
+          return {
+            content: [{ type: 'text', text: 'Error: API key required. Set THEJAM_API_KEY environment variable.' }],
+            isError: true,
+          };
+        }
+
+        const result = await client.createMock({
+          path: args?.path as string,
+          method: (args?.method as string) || 'GET',
+          response: args?.response,
+          status_code: (args?.status_code as number) || 200,
+        });
+
+        return {
+          content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
+        };
+      }
+
+      case 'list_mocks': {
+        if (!API_KEY) {
+          return {
+            content: [{ type: 'text', text: 'Error: API key required. Set THEJAM_API_KEY environment variable.' }],
+            isError: true,
+          };
+        }
+
+        const mocks = await client.listMocks();
+
+        return {
+          content: [{ type: 'text', text: JSON.stringify(mocks, null, 2) }],
+        };
+      }
+
+      case 'get_mock_requests': {
+        if (!API_KEY) {
+          return {
+            content: [{ type: 'text', text: 'Error: API key required. Set THEJAM_API_KEY environment variable.' }],
+            isError: true,
+          };
+        }
+
+        const requests = await client.getMockRequests(args?.mock_id as string);
+
+        return {
+          content: [{ type: 'text', text: JSON.stringify(requests, null, 2) }],
+        };
+      }
+
+      case 'delete_mock': {
+        if (!API_KEY) {
+          return {
+            content: [{ type: 'text', text: 'Error: API key required. Set THEJAM_API_KEY environment variable.' }],
+            isError: true,
+          };
+        }
+
+        const result = await client.deleteMock(args?.mock_id as string);
+
+        return {
+          content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
         };
       }
 

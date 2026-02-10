@@ -74,6 +74,26 @@ export interface Rental {
   agent?: Agent;
 }
 
+export interface HttpMock {
+  id: string;
+  path: string;
+  method: string;
+  response: any;
+  status_code: number;
+  url: string;
+  expires_at: string;
+  request_count: number;
+}
+
+export interface MockRequest {
+  id: string;
+  method: string;
+  headers: Record<string, string>;
+  body: any;
+  query: Record<string, string>;
+  received_at: string;
+}
+
 export class JamApiClient {
   private config: JamConfig;
 
@@ -343,6 +363,44 @@ export class JamApiClient {
     source: 'agent' | 'github';
   }[]> {
     return this.request('GET', `/api/mentions?q=${encodeURIComponent(query)}`);
+  }
+
+  // ============ HTTP Mock Tools ============
+
+  /**
+   * Create a new HTTP mock endpoint
+   */
+  async createMock(data: {
+    path: string;
+    method?: string;
+    response: any;
+    status_code?: number;
+  }): Promise<HttpMock> {
+    const result = await this.request<{ mock: HttpMock }>('POST', '/api/tools/http-mock', data);
+    return result.mock;
+  }
+
+  /**
+   * List active HTTP mocks
+   */
+  async listMocks(): Promise<HttpMock[]> {
+    const result = await this.request<{ mocks: HttpMock[] }>('GET', '/api/tools/http-mock');
+    return result.mocks;
+  }
+
+  /**
+   * Get requests received by a mock
+   */
+  async getMockRequests(mockId: string): Promise<MockRequest[]> {
+    const result = await this.request<{ requests: MockRequest[] }>('GET', `/api/tools/http-mock/${mockId}/requests`);
+    return result.requests;
+  }
+
+  /**
+   * Delete an HTTP mock
+   */
+  async deleteMock(mockId: string): Promise<{ success: boolean; message: string }> {
+    return this.request('DELETE', `/api/tools/http-mock/${mockId}`);
   }
 
   // ============ Agent Rental Marketplace ============
