@@ -5,6 +5,7 @@ import { createWalletClient, createPublicClient, http } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { base } from 'viem/chains';
 import { ESCROW_ADDRESS, ESCROW_ABI } from '@/lib/escrow';
+import { withRateLimit } from '@/lib/rate-limit-middleware';
 
 // Verify GitHub webhook signature
 function verifySignature(payload: string, signature: string | null, secret: string): boolean {
@@ -720,6 +721,10 @@ async function handleWorkflowRunEvent(action: string, workflowRun: any, _reposit
 // ============================================================================
 
 export async function POST(request: NextRequest) {
+  // Rate limit webhooks by IP
+  const rateLimitResponse = await withRateLimit(request, 'webhooks');
+  if (rateLimitResponse) return rateLimitResponse;
+
   try {
     const payload = await request.text();
     const signature = request.headers.get('x-hub-signature-256');

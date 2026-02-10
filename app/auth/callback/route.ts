@@ -2,8 +2,13 @@ import logger from '@/lib/logger'
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
+import { withRateLimit } from '@/lib/rate-limit-middleware'
 
 export async function GET(request: Request) {
+  // Rate limit auth callbacks
+  const rateLimitResponse = await withRateLimit(request, 'auth');
+  if (rateLimitResponse) return rateLimitResponse;
+
   const { searchParams, origin, hash: _hash } = new URL(request.url)
   const code = searchParams.get('code')
   const next = searchParams.get('next') ?? '/dashboard'

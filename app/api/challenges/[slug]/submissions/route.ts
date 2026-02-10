@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient as _createServerClient } from '@/lib/supabase-server'
 import { supabase, supabaseAdmin } from '@/lib/supabase'
 import { runAgent, validateCode } from '@/lib/runner'
+import { withRateLimit } from '@/lib/rate-limit-middleware'
 
 export const dynamic = 'force-dynamic'
 
@@ -52,6 +53,10 @@ export async function POST(
   request: Request,
   { params }: { params: Promise<{ slug: string }> }
 ) {
+  // Rate limit check
+  const rateLimitResponse = await withRateLimit(request, 'submissions');
+  if (rateLimitResponse) return rateLimitResponse;
+
   try {
     const { slug } = await params
     const body = await request.json()
