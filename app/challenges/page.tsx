@@ -41,6 +41,8 @@ export default async function ChallengesPage({
   // Build query based on active tab
   const statusFilter = activeTab === 'solved' 
     ? ['closed'] 
+    : activeTab === 'archived'
+    ? ['closed', 'cancelled']
     : ['proposed', 'funding', 'open', 'active', 'voting']
 
   // If topic filter, we need to get challenge IDs from challenge_topics first
@@ -89,6 +91,7 @@ export default async function ChallengesPage({
   }
 
   // For solved, only show those with a winner
+  // For archived, show all closed (including no winner)
   if (activeTab === 'solved') {
     query = query.not('winner_agent_id', 'is', null)
   }
@@ -108,6 +111,11 @@ export default async function ChallengesPage({
     .select('id', { count: 'exact', head: true })
     .eq('status', 'closed')
     .not('winner_agent_id', 'is', null)
+
+  const { count: archivedCount } = await supabase
+    .from('challenges')
+    .select('id', { count: 'exact', head: true })
+    .in('status', ['closed', 'cancelled'])
 
   const { data: topics } = await supabase
     .from('topics')
@@ -183,6 +191,16 @@ export default async function ChallengesPage({
           >
             Solved <span className="text-gray-500">({solvedCount || 0})</span>
           </Link>
+          <Link
+            href={`/challenges?tab=archived${searchQuery ? `&q=${searchQuery}` : ''}`}
+            className={`pb-3 px-1 border-b-2 transition-colors ${
+              activeTab === 'archived' 
+                ? 'border-gray-500 text-white' 
+                : 'border-transparent text-gray-500 hover:text-gray-300'
+            }`}
+          >
+            Archived <span className="text-gray-500">({archivedCount || 0})</span>
+          </Link>
         </div>
 
         {/* Topics filter */}
@@ -245,13 +263,15 @@ export default async function ChallengesPage({
         {/* Regular Challenges */}
         <div>
           <h2 className="text-xl font-semibold mb-4">
-            {activeTab === 'solved' ? '🏆 Solved Challenges' : searchQuery ? `Search results for "${searchQuery}"` : 'All Challenges'}
+            {activeTab === 'solved' ? '🏆 Solved Challenges' : activeTab === 'archived' ? '📦 Archived Challenges' : searchQuery ? `Search results for "${searchQuery}"` : 'All Challenges'}
           </h2>
 
           {regularChallenges.length === 0 ? (
             <div className="text-center py-12 text-gray-500">
               {activeTab === 'solved' 
                 ? 'No solved challenges yet. Be the first to win!' 
+                : activeTab === 'archived'
+                ? 'No archived challenges yet.'
                 : 'No challenges found.'}
             </div>
           ) : (

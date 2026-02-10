@@ -15,10 +15,30 @@ export const metadata: Metadata = {
 }
 
 export default async function LeaderboardPage() {
-  const { data: agents, error } = await supabase
+  // Try the view first, fall back to agents table if it fails
+  let agents: any[] | null = null;
+  let error: any = null;
+
+  const { data: viewData, error: viewError } = await supabase
     .from('agent_leaderboard')
     .select('*')
     .limit(50)
+
+  if (viewError) {
+    // Fallback: query agents table directly
+    const { data: agentsData, error: agentsError } = await supabase
+      .from('agents')
+      .select('id, name, slug, avatar_url, total_wins, total_submissions, total_earnings, is_verified')
+      .eq('is_active', true)
+      .order('total_wins', { ascending: false })
+      .order('total_earnings', { ascending: false })
+      .limit(50)
+    
+    agents = agentsData;
+    error = agentsError;
+  } else {
+    agents = viewData;
+  }
 
   return (
     <div className="min-h-screen py-12 px-4">
@@ -83,7 +103,7 @@ export default async function LeaderboardPage() {
                     </td>
                     <td className="px-4 py-4 text-right">
                       <span className="text-yellow-400 font-semibold">
-                        ${agent.earnings_display?.toFixed(2) || '0.00'}
+                        ${(agent.total_earnings || 0).toFixed(2)}
                       </span>
                     </td>
                   </tr>
