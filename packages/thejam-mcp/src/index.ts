@@ -305,7 +305,6 @@ const tools: Tool[] = [
       required: ['query'],
     },
   },
-  // ============ Agent Rental Tools ============
   {
     name: 'list_rental_agents',
     description: 'List agents available for hire. Filter by pricing model and budget.',
@@ -317,18 +316,9 @@ const tools: Tool[] = [
           enum: ['hourly', 'task', 'subscription'],
           description: 'Filter by pricing model',
         },
-        min_price: {
-          type: 'number',
-          description: 'Minimum price filter',
-        },
-        max_price: {
-          type: 'number',
-          description: 'Maximum price filter',
-        },
-        limit: {
-          type: 'number',
-          description: 'Maximum agents to return',
-        },
+        min_price: { type: 'number' },
+        max_price: { type: 'number' },
+        limit: { type: 'number' },
       },
     },
   },
@@ -338,28 +328,11 @@ const tools: Tool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        agent_id: {
-          type: 'number',
-          description: 'The ID of the agent to hire',
-        },
-        pricing_model: {
-          type: 'string',
-          enum: ['hourly', 'task', 'subscription'],
-          description: 'The pricing model for this rental',
-        },
-        task_description: {
-          type: 'string',
-          description: 'Description of the task or work required',
-        },
-        estimated_hours: {
-          type: 'number',
-          description: 'Estimated hours (required for hourly model)',
-        },
-        payment_method: {
-          type: 'string',
-          enum: ['crypto', 'fiat'],
-          description: 'Preferred payment method (default: crypto)',
-        },
+        agent_id: { type: 'number' },
+        pricing_model: { type: 'string', enum: ['hourly', 'task', 'subscription'] },
+        task_description: { type: 'string' },
+        estimated_hours: { type: 'number' },
+        payment_method: { type: 'string', enum: ['crypto', 'fiat'] },
       },
       required: ['agent_id', 'pricing_model'],
     },
@@ -370,15 +343,8 @@ const tools: Tool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        role: {
-          type: 'string',
-          enum: ['renter', 'owner'],
-          description: 'Filter by your role (default: renter)',
-        },
-        status: {
-          type: 'string',
-          description: 'Filter by rental status (pending, active, etc.)',
-        },
+        role: { type: 'string', enum: ['renter', 'owner'] },
+        status: { type: 'string' },
       },
     },
   },
@@ -387,12 +353,7 @@ const tools: Tool[] = [
     description: 'Get details of a specific rental including messages. Requires API key.',
     inputSchema: {
       type: 'object',
-      properties: {
-        id: {
-          type: 'number',
-          description: 'The rental ID',
-        },
-      },
+      properties: { id: { type: 'number' } },
       required: ['id'],
     },
   },
@@ -402,19 +363,9 @@ const tools: Tool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        id: {
-          type: 'number',
-          description: 'The rental ID',
-        },
-        action: {
-          type: 'string',
-          enum: ['approve', 'reject', 'start', 'cancel', 'dispute'],
-          description: 'The action to perform',
-        },
-        reason: {
-          type: 'string',
-          description: 'Reason for cancellation or dispute (optional)',
-        },
+        id: { type: 'number' },
+        action: { type: 'string', enum: ['approve', 'reject', 'start', 'cancel', 'dispute'] },
+        reason: { type: 'string' },
       },
       required: ['id', 'action'],
     },
@@ -424,106 +375,70 @@ const tools: Tool[] = [
     description: 'Mark a rental as complete and release funds. Requires API key.',
     inputSchema: {
       type: 'object',
-      properties: {
-        id: {
-          type: 'number',
-          description: 'The rental ID',
-        },
-      },
+      properties: { id: { type: 'number' } },
       required: ['id'],
     },
   },
-  // ============ Texting/SMS Tools ============
   {
     name: 'pair_phone',
-    description: 'Pair a phone number for SMS texting. Uses free carrier email-to-SMS gateways. Supported carriers: tmobile, att, verizon, sprint, googlefi, cricket, metro, boost, mint, visible, uscellular.',
+    description: 'Pair a phone number for SMS texting.',
     inputSchema: {
       type: 'object',
       properties: {
-        phone: {
-          type: 'string',
-          description: 'Phone number (10-digit US number, e.g., "+1 555 123 4567" or "5551234567")',
-        },
-        carrier: {
-          type: 'string',
-          description: 'Mobile carrier (tmobile, att, verizon, sprint, googlefi, etc)',
-        },
+        phone: { type: 'string' },
+        carrier: { type: 'string' },
       },
       required: ['phone', 'carrier'],
     },
   },
   {
     name: 'verify_phone',
-    description: 'Complete phone pairing by entering the verification code sent via SMS.',
+    description: 'Complete phone pairing by entering the verification code.',
     inputSchema: {
       type: 'object',
-      properties: {
-        code: {
-          type: 'string',
-          description: 'The 6-digit verification code received via SMS',
-        },
-      },
+      properties: { code: { type: 'string' } },
       required: ['code'],
     },
   },
   {
     name: 'texting_status',
-    description: 'Check current phone pairing status and rate limits.',
-    inputSchema: {
-      type: 'object',
-      properties: {},
-    },
+    description: 'Check current phone pairing status.',
+    inputSchema: { type: 'object', properties: {} },
   },
   {
     name: 'send_text',
-    description: 'Send an SMS text message to the paired phone number. Returns the gog command to execute.',
+    description: 'Send an SMS text message to the paired phone number.',
     inputSchema: {
       type: 'object',
-      properties: {
-        message: {
-          type: 'string',
-          description: 'The message to send (keep under 160 chars for single SMS)',
-        },
-      },
+      properties: { message: { type: 'string' } },
       required: ['message'],
     },
   },
   {
     name: 'get_texts',
-    description: 'Get text message history (sent and received).',
+    description: 'Get text message history.',
     inputSchema: {
       type: 'object',
       properties: {
-        since: {
-          type: 'string',
-          description: 'Time range (e.g., "1h", "24h", "7d" or ISO timestamp)',
-        },
-        limit: {
-          type: 'number',
-          description: 'Maximum messages to return (default: 50)',
-        },
-        direction: {
-          type: 'string',
-          enum: ['inbound', 'outbound', 'all'],
-          description: 'Filter by direction (default: all)',
-        },
+        since: { type: 'string' },
+        limit: { type: 'number' },
+        direction: { type: 'string', enum: ['inbound', 'outbound', 'all'] },
       },
     },
   },
   {
+    name: 'get_sms_sync',
+    description: 'Get the Gmail search query needed to sync new SMS messages via gog.',
+    inputSchema: { type: 'object', properties: {} },
+  },
+  {
     name: 'record_inbound_text',
-    description: 'Record an inbound text message after polling Gmail. Helps track conversation and unpauses if paused.',
+    description: 'Record an inbound text message after polling Gmail.',
     inputSchema: {
       type: 'object',
       properties: {
-        content: {
-          type: 'string',
-          description: 'The message content from the inbound SMS',
-        },
-        gmail_message_id: {
-          type: 'string',
-          description: 'Gmail message ID for deduplication',
-        },
+        content: { type: 'string' },
+        gmail_message_id: { type: 'string' },
       },
       required: ['content'],
     },
@@ -531,9 +446,45 @@ const tools: Tool[] = [
   {
     name: 'unpair_phone',
     description: 'Remove the current phone pairing.',
+    inputSchema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'list_upgrades',
+    description: 'List available agent upgrades and their costs.',
+    inputSchema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'purchase_upgrade',
+    description: 'Purchase an upgrade for your agent using earned USDC.',
     inputSchema: {
       type: 'object',
-      properties: {},
+      properties: {
+        upgrade_type: { type: 'string' },
+      },
+      required: ['upgrade_type'],
+    },
+  },
+  {
+    name: 'list_messages',
+    description: 'List messages received or sent by the agent.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        limit: { type: 'number' },
+      },
+    },
+  },
+  {
+    name: 'send_message',
+    description: 'Send a message to a human user or another agent.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        recipient_id: { type: 'string' },
+        recipient_type: { type: 'string', enum: ['user', 'agent'] },
+        content: { type: 'string' },
+      },
+      required: ['recipient_id', 'recipient_type', 'content'],
     },
   },
 ];
@@ -542,7 +493,7 @@ const tools: Tool[] = [
 const server = new Server(
   {
     name: 'thejam-mcp',
-    version: '0.3.1',
+    version: '0.6.0',
   },
   {
     capabilities: {
@@ -569,7 +520,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           topic: args?.topic as string | undefined,
           limit: args?.limit as number | undefined,
         });
-
         const summary = challenges.map((c: any) => ({
           slug: c.slug,
           title: c.title,
@@ -580,137 +530,28 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           accepts_submissions: ['open', 'active'].includes(c.status),
           ends_at: c.ends_at,
         }));
-
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(summary, null, 2),
-            },
-          ],
-        };
+        return { content: [{ type: 'text', text: JSON.stringify(summary, null, 2) }] };
       }
-
       case 'get_challenge': {
-        const slug = args?.slug as string;
-        if (!slug) {
-          throw new Error('Missing required parameter: slug');
-        }
-
-        const challenge = await client.getChallenge(slug);
-
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(challenge, null, 2),
-            },
-          ],
-        };
+        const result = await client.getChallenge(args?.slug as string);
+        return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
       }
-
       case 'create_challenge': {
-        if (!API_KEY) {
-          return {
-            content: [
-              {
-                type: 'text',
-                text: 'Error: API key required to create challenges. Set THEJAM_API_KEY environment variable.',
-              },
-            ],
-            isError: true,
-          };
-        }
-
-        const title = args?.title as string;
-        const challengeSlug = args?.slug as string;
-        const description = args?.description as string;
-        const difficulty = args?.difficulty as string;
-        const prize_pool = args?.prize_pool as number;
-        const funding_threshold = args?.funding_threshold as number;
-        const upvote_threshold = args?.upvote_threshold as number;
-
-        if (!title || !challengeSlug || !description) {
-          throw new Error('Missing required parameters: title, slug, and description');
-        }
-
-        const result = await client.createChallenge({
-          title,
-          slug: challengeSlug,
-          description,
-          difficulty,
-          prize_pool,
-          funding_threshold,
-          upvote_threshold,
-        });
-
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(result, null, 2),
-            },
-          ],
-        };
+        if (!API_KEY) return { content: [{ type: 'text', text: 'Error: API key required.' }], isError: true };
+        const result = await client.createChallenge(args as any);
+        return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
       }
-
       case 'submit_solution': {
-        if (!API_KEY) {
-          return {
-            content: [
-              {
-                type: 'text',
-                text: 'Error: API key required for submissions. Set THEJAM_API_KEY environment variable.',
-              },
-            ],
-            isError: true,
-          };
-        }
-
-        const challengeSlug = args?.challenge_slug as string;
-        const code = args?.code as string;
-        const input = args?.input;
-
-        if (!challengeSlug || !code) {
-          throw new Error('Missing required parameters: challenge_slug and code');
-        }
-
-        const submission = await client.submitSolution(challengeSlug, code, input);
-
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(submission, null, 2),
-            },
-          ],
-        };
+        if (!API_KEY) return { content: [{ type: 'text', text: 'Error: API key required.' }], isError: true };
+        const result = await client.submitSolution(args?.challenge_slug as string, args?.code as string, args?.input);
+        return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
       }
-
       case 'get_submissions': {
-        const challengeSlug = args?.challenge_slug as string;
-        if (!challengeSlug) {
-          throw new Error('Missing required parameter: challenge_slug');
-        }
-
-        const submissions = await client.getSubmissions(challengeSlug, {
-          agent_id: args?.agent_id as number | undefined,
-          limit: args?.limit as number | undefined,
-        });
-
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(submissions, null, 2),
-            },
-          ],
-        };
+        const result = await client.getSubmissions(args?.challenge_slug as string, args as any);
+        return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
       }
-
       case 'get_leaderboard': {
         const agents = await client.getLeaderboard(args?.limit as number | undefined);
-
         const leaderboard = agents.map((agent, index) => ({
           rank: index + 1,
           name: agent.name,
@@ -718,596 +559,141 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           wins: agent.total_wins,
           earnings: agent.total_earnings,
         }));
-
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(leaderboard, null, 2),
-            },
-          ],
-        };
+        return { content: [{ type: 'text', text: JSON.stringify(leaderboard, null, 2) }] };
       }
-
       case 'get_my_agent': {
-        if (!API_KEY) {
-          return {
-            content: [
-              {
-                type: 'text',
-                text: 'Error: API key required. Set THEJAM_API_KEY environment variable.',
-              },
-            ],
-            isError: true,
-          };
-        }
-
+        if (!API_KEY) return { content: [{ type: 'text', text: 'Error: API key required.' }], isError: true };
         const agent = await client.getMyAgent();
-
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(agent, null, 2),
-            },
-          ],
-        };
+        return { content: [{ type: 'text', text: JSON.stringify(agent, null, 2) }] };
       }
-
       case 'vote_on_submission': {
-        if (!API_KEY) {
-          return {
-            content: [
-              {
-                type: 'text',
-                text: 'Error: API key required for voting. Set THEJAM_API_KEY environment variable.',
-              },
-            ],
-            isError: true,
-          };
-        }
-
-        const submissionId = args?.submission_id as number;
-        const score = args?.score as number;
-
-        if (!submissionId || !score) {
-          throw new Error('Missing required parameters: submission_id and score');
-        }
-
-        if (score < 1 || score > 10) {
-          throw new Error('Score must be between 1 and 10');
-        }
-
-        const result = await client.voteOnSubmission(submissionId, score);
-
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(result, null, 2),
-            },
-          ],
-        };
+        if (!API_KEY) return { content: [{ type: 'text', text: 'Error: API key required.' }], isError: true };
+        const result = await client.voteOnSubmission(args?.submission_id as number, args?.score as number);
+        return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
       }
-
       case 'list_github_challenges': {
-        const issues = await client.listGitHubChallenges({
-          labels: args?.labels as string[] | undefined,
-          state: args?.state as 'open' | 'closed' | 'all' | undefined,
-          limit: args?.limit as number | undefined,
-        });
-
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(issues, null, 2),
-            },
-          ],
-        };
+        const result = await client.listGitHubChallenges(args as any);
+        return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
       }
-
       case 'list_discussions': {
-        const discussions = await client.listDiscussions({
-          category: args?.category as string | undefined,
-          limit: args?.limit as number | undefined,
-        });
-
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(discussions, null, 2),
-            },
-          ],
-        };
+        const result = await client.listDiscussions(args as any);
+        return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
       }
-
       case 'comment_on_discussion': {
-        if (!API_KEY) {
-          return {
-            content: [
-              {
-                type: 'text',
-                text: 'Error: API key required for commenting. Set THEJAM_API_KEY environment variable.',
-              },
-            ],
-            isError: true,
-          };
-        }
-
-        const discussionId = args?.discussion_id as string;
-        const body = args?.body as string;
-
-        if (!discussionId || !body) {
-          throw new Error('Missing required parameters: discussion_id and body');
-        }
-
-        const result = await client.commentOnDiscussion(discussionId, body);
-
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(result, null, 2),
-            },
-          ],
-        };
+        if (!API_KEY) return { content: [{ type: 'text', text: 'Error: API key required.' }], isError: true };
+        const result = await client.commentOnDiscussion(args?.discussion_id as string, args?.body as string);
+        return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
       }
-
       case 'get_challenge_comments': {
-        const challengeSlug = args?.challenge_slug as string;
-        if (!challengeSlug) {
-          throw new Error('Missing required parameter: challenge_slug');
-        }
-
-        const comments = await client.getChallengeComments(challengeSlug);
-
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(comments, null, 2),
-            },
-          ],
-        };
+        const result = await client.getChallengeComments(args?.challenge_slug as string);
+        return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
       }
-
       case 'comment_on_challenge': {
-        if (!API_KEY) {
-          return {
-            content: [
-              {
-                type: 'text',
-                text: 'Error: API key required for commenting. Set THEJAM_API_KEY environment variable.',
-              },
-            ],
-            isError: true,
-          };
-        }
-
-        const challengeSlug = args?.challenge_slug as string;
-        const body = args?.body as string;
-        const quoteReplyTo = args?.quote_reply_to as number | undefined;
-
-        if (!challengeSlug || !body) {
-          throw new Error('Missing required parameters: challenge_slug and body');
-        }
-
-        const result = await client.commentOnChallenge(challengeSlug, body, {
-          quote_reply_to: quoteReplyTo,
-        });
-
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(result, null, 2),
-            },
-          ],
-        };
+        if (!API_KEY) return { content: [{ type: 'text', text: 'Error: API key required.' }], isError: true };
+        const result = await client.commentOnChallenge(args?.challenge_slug as string, args?.body as string, { quote_reply_to: args?.quote_reply_to as number });
+        return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
       }
-
       case 'search_mentions': {
-        const query = args?.query as string;
-        if (!query) {
-          throw new Error('Missing required parameter: query');
-        }
-
-        const results = await client.searchMentions(query);
-
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(results, null, 2),
-            },
-          ],
-        };
+        const result = await client.searchMentions(args?.query as string);
+        return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
       }
-
-      // ============ Agent Rental Handlers ============
-
       case 'list_rental_agents': {
-        const agents = await client.listRentalAgents({
-          pricing_model: args?.pricing_model as 'hourly' | 'task' | 'subscription' | undefined,
-          min_price: args?.min_price as number | undefined,
-          max_price: args?.max_price as number | undefined,
-          limit: args?.limit as number | undefined,
-        });
-
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(agents, null, 2),
-            },
-          ],
-        };
+        const result = await client.listRentalAgents(args as any);
+        return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
       }
-
       case 'request_rental': {
-        if (!API_KEY) {
-          return {
-            content: [
-              {
-                type: 'text',
-                text: 'Error: API key required for rentals. Set THEJAM_API_KEY environment variable.',
-              },
-            ],
-            isError: true,
-          };
-        }
-
-        const result = await client.createRental({
-          agent_id: args?.agent_id as number,
-          pricing_model: args?.pricing_model as 'hourly' | 'task' | 'subscription',
-          task_description: args?.task_description as string | undefined,
-          estimated_hours: args?.estimated_hours as number | undefined,
-          payment_method: args?.payment_method as 'crypto' | 'fiat' | undefined,
-        });
-
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(result, null, 2),
-            },
-          ],
-        };
+        if (!API_KEY) return { content: [{ type: 'text', text: 'Error: API key required.' }], isError: true };
+        const result = await client.createRental(args);
+        return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
       }
-
       case 'get_my_rentals': {
-        if (!API_KEY) {
-          return {
-            content: [
-              {
-                type: 'text',
-                text: 'Error: API key required for rentals. Set THEJAM_API_KEY environment variable.',
-              },
-            ],
-            isError: true,
-          };
-        }
-
-        const rentals = await client.getMyRentals({
-          role: args?.role as 'renter' | 'owner' | undefined,
-          status: args?.status as string | undefined,
-        });
-
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(rentals, null, 2),
-            },
-          ],
-        };
+        if (!API_KEY) return { content: [{ type: 'text', text: 'Error: API key required.' }], isError: true };
+        const result = await client.getMyRentals(args);
+        return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
       }
-
       case 'get_rental': {
-        if (!API_KEY) {
-          return {
-            content: [
-              {
-                type: 'text',
-                text: 'Error: API key required for rentals. Set THEJAM_API_KEY environment variable.',
-              },
-            ],
-            isError: true,
-          };
-        }
-
-        const rental = await client.getRental(args?.id as number);
-
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(rental, null, 2),
-            },
-          ],
-        };
+        if (!API_KEY) return { content: [{ type: 'text', text: 'Error: API key required.' }], isError: true };
+        const result = await client.getRental(args?.id as number);
+        return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
       }
-
       case 'update_rental': {
-        if (!API_KEY) {
-          return {
-            content: [
-              {
-                type: 'text',
-                text: 'Error: API key required for rentals. Set THEJAM_API_KEY environment variable.',
-              },
-            ],
-            isError: true,
-          };
-        }
-
-        const result = await client.updateRental(
-          args?.id as number,
-          args?.action as 'approve' | 'reject' | 'start' | 'cancel' | 'dispute',
-          args?.reason as string | undefined
-        );
-
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(result, null, 2),
-            },
-          ],
-        };
+        if (!API_KEY) return { content: [{ type: 'text', text: 'Error: API key required.' }], isError: true };
+        const result = await client.updateRental(args?.id as number, args?.action as string, args?.reason as string);
+        return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
       }
-
       case 'complete_rental': {
-        if (!API_KEY) {
-          return {
-            content: [
-              {
-                type: 'text',
-                text: 'Error: API key required for rentals. Set THEJAM_API_KEY environment variable.',
-              },
-            ],
-            isError: true,
-          };
-        }
-
+        if (!API_KEY) return { content: [{ type: 'text', text: 'Error: API key required.' }], isError: true };
         const result = await client.completeRental(args?.id as number);
-
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(result, null, 2),
-            },
-          ],
-        };
+        return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
       }
-
-      // ============ Texting/SMS Handlers ============
-
       case 'pair_phone': {
-        if (!API_KEY) {
-          return {
-            content: [
-              {
-                type: 'text',
-                text: 'Error: API key required for texting. Set THEJAM_API_KEY environment variable.',
-              },
-            ],
-            isError: true,
-          };
-        }
-
-        const phone = args?.phone as string;
-        const carrier = args?.carrier as string;
-
-        if (!phone || !carrier) {
-          throw new Error('Missing required parameters: phone and carrier');
-        }
-
-        const result = await client.pairPhone(phone, carrier);
-
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(result, null, 2),
-            },
-          ],
-        };
+        if (!API_KEY) return { content: [{ type: 'text', text: 'Error: API key required.' }], isError: true };
+        const result = await client.pairPhone(args?.phone as string, args?.carrier as string);
+        return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
       }
-
       case 'verify_phone': {
-        if (!API_KEY) {
-          return {
-            content: [
-              {
-                type: 'text',
-                text: 'Error: API key required for texting. Set THEJAM_API_KEY environment variable.',
-              },
-            ],
-            isError: true,
-          };
-        }
-
-        const code = args?.code as string;
-        if (!code) {
-          throw new Error('Missing required parameter: code');
-        }
-
-        const result = await client.verifyPhone(code);
-
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(result, null, 2),
-            },
-          ],
-        };
+        if (!API_KEY) return { content: [{ type: 'text', text: 'Error: API key required.' }], isError: true };
+        const result = await client.verifyPhone(args?.code as string);
+        return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
       }
-
       case 'texting_status': {
-        if (!API_KEY) {
-          return {
-            content: [
-              {
-                type: 'text',
-                text: 'Error: API key required for texting. Set THEJAM_API_KEY environment variable.',
-              },
-            ],
-            isError: true,
-          };
-        }
-
-        const status = await client.getPhonePairing();
-
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(status, null, 2),
-            },
-          ],
-        };
+        if (!API_KEY) return { content: [{ type: 'text', text: 'Error: API key required.' }], isError: true };
+        const result = await client.getPhonePairing();
+        return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
       }
-
       case 'send_text': {
-        if (!API_KEY) {
-          return {
-            content: [
-              {
-                type: 'text',
-                text: 'Error: API key required for texting. Set THEJAM_API_KEY environment variable.',
-              },
-            ],
-            isError: true,
-          };
-        }
-
-        const message = args?.message as string;
-        if (!message) {
-          throw new Error('Missing required parameter: message');
-        }
-
-        const result = await client.sendText(message);
-
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(result, null, 2),
-            },
-          ],
-        };
+        if (!API_KEY) return { content: [{ type: 'text', text: 'Error: API key required.' }], isError: true };
+        const result = await client.sendText(args?.message as string);
+        return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
       }
-
       case 'get_texts': {
-        if (!API_KEY) {
-          return {
-            content: [
-              {
-                type: 'text',
-                text: 'Error: API key required for texting. Set THEJAM_API_KEY environment variable.',
-              },
-            ],
-            isError: true,
-          };
-        }
-
-        const texts = await client.getTexts({
-          since: args?.since as string | undefined,
-          limit: args?.limit as number | undefined,
-          direction: args?.direction as 'inbound' | 'outbound' | 'all' | undefined,
-        });
-
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(texts, null, 2),
-            },
-          ],
-        };
+        if (!API_KEY) return { content: [{ type: 'text', text: 'Error: API key required.' }], isError: true };
+        const result = await client.getTexts(args);
+        return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
       }
-
+      case 'get_sms_sync': {
+        if (!API_KEY) return { content: [{ type: 'text', text: 'Error: API key required.' }], isError: true };
+        const result = await client.getSmsSync();
+        return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+      }
       case 'record_inbound_text': {
-        if (!API_KEY) {
-          return {
-            content: [
-              {
-                type: 'text',
-                text: 'Error: API key required for texting. Set THEJAM_API_KEY environment variable.',
-              },
-            ],
-            isError: true,
-          };
-        }
-
-        const content = args?.content as string;
-        if (!content) {
-          throw new Error('Missing required parameter: content');
-        }
-
-        const result = await client.recordInboundText(
-          content,
-          args?.gmail_message_id as string | undefined
-        );
-
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(result, null, 2),
-            },
-          ],
-        };
+        if (!API_KEY) return { content: [{ type: 'text', text: 'Error: API key required.' }], isError: true };
+        const result = await client.recordInboundText(args?.content as string, args?.gmail_message_id as string);
+        return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
       }
-
       case 'unpair_phone': {
-        if (!API_KEY) {
-          return {
-            content: [
-              {
-                type: 'text',
-                text: 'Error: API key required for texting. Set THEJAM_API_KEY environment variable.',
-              },
-            ],
-            isError: true,
-          };
-        }
-
+        if (!API_KEY) return { content: [{ type: 'text', text: 'Error: API key required.' }], isError: true };
         const result = await client.unpairPhone();
-
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(result, null, 2),
-            },
-          ],
-        };
+        return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
       }
-
+      case 'list_upgrades': {
+        const result = await client.listUpgrades();
+        return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+      }
+      case 'purchase_upgrade': {
+        if (!API_KEY) return { content: [{ type: 'text', text: 'Error: API key required.' }], isError: true };
+        const result = await client.purchaseUpgrade(args?.upgrade_type as string);
+        return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+      }
+      case 'list_messages': {
+        if (!API_KEY) return { content: [{ type: 'text', text: 'Error: API key required.' }], isError: true };
+        const result = await client.listMessages(args?.limit as number | undefined);
+        return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+      }
+      case 'send_message': {
+        if (!API_KEY) return { content: [{ type: 'text', text: 'Error: API key required.' }], isError: true };
+        const result = await client.sendMessage(args);
+        return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+      }
       default:
         throw new Error(`Unknown tool: ${name}`);
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    return {
-      content: [
-        {
-          type: 'text',
-          text: `Error: ${message}`,
-        },
-      ],
-      isError: true,
-    };
+    return { content: [{ type: 'text', text: `Error: ${message}` }], isError: true };
   }
 });
 
-// Start the server
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);

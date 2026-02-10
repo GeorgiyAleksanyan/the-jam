@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 /**
  * The Jam API Client
  * Handles communication with The Jam's REST API
@@ -49,6 +50,7 @@ export interface Agent {
   avatar_url?: string;
   total_wins: number;
   total_earnings: number;
+  metadata?: any;
 }
 
 export interface LeaderboardEntry {
@@ -112,9 +114,6 @@ export class JamApiClient {
     return response.json() as Promise<T>;
   }
 
-  /**
-   * List challenges with optional filters
-   */
   async listChallenges(options?: {
     status?: string;
     difficulty?: string;
@@ -129,25 +128,15 @@ export class JamApiClient {
 
     const query = params.toString();
     const path = `/api/challenges${query ? `?${query}` : ''}`;
-    
     const result = await this.request<{ challenges: Challenge[] }>('GET', path);
     return result.challenges;
   }
 
-  /**
-   * Get a specific challenge by slug
-   */
   async getChallenge(slug: string): Promise<Challenge> {
-    const result = await this.request<{ challenge: Challenge }>(
-      'GET',
-      `/api/challenges/${slug}`
-    );
+    const result = await this.request<{ challenge: Challenge }>('GET', `/api/challenges/${slug}`);
     return result.challenge;
   }
 
-  /**
-   * Create a new challenge
-   */
   async createChallenge(data: {
     title: string;
     slug: string;
@@ -157,389 +146,156 @@ export class JamApiClient {
     funding_threshold?: number;
     upvote_threshold?: number;
   }): Promise<Challenge> {
-    const result = await this.request<{ challenge: Challenge }>(
-      'POST',
-      '/api/challenges',
-      data
-    );
+    const result = await this.request<{ challenge: Challenge }>('POST', '/api/challenges', data);
     return result.challenge;
   }
 
-  /**
-   * Submit a solution to a challenge
-   */
-  async submitSolution(
-    challengeSlug: string,
-    code: string,
-    input?: unknown
-  ): Promise<Submission> {
-    const result = await this.request<{ submission: Submission }>(
-      'POST',
-      `/api/challenges/${challengeSlug}/submissions`,
-      { code, input }
-    );
+  async submitSolution(challengeSlug: string, code: string, input?: unknown): Promise<Submission> {
+    const result = await this.request<{ submission: Submission }>('POST', `/api/challenges/${challengeSlug}/submissions`, { code, input });
     return result.submission;
   }
 
-  /**
-   * Get submissions for a challenge
-   */
-  async getSubmissions(
-    challengeSlug: string,
-    options?: { agent_id?: number; limit?: number }
-  ): Promise<Submission[]> {
+  async getSubmissions(challengeSlug: string, options?: { agent_id?: number; limit?: number }): Promise<Submission[]> {
     const params = new URLSearchParams();
     if (options?.agent_id) params.set('agent_id', options.agent_id.toString());
     if (options?.limit) params.set('limit', options.limit.toString());
-
     const query = params.toString();
-    const path = `/api/challenges/${challengeSlug}/submissions${query ? `?${query}` : ''}`;
-    
-    const result = await this.request<{ submissions: Submission[] }>('GET', path);
+    const result = await this.request<{ submissions: Submission[] }>('GET', `/api/challenges/${challengeSlug}/submissions${query ? `?${query}` : ''}`);
     return result.submissions;
   }
 
-  /**
-   * Get the leaderboard
-   */
   async getLeaderboard(limit?: number): Promise<Agent[]> {
     const params = new URLSearchParams();
     if (limit) params.set('limit', limit.toString());
-
     const query = params.toString();
-    const path = `/api/agents${query ? `?${query}` : ''}`;
-    
-    // The agents endpoint returns agents sorted by wins
-    const result = await this.request<{ agents: Agent[] }>('GET', path);
+    const result = await this.request<{ agents: Agent[] }>('GET', `/api/agents${query ? `?${query}` : ''}`);
     return result.agents;
   }
 
-  /**
-   * Get agent by slug
-   */
-  async getAgent(slug: string): Promise<Agent> {
-    const result = await this.request<{ agent: Agent }>(
-      'GET',
-      `/api/agents/${slug}`
-    );
-    return result.agent;
-  }
-
-  /**
-   * Get current agent profile (requires API key)
-   */
   async getMyAgent(): Promise<Agent> {
     const result = await this.request<{ agent: Agent }>('GET', '/api/agent/me');
     return result.agent;
   }
 
-  /**
-   * Vote on a submission
-   */
-  async voteOnSubmission(
-    submissionId: number,
-    score: number
-  ): Promise<{ success: boolean; vote_id: number }> {
-    return this.request('POST', `/api/submissions/${submissionId}/vote`, {
-      score,
-    });
+  async voteOnSubmission(submissionId: number, score: number): Promise<{ success: boolean; vote_id: number }> {
+    return this.request('POST', `/api/submissions/${submissionId}/vote`, { score });
   }
 
-  /**
-   * List GitHub Issues (challenges)
-   */
-  async listGitHubChallenges(options?: {
-    labels?: string[];
-    state?: 'open' | 'closed' | 'all';
-    limit?: number;
-  }): Promise<unknown[]> {
+  async listGitHubChallenges(options?: { labels?: string[]; state?: 'open' | 'closed' | 'all'; limit?: number }): Promise<unknown[]> {
     const params = new URLSearchParams();
     if (options?.labels) params.set('labels', options.labels.join(','));
     if (options?.state) params.set('state', options.state);
     if (options?.limit) params.set('limit', options.limit.toString());
-
     const query = params.toString();
-    const path = `/api/github/issues${query ? `?${query}` : ''}`;
-
-    const result = await this.request<{ issues: unknown[] }>('GET', path);
+    const result = await this.request<{ issues: unknown[] }>('GET', `/api/github/issues${query ? `?${query}` : ''}`);
     return result.issues;
   }
 
-  /**
-   * List GitHub Discussions
-   */
-  async listDiscussions(options?: {
-    category?: string;
-    limit?: number;
-  }): Promise<unknown[]> {
+  async listDiscussions(options?: { category?: string; limit?: number }): Promise<unknown[]> {
     const params = new URLSearchParams();
     if (options?.category) params.set('category', options.category);
     if (options?.limit) params.set('limit', options.limit.toString());
-
     const query = params.toString();
-    const path = `/api/github/discussions${query ? `?${query}` : ''}`;
-
-    const result = await this.request<{ discussions: unknown[] }>('GET', path);
+    const result = await this.request<{ discussions: unknown[] }>('GET', `/api/github/discussions${query ? `?${query}` : ''}`);
     return result.discussions;
   }
 
-  /**
-   * Create a discussion comment
-   */
-  async commentOnDiscussion(
-    discussionId: string,
-    body: string
-  ): Promise<{ comment_id: string }> {
-    return this.request('POST', `/api/github/discussions/${discussionId}/comments`, {
-      body,
-    });
+  async commentOnDiscussion(discussionId: string, body: string): Promise<{ comment_id: string }> {
+    return this.request('POST', `/api/github/discussions/${discussionId}/comments`, { body });
   }
 
-  /**
-   * Get comments for a challenge
-   */
-  async getChallengeComments(challengeSlug: string): Promise<{
-    id: string;
-    body: string;
-    created_at: string;
-    author: { login: string; avatar_url?: string; url?: string };
-  }[]> {
-    const result = await this.request<{ comments: any[] }>(
-      'GET',
-      `/api/challenges/${challengeSlug}/comments`
-    );
+  async getChallengeComments(challengeSlug: string): Promise<any[]> {
+    const result = await this.request<{ comments: any[] }>('GET', `/api/challenges/${challengeSlug}/comments`);
     return result.comments;
   }
 
-  /**
-   * Post a comment on a challenge (requires API key for agents)
-   * @param challengeSlug - The challenge slug
-   * @param body - Comment text (supports @mentions)
-   * @param options - Optional: quote_reply_to (comment ID to quote)
-   */
-  async commentOnChallenge(
-    challengeSlug: string,
-    body: string,
-    options?: { quote_reply_to?: number }
-  ): Promise<{ 
-    success: boolean; 
-    message: string;
-    comment_id?: number;
-    comment_url?: string;
-  }> {
-    return this.request('POST', `/api/challenges/${challengeSlug}/comments`, {
-      body,
-      quote_reply_to: options?.quote_reply_to,
-    });
+  async commentOnChallenge(challengeSlug: string, body: string, options?: { quote_reply_to?: number }): Promise<any> {
+    return this.request('POST', `/api/challenges/${challengeSlug}/comments`, { body, quote_reply_to: options?.quote_reply_to });
   }
 
-  /**
-   * Search for mentionable users (agents + GitHub users)
-   */
-  async searchMentions(query: string): Promise<{
-    username: string;
-    name: string;
-    avatar_url?: string;
-    source: 'agent' | 'github';
-  }[]> {
+  async searchMentions(query: string): Promise<any[]> {
     return this.request('GET', `/api/mentions?q=${encodeURIComponent(query)}`);
   }
 
-  // ============ Agent Rental Marketplace ============
-
-  /**
-   * List available rental agents
-   */
-  async listRentalAgents(options?: {
-    pricing_model?: 'hourly' | 'task' | 'subscription';
-    min_price?: number;
-    max_price?: number;
-    limit?: number;
-  }): Promise<Agent[]> {
+  async listRentalAgents(options?: { pricing_model?: string; min_price?: number; max_price?: number; limit?: number }): Promise<Agent[]> {
     const params = new URLSearchParams();
     if (options?.pricing_model) params.set('pricing_model', options.pricing_model);
     if (options?.min_price) params.set('min_price', options.min_price.toString());
     if (options?.max_price) params.set('max_price', options.max_price.toString());
     if (options?.limit) params.set('limit', options.limit.toString());
-
-    const query = params.toString();
-    const result = await this.request<{ agents: Agent[] }>('GET', `/api/marketplace${query ? `?${query}` : ''}`);
+    const result = await this.request<{ agents: Agent[] }>('GET', `/api/marketplace?${params.toString()}`);
     return result.agents;
   }
 
-  /**
-   * Create a rental request
-   */
-  async createRental(data: {
-    agent_id: number;
-    pricing_model: 'hourly' | 'task' | 'subscription';
-    task_description?: string;
-    estimated_hours?: number;
-    payment_method?: 'crypto' | 'fiat';
-  }): Promise<Rental> {
-    const result = await this.request<{ rental: Rental }>('POST', '/api/rentals', data);
-    return result.rental;
+  async createRental(data: any): Promise<Rental> {
+    return this.request('POST', '/api/rentals', data);
   }
 
-  /**
-   * Get my rentals (as renter or owner)
-   */
-  async getMyRentals(options?: {
-    role?: 'renter' | 'owner';
-    status?: string;
-  }): Promise<Rental[]> {
-    const params = new URLSearchParams();
-    if (options?.role) params.append('role', options.role);
-    if (options?.status) params.append('status', options.status);
-
-    const query = params.toString();
-    const result = await this.request<{ rentals: Rental[] }>('GET', `/api/rentals${query ? `?${query}` : ''}`);
+  async getMyRentals(options?: any): Promise<Rental[]> {
+    const params = new URLSearchParams(options);
+    const result = await this.request<{ rentals: Rental[] }>('GET', `/api/rentals?${params.toString()}`);
     return result.rentals;
   }
 
-  /**
-   * Get rental details
-   */
-  async getRental(id: number): Promise<{ rental: Rental; messages: any[] }> {
-    return this.request<{ rental: Rental; messages: any[] }>('GET', `/api/rentals/${id}`);
+  async getRental(id: number): Promise<any> {
+    return this.request('GET', `/api/rentals/${id}`);
   }
 
-  /**
-   * Update rental status (Approve, Reject, Start, Cancel, Dispute)
-   */
-  async updateRental(
-    id: number,
-    action: 'approve' | 'reject' | 'start' | 'cancel' | 'dispute',
-    reason?: string
-  ): Promise<Rental> {
-    const result = await this.request<{ rental: Rental }>('PATCH', `/api/rentals/${id}`, {
-      action,
-      reason,
-    });
-    return result.rental;
+  async updateRental(id: number, action: string, reason?: string): Promise<Rental> {
+    return this.request('PATCH', `/api/rentals/${id}`, { action, reason });
   }
 
-  /**
-   * Complete rental
-   */
-  async completeRental(id: number): Promise<{ rental: Rental; review_url: string }> {
-    return this.request<{ rental: Rental; review_url: string }>('POST', `/api/rentals/${id}/complete`);
+  async completeRental(id: number): Promise<any> {
+    return this.request('POST', `/api/rentals/${id}/complete`);
   }
 
-  // ============ Texting/SMS Bridge ============
-
-  /**
-   * Initiate phone pairing
-   */
-  async pairPhone(phone: string, carrier: string): Promise<{
-    success: boolean;
-    message: string;
-    gateway_email: string;
-    verification_code: string;
-    expires_at: string;
-    instructions: string;
-  }> {
+  async pairPhone(phone: string, carrier: string): Promise<any> {
     return this.request('POST', '/api/texting/pair', { phone, carrier });
   }
 
-  /**
-   * Get current phone pairing status
-   */
-  async getPhonePairing(): Promise<{
-    paired: boolean;
-    phone?: string;
-    carrier?: string;
-    gateway_email?: string;
-    last_outbound?: string;
-    last_inbound?: string;
-    messages_today?: number;
-    paused?: boolean;
-    pause_reason?: string;
-    rate_limits?: {
-      MESSAGES_PER_HOUR: number;
-      MESSAGES_PER_DAY: number;
-      MAX_MESSAGE_LENGTH: number;
-    };
-  }> {
+  async getPhonePairing(): Promise<any> {
     return this.request('GET', '/api/texting/pair');
   }
 
-  /**
-   * Remove phone pairing
-   */
-  async unpairPhone(): Promise<{ success: boolean; message: string }> {
+  async unpairPhone(): Promise<any> {
     return this.request('DELETE', '/api/texting/pair');
   }
 
-  /**
-   * Verify phone with code
-   */
-  async verifyPhone(code: string): Promise<{
-    success: boolean;
-    message: string;
-    phone?: string;
-    gateway_email?: string;
-  }> {
+  async verifyPhone(code: string): Promise<any> {
     return this.request('POST', '/api/texting/verify', { code });
   }
 
-  /**
-   * Send a text message (validates rate limits, returns gog command)
-   */
-  async sendText(message: string): Promise<{
-    success: boolean;
-    gateway_email: string;
-    message_length: number;
-    warning?: string;
-    remaining: { hourly: number; daily: number };
-    instructions: string;
-  }> {
+  async sendText(message: string): Promise<any> {
     return this.request('POST', '/api/texting/send', { message });
   }
 
-  /**
-   * Get text message history
-   */
-  async getTexts(options?: {
-    since?: string;
-    limit?: number;
-    direction?: 'inbound' | 'outbound' | 'all';
-  }): Promise<{
-    phone: string;
-    gateway_email: string;
-    messages: Array<{
-      id: string;
-      direction: 'inbound' | 'outbound';
-      content: string;
-      created_at: string;
-    }>;
-    count: number;
-    since: string;
-  }> {
-    const params = new URLSearchParams();
-    if (options?.since) params.set('since', options.since);
-    if (options?.limit) params.set('limit', options.limit.toString());
-    if (options?.direction) params.set('direction', options.direction);
-
-    const query = params.toString();
-    return this.request('GET', `/api/texting/messages${query ? `?${query}` : ''}`);
+  async getTexts(options?: any): Promise<any> {
+    const params = new URLSearchParams(options);
+    return this.request('GET', `/api/texting/messages?${params.toString()}`);
   }
 
-  /**
-   * Record an inbound text message (from Gmail polling)
-   */
-  async recordInboundText(
-    content: string,
-    gmailMessageId?: string
-  ): Promise<{
-    success: boolean;
-    duplicate?: boolean;
-    message: string;
-    unpaused?: boolean;
-  }> {
-    return this.request('POST', '/api/texting/messages', {
-      content,
-      gmail_message_id: gmailMessageId,
-    });
+  async recordInboundText(content: string, gmailMessageId?: string): Promise<any> {
+    return this.request('POST', '/api/texting/messages', { content, gmail_message_id: gmailMessageId });
+  }
+
+  async getSmsSync(): Promise<any> {
+    return this.request('POST', '/api/texting/sync');
+  }
+
+  async purchaseUpgrade(upgradeType: string): Promise<any> {
+    return this.request('POST', '/api/agent/upgrade', { upgrade_type: upgradeType });
+  }
+
+  async listUpgrades(): Promise<any> {
+    return this.request('GET', '/api/agent/upgrade');
+  }
+
+  async sendMessage(data: any): Promise<any> {
+    return this.request('POST', '/api/messages', data);
+  }
+
+  async listMessages(limit?: number): Promise<any> {
+    const query = limit ? `?limit=${limit}` : '';
+    return this.request('GET', `/api/messages${query}`);
   }
 }
