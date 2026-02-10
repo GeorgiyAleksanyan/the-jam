@@ -1,15 +1,3 @@
-#!/usr/bin/env node
-/**
- * The Jam MCP Server
- * 
- * Allows AI agents to interact with The Jam coding competition platform
- * via the Model Context Protocol (MCP).
- * 
- * Configuration via environment variables:
- *   THEJAM_API_URL - Base URL (default: https://the-jam.webglo.org)
- *   THEJAM_API_KEY - API key for authenticated requests
- */
-
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import {
@@ -511,6 +499,14 @@ const tools: Tool[] = [
     },
   },
   {
+    name: 'get_sms_sync',
+    description: 'Get the Gmail search query needed to sync new SMS messages via gog.',
+    inputSchema: {
+      type: 'object',
+      properties: {},
+    },
+  },
+  {
     name: 'record_inbound_text',
     description: 'Record an inbound text message after polling Gmail. Helps track conversation and unpauses if paused.',
     inputSchema: {
@@ -536,13 +532,50 @@ const tools: Tool[] = [
       properties: {},
     },
   },
+  // ============ Cross-platform Messaging Tools ============
+  {
+    name: 'list_messages',
+    description: 'List messages received or sent by the agent.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        limit: {
+          type: 'number',
+          description: 'Maximum messages to return (default: 50)',
+        },
+      },
+    },
+  },
+  {
+    name: 'send_message',
+    description: 'Send a message to a human user or another agent.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        recipient_id: {
+          type: 'string',
+          description: 'The ID of the recipient (user ID or agent ID)',
+        },
+        recipient_type: {
+          type: 'string',
+          enum: ['user', 'agent'],
+          description: 'The type of recipient',
+        },
+        content: {
+          type: 'string',
+          description: 'The message content',
+        },
+      },
+      required: ['recipient_id', 'recipient_type', 'content'],
+    },
+  },
 ];
 
 // Create MCP server
 const server = new Server(
   {
     name: 'thejam-mcp',
-    version: '0.3.1',
+    version: '0.6.0', // Bumped version
   },
   {
     capabilities: {
@@ -1232,6 +1265,19 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
       }
 
+      case 'get_sms_sync': {
+        if (!API_KEY) {
+          return {
+            content: [{ type: 'text', text: 'Error: API key required.' }],
+            isError: true,
+          };
+        }
+        const result = await client.getSmsSync();
+        return {
+          content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
+        };
+      }
+
       case 'record_inbound_text': {
         if (!API_KEY) {
           return {
@@ -1290,8 +1336,40 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
       }
 
+      // ============ Cross-platform Messaging Handlers ============
+
+      case 'list_messages': {
+        if (!API_KEY) {
+          return {
+            content: [{ type: 'text', text: 'Error: API key required.' }],
+            isError: true,
+          };
+        }
+        const messages = await client.listMessages(args?.limit as number | undefined);
+        return {
+          content: [{ type: 'text', text: JSON.stringify(messages, null, 2) }],
+        };
+      }
+
+      case 'send_message': {
+        if (!API_KEY) {
+          return {
+            content: [{ type: 'text', text: 'Error: API key required.' }],
+            isError: true,
+          };
+        }
+        const result = await client.sendMessage({
+          recipient_id: args?.recipient_id as string,
+          recipient_type: args?.recipient_type as 'user' | 'agent',
+          content: args?.content as string,
+        });
+        return {
+          content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
+        };
+      }
+
       default:
-        throw new Error(`Unknown tool: ${name}`);
+        throw new Error(`Unknown tool: \${name}`);
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
@@ -1299,7 +1377,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       content: [
         {
           type: 'text',
-          text: `Error: ${message}`,
+          text: \`Error: \${message}\`,
         },
       ],
       isError: true,
@@ -1318,3 +1396,4 @@ main().catch((error) => {
   console.error('Fatal error:', error);
   process.exit(1);
 });
+EOF
