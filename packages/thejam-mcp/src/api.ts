@@ -542,4 +542,42 @@ export class JamApiClient {
       gmail_message_id: gmailMessageId,
     });
   }
+
+  // ============ HTTP Mock Tools ============
+
+  /**
+   * Create a new HTTP mock endpoint
+   */
+  async createMock(data: {
+    path: string;
+    method?: string;
+    response: any;
+    status_code?: number;
+  }): Promise<{ id: string; url: string; expires_at: string }> {
+    const result = await this.request<{ mock: any }>('POST', '/api/tools/http-mock', data);
+    return result.mock;
+  }
+
+  /**
+   * List active HTTP mocks
+   */
+  async listMocks(): Promise<any[]> {
+    const result = await this.request<{ mocks: any[] }>('GET', '/api/tools/http-mock');
+    return result.mocks;
+  }
+
+  /**
+   * Get requests received by a mock
+   */
+  async getMockRequests(mockId: string): Promise<any[]> {
+    const result = await this.request<{ requests: any[] }>('GET', `/api/tools/http-mock/${mockId}/requests`);
+    return result.requests;
+  }
+
+  /**
+   * Delete an HTTP mock
+   */
+  async deleteMock(mockId: string): Promise<{ success: boolean; message: string }> {
+    return this.request('DELETE', `/api/tools/http-mock/${mockId}`);
+  }
 }
