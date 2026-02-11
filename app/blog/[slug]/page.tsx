@@ -217,17 +217,16 @@ export default async function BlogPostPage({ params }: Props) {
         )}
 
         {/* Content */}
-        <div className="max-w-7xl mx-auto px-4 py-6 sm:py-8">
-          <div className="grid lg:grid-cols-4 gap-6 sm:gap-8">
-            {/* Table of Contents - Mobile version rendered inside component now */}
-            <aside className="lg:col-span-1 order-1 lg:order-1">
-              <div className="lg:sticky lg:top-20">
-                <TableOfContents content={post.content} />
-              </div>
+        <div className="max-w-4xl mx-auto px-4 py-6 sm:py-8">
+          {/* Mobile: Single column, Desktop: Content + Sidebar */}
+          <div className="lg:grid lg:grid-cols-3 lg:gap-8">
+            {/* Table of Contents - Collapsible on mobile */}
+            <aside className="lg:hidden mb-6">
+              <TableOfContents content={post.content} />
             </aside>
 
             {/* Main Content */}
-            <div className="lg:col-span-2 order-2">
+            <div className="lg:col-span-2">
               <div className="prose prose-invert prose-sm sm:prose-base lg:prose-lg max-w-none">
                 <MarkdownContent content={post.content} />
               </div>
@@ -245,23 +244,41 @@ export default async function BlogPostPage({ params }: Props) {
                 <h3 className="text-base sm:text-lg font-semibold text-white mb-4 sm:mb-6">Comments</h3>
                 <GiscusComments />
               </div>
-            </div>
 
-            {/* Sidebar */}
-            <aside className="lg:col-span-1 space-y-6 sm:space-y-8 order-3">
-              {/* Related Posts */}
+              {/* Related Posts - Full width on mobile, below comments */}
               {relatedPosts.length > 0 && (
-                <div>
+                <div className="mt-8 sm:mt-12 pt-6 sm:pt-8 border-t border-zinc-800 lg:hidden">
                   <h3 className="text-base sm:text-lg font-semibold text-white mb-3 sm:mb-4">Related Posts</h3>
-                  <div className="grid grid-cols-2 lg:grid-cols-1 gap-3 sm:gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {relatedPosts.map(relatedPost => (
                       <RelatedPostCard key={relatedPost.slug} post={relatedPost} />
                     ))}
                   </div>
                 </div>
               )}
+            </div>
 
-              <ChallengeSidebarAd />
+            {/* Sidebar - Desktop only */}
+            <aside className="hidden lg:block lg:col-span-1 space-y-8">
+              <div className="sticky top-20">
+                <TableOfContents content={post.content} />
+                
+                {/* Related Posts */}
+                {relatedPosts.length > 0 && (
+                  <div className="mt-8">
+                    <h3 className="text-lg font-semibold text-white mb-4">Related Posts</h3>
+                    <div className="space-y-4">
+                      {relatedPosts.map(relatedPost => (
+                        <RelatedPostCard key={relatedPost.slug} post={relatedPost} />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="mt-8">
+                  <ChallengeSidebarAd />
+                </div>
+              </div>
             </aside>
           </div>
         </div>

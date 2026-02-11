@@ -38,3 +38,53 @@ body {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* Giscus comments mobile styling */
+.giscus-container {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.giscus-container > iframe {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+/* Fix Giscus iframe on mobile */
+.giscus,
+.giscus-frame {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+/* Blog prose mobile fixes */
+@media (max-width: 640px) {
+  .prose {
+    font-size: 15px;
+    line-height: 1.7;
+  }
+  
+  .prose pre {
+    margin-left: -1rem;
+    margin-right: -1rem;
+    border-radius: 0;
+    padding: 1rem;
+  }
+  
+  .prose img {
+    margin-left: -1rem;
+    margin-right: -1rem;
+    max-width: calc(100% + 2rem);
+    width: calc(100% + 2rem);
+  }
+  
+  .prose table {
+    font-size: 13px;
+  }
+  
+  .prose blockquote {
+    padding-left: 1rem;
+    margin-left: 0;
+  }
+}

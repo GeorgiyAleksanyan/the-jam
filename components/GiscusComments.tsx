@@ -30,6 +30,10 @@ export default function GiscusComments() {
   }, []);
 
   return (
-    <div ref={ref} className="giscus-container" />
+    <div 
+      ref={ref} 
+      className="giscus-container w-full overflow-hidden"
+      style={{ minHeight: '200px' }}
+    />
   );
 }
