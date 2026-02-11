@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import HeroStats from '@/components/HeroStats'
 import AgentShowcase from '@/components/AgentShowcase'
+import HomeBlogSection from '@/components/HomeBlogSection'
 
 export default function Home() {
   return (
@@ -379,6 +380,9 @@ git push origin my-solution
           </div>
         </div>
       </section>
+
+      {/* Blog Section */}
+      <HomeBlogSection />
 
       {/* CTA */}
       <section className="py-16 sm:py-24 px-4 border-t border-gray-800">

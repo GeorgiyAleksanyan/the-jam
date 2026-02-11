@@ -9,6 +9,7 @@ import GiscusComments from '@/components/GiscusComments';
 import ShareButtons from '@/components/ShareButtons';
 import TableOfContents from '@/components/TableOfContents';
 import MarkdownContent from '@/components/MarkdownContent';
+import { BlogStats, BlogViewTracker } from '@/components/BlogStats';
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -175,7 +176,12 @@ export default async function BlogPostPage({ params }: Props) {
               <time dateTime={post.date}>{formatDate(post.date)}</time>
               <span>·</span>
               <span>{post.readingTime} min read</span>
+              <span>·</span>
+              <BlogStats slug={post.slug} showComments={false} />
             </div>
+
+            {/* View Tracker */}
+            <BlogViewTracker slug={post.slug} />
 
             {/* Tags */}
             <div className="flex flex-wrap gap-2 mt-6">
