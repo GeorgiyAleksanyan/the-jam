@@ -184,11 +184,14 @@ export default function BlogPage() {
       </section>
 
       <div className="max-w-7xl mx-auto px-4 py-6 sm:py-8 md:py-12">
-        <LeaderboardAd />
+        {/* LeaderboardAd only on larger screens */}
+        <div className="hidden md:block">
+          <LeaderboardAd />
+        </div>
         
         <div className="grid lg:grid-cols-4 gap-6 sm:gap-8">
-          {/* Main Content */}
-          <div className="lg:col-span-3 order-2 lg:order-1">
+          {/* Main Content - shows first on all screens */}
+          <div className="lg:col-span-3">
             {/* Featured Post */}
             {featuredPosts.length > 0 && (
               <section className="mb-8 sm:mb-12">
@@ -217,8 +220,8 @@ export default function BlogPage() {
             </section>
           </div>
 
-          {/* Sidebar - shows first on mobile for newsletter visibility */}
-          <div className="lg:col-span-1 order-1 lg:order-2">
+          {/* Sidebar - after posts on mobile */}
+          <div className="lg:col-span-1">
             <Sidebar categories={categories} tags={tags} />
           </div>
         </div>
