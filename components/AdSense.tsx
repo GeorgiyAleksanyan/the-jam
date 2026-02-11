@@ -140,26 +140,27 @@ export function AdSenseScript() {
 // Pre-configured ad components for common placements
 
 /**
- * Footer Ad - horizontal banner
+ * Footer Ad - horizontal banner (smaller on mobile)
  */
 export function FooterAd() {
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
+    <div className="max-w-4xl mx-auto px-4 py-4 sm:py-8">
       <AdSlot 
         slot="footer-banner"
         format="horizontal"
-        style={{ minHeight: 90 }}
+        style={{ minHeight: 50 }}
+        className="md:min-h-[90px]"
       />
     </div>
   );
 }
 
 /**
- * Sidebar Ad - vertical rectangle
+ * Sidebar Ad - vertical rectangle (hidden on mobile)
  */
 export function SidebarAd() {
   return (
-    <div className="sticky top-20">
+    <div className="sticky top-20 hidden lg:block">
       <AdSlot 
         slot="sidebar"
         format="vertical"
@@ -170,7 +171,7 @@ export function SidebarAd() {
 }
 
 /**
- * In-Feed Ad - for content lists
+ * In-Feed Ad - for content lists (compact on mobile)
  */
 export function InFeedAd() {
   return (
@@ -178,48 +179,50 @@ export function InFeedAd() {
       slot="in-feed"
       format="fluid"
       layout="in-article"
-      style={{ minHeight: 100 }}
-      className="my-4"
+      style={{ minHeight: 60 }}
+      className="my-3 sm:my-4 sm:min-h-[100px]"
     />
   );
 }
 
 /**
- * Challenge Page Ad - medium rectangle
+ * Challenge Page Ad - medium rectangle (smaller on mobile)
  */
 export function ChallengePageAd() {
   return (
-    <div className="my-6">
+    <div className="my-4 sm:my-6">
       <AdSlot 
         slot="challenge-page"
         format="rectangle"
-        style={{ minHeight: 250 }}
+        style={{ minHeight: 150 }}
+        className="sm:min-h-[250px]"
       />
     </div>
   );
 }
 
 /**
- * Agent Profile Ad - horizontal
+ * Agent Profile Ad - horizontal (compact on mobile)
  */
 export function AgentProfileAd() {
   return (
-    <div className="mt-6">
+    <div className="mt-4 sm:mt-6">
       <AdSlot 
         slot="agent-profile"
         format="horizontal"
-        style={{ minHeight: 90 }}
+        style={{ minHeight: 50 }}
+        className="sm:min-h-[90px]"
       />
     </div>
   );
 }
 
 /**
- * Leaderboard Ad - top banner
+ * Leaderboard Ad - top banner (hidden on mobile)
  */
 export function LeaderboardAd() {
   return (
-    <div className="mb-6">
+    <div className="mb-6 hidden md:block">
       <AdSlot 
         slot="leaderboard"
         format="horizontal"
@@ -230,58 +233,61 @@ export function LeaderboardAd() {
 }
 
 /**
- * Donate Page Ad - medium rectangle
+ * Donate Page Ad - medium rectangle (smaller on mobile)
  */
 export function DonatePageAd() {
   return (
-    <div className="my-6">
+    <div className="my-4 sm:my-6">
       <AdSlot 
         slot="donate-page"
         format="rectangle"
-        style={{ minHeight: 250 }}
+        style={{ minHeight: 150 }}
+        className="sm:min-h-[250px]"
       />
     </div>
   );
 }
 
 /**
- * Agents Feed Ad - in-feed ad for agents list
+ * Agents Feed Ad - in-feed ad for agents list (compact on mobile)
  */
 export function AgentsFeedAd() {
   return (
-    <div className="my-4">
+    <div className="my-3 sm:my-4">
       <AdSlot 
         slot="agents-feed"
         format="fluid"
         layout="in-article"
-        style={{ minHeight: 100 }}
+        style={{ minHeight: 60 }}
+        className="sm:min-h-[100px]"
       />
     </div>
   );
 }
 
 /**
- * Challenges Feed Ad - in-feed ad for challenges list
+ * Challenges Feed Ad - in-feed ad for challenges list (compact on mobile)
  */
 export function ChallengesFeedAd() {
   return (
-    <div className="my-4">
+    <div className="my-3 sm:my-4">
       <AdSlot 
         slot="challenges-feed"
         format="fluid"
         layout="in-article"
-        style={{ minHeight: 100 }}
+        style={{ minHeight: 60 }}
+        className="sm:min-h-[100px]"
       />
     </div>
   );
 }
 
 /**
- * Challenge Sidebar Ad - vertical ad for challenge detail page
+ * Challenge Sidebar Ad - vertical ad for challenge detail page (hidden on mobile)
  */
 export function ChallengeSidebarAd() {
   return (
-    <div className="sticky top-20">
+    <div className="sticky top-20 hidden lg:block">
       <AdSlot 
         slot="challenge-sidebar"
         format="vertical"
