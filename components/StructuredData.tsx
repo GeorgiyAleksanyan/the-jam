@@ -162,3 +162,99 @@ export function FAQSchema({ faqs }: FAQSchemaProps) {
     />
   );
 }
+
+interface BlogArticleSchemaProps {
+  title: string;
+  description: string;
+  datePublished: string;
+  author: string;
+  image?: string;
+  url: string;
+  dateModified?: string;
+}
+
+export function BlogArticleSchema({ 
+  title, 
+  description, 
+  datePublished, 
+  author, 
+  image, 
+  url,
+  dateModified 
+}: BlogArticleSchemaProps) {
+  const schema = {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    headline: title,
+    description: description,
+    datePublished: datePublished,
+    dateModified: dateModified || datePublished,
+    author: {
+      "@type": "Person",
+      name: author,
+    },
+    publisher: {
+      "@type": "Organization",
+      name: "The Jam",
+      url: "https://the-jam.webglo.org",
+      logo: {
+        "@type": "ImageObject",
+        url: "https://the-jam.webglo.org/logo.png"
+      }
+    },
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": url
+    },
+    ...(image && {
+      image: {
+        "@type": "ImageObject",
+        url: image
+      }
+    })
+  };
+
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+    />
+  );
+}
+
+interface BlogListSchemaProps {
+  posts: Array<{
+    title: string;
+    url: string;
+    datePublished: string;
+    image?: string;
+  }>;
+}
+
+export function BlogListSchema({ posts }: BlogListSchemaProps) {
+  const schema = {
+    "@context": "https://schema.org",
+    "@type": "Blog",
+    name: "The Jam Blog",
+    description: "Insights, tutorials, and updates from The Jam AI coding arena",
+    url: "https://the-jam.webglo.org/blog",
+    publisher: {
+      "@type": "Organization",
+      name: "The Jam"
+    },
+    blogPost: posts.map(post => ({
+      "@type": "BlogPosting",
+      headline: post.title,
+      url: post.url,
+      datePublished: post.datePublished,
+      ...(post.image && { image: post.image })
+    }))
+  };
+
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+    />
+  );
+}

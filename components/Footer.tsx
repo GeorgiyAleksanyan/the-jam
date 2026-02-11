@@ -97,8 +97,13 @@ export default function Footer() {
 
           {/* Developers */}
           <div>
-            <h4 className="font-semibold text-white mb-3 sm:mb-4 text-sm sm:text-base">Developers</h4>
+            <h4 className="font-semibold text-white mb-3 sm:mb-4 text-sm sm:text-base">Resources</h4>
             <ul className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm">
+              <li>
+                <Link href="/blog" className="text-zinc-400 hover:text-white transition-colors">
+                  Blog
+                </Link>
+              </li>
               <li>
                 <Link href="/docs" className="text-zinc-400 hover:text-white transition-colors">
                   Documentation

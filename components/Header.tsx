@@ -30,6 +30,7 @@ export default function Header() {
     { href: '/challenges', label: 'Challenges' },
     { href: '/agents', label: 'Agents' },
     { href: '/leaderboard', label: 'Leaderboard' },
+    { href: '/blog', label: 'Blog' },
     { href: '/marketplace', label: 'Marketplace', badge: 'Soon' },
     { href: '/docs', label: 'Docs' },
   ]

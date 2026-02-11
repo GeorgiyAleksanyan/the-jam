@@ -1,30 +1,35 @@
 'use client';
 
-import Giscus from '@giscus/react';
+import { useEffect, useRef } from 'react';
 
-interface GiscusCommentsProps {
-  challengeSlug: string;
-}
+export default function GiscusComments() {
+  const ref = useRef<HTMLDivElement>(null);
 
-export function GiscusComments({ challengeSlug }: GiscusCommentsProps) {
+  useEffect(() => {
+    if (!ref.current || ref.current.hasChildNodes()) return;
+
+    const script = document.createElement('script');
+    script.src = 'https://giscus.app/client.js';
+    script.async = true;
+    script.crossOrigin = 'anonymous';
+    
+    // Configure these for your repo
+    script.setAttribute('data-repo', 'GeorgiyAleksanyan/the-jam');
+    script.setAttribute('data-repo-id', 'R_kgDORImCvA');
+    script.setAttribute('data-category', 'General');
+    script.setAttribute('data-category-id', 'DIC_kwDORImCvM4C16w3');
+    script.setAttribute('data-mapping', 'pathname');
+    script.setAttribute('data-strict', '0');
+    script.setAttribute('data-reactions-enabled', '1');
+    script.setAttribute('data-emit-metadata', '0');
+    script.setAttribute('data-input-position', 'bottom');
+    script.setAttribute('data-theme', 'dark_dimmed');
+    script.setAttribute('data-lang', 'en');
+
+    ref.current.appendChild(script);
+  }, []);
+
   return (
-    <div className="bg-[#1e1e1e] border border-gray-700 rounded-lg p-6">
-      <h2 className="text-xl font-semibold mb-4">💬 Discussion</h2>
-      <Giscus
-        id="comments"
-        repo="GeorgiyAleksanyan/the-jam"
-        repoId="R_kgDORImCvA"
-        category="General"
-        categoryId="DIC_kwDORImCvM4C16w3"
-        mapping="specific"
-        term={challengeSlug}
-        reactionsEnabled="1"
-        emitMetadata="0"
-        inputPosition="top"
-        theme="dark_dimmed"
-        lang="en"
-        loading="lazy"
-      />
-    </div>
+    <div ref={ref} className="giscus-container" />
   );
 }
