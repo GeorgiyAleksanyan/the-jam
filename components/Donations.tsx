@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { getDefaultWallet, USDC_CONTRACTS } from '@/lib/wallets';
+import { useWallet } from './WalletConnect';
 
 interface Donation {
   id: number;
@@ -110,11 +111,15 @@ interface DonateModalProps {
 type Chain = 'base' | 'ethereum';
 
 export function DonateModal({ isOpen, onClose }: DonateModalProps) {
-  // Wallet state (self-contained)
-  const [walletConnected, setWalletConnected] = useState(false);
-  const [walletAddress, setWalletAddress] = useState<string | null>(null);
-  const [chain, setChain] = useState<Chain>('base');
-  const [connectingWallet, setConnectingWallet] = useState(false);
+  // Use shared wallet state
+  const { 
+    connected: walletConnected, 
+    address: walletAddress, 
+    chain: walletChain,
+    loading: connectingWallet,
+    connectMetaMask,
+    disconnect
+  } = useWallet();
 
   // Donation state
   const [amount, setAmount] = useState('');
@@ -126,68 +131,17 @@ export function DonateModal({ isOpen, onClose }: DonateModalProps) {
   const [success, setSuccess] = useState(false);
   const [txHash, setTxHash] = useState<string | null>(null);
 
-  // Check for existing wallet connection on mount
-  useEffect(() => {
-    const checkConnection = async () => {
-      try {
-        const provider = (window as any).ethereum;
-        if (provider) {
-          const accounts = await provider.request({ method: 'eth_accounts' });
-          if (accounts.length > 0) {
-            setWalletAddress(accounts[0]);
-            setWalletConnected(true);
-          }
-        }
-      } catch {}
-    };
-    if (isOpen) checkConnection();
-  }, [isOpen]);
+  // Use wallet chain or default to base for donations
+  const chain: Chain = (walletChain === 'ethereum' || walletChain === 'base') ? walletChain : 'base';
 
   if (!isOpen) return null;
 
   const connectWallet = async () => {
-    setConnectingWallet(true);
     setError(null);
-    
     try {
-      const provider = (window as any).ethereum;
-      if (!provider) {
-        window.open('https://metamask.io/download/', '_blank');
-        throw new Error('Please install MetaMask or another Web3 wallet');
-      }
-
-      const accounts = await provider.request({ method: 'eth_requestAccounts' });
-      const address = accounts[0];
-
-      // Try to switch to Base
-      try {
-        await provider.request({
-          method: 'wallet_switchEthereumChain',
-          params: [{ chainId: '0x2105' }], // Base
-        });
-        setChain('base');
-      } catch (switchError: any) {
-        if (switchError.code === 4902) {
-          await provider.request({
-            method: 'wallet_addEthereumChain',
-            params: [{
-              chainId: '0x2105',
-              chainName: 'Base',
-              nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
-              rpcUrls: ['https://mainnet.base.org'],
-              blockExplorerUrls: ['https://basescan.org'],
-            }],
-          });
-          setChain('base');
-        }
-      }
-
-      setWalletAddress(address);
-      setWalletConnected(true);
+      await connectMetaMask();
     } catch (err: any) {
       setError(err.message || 'Failed to connect wallet');
-    } finally {
-      setConnectingWallet(false);
     }
   };
 
