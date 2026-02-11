@@ -6,23 +6,24 @@ import { useEffect, useState } from 'react';
 const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_ID || 'G-BFDSVY8Y4N';
 
 // Check if user has consented to analytics cookies
+// Defaults to true (opt-out model)
 function getAnalyticsConsent(): { analytics: boolean; advertising: boolean } {
-  if (typeof window === 'undefined') return { analytics: false, advertising: false };
+  if (typeof window === 'undefined') return { analytics: true, advertising: true };
   try {
     const consent = localStorage.getItem('jam_cookie_consent');
-    if (!consent) return { analytics: false, advertising: false };
+    if (!consent) return { analytics: true, advertising: true }; // Default enabled
     const parsed = JSON.parse(consent);
     return {
-      analytics: parsed.analytics === true,
-      advertising: parsed.advertising === true,
+      analytics: parsed.analytics !== false, // Default true unless explicitly false
+      advertising: parsed.advertising !== false,
     };
   } catch {
-    return { analytics: false, advertising: false };
+    return { analytics: true, advertising: true };
   }
 }
 
 export function GoogleAnalytics() {
-  const [consent, setConsent] = useState({ analytics: false, advertising: false });
+  const [consent, setConsent] = useState({ analytics: true, advertising: true });
   const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {

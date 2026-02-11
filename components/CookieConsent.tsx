@@ -44,9 +44,27 @@ export function CookieConsentProvider({ children }: { children: ReactNode }) {
         const parsed = JSON.parse(stored);
         setConsent(parsed);
       } catch {
-        setShowBanner(true);
+        // Invalid stored consent - use defaults (all enabled)
+        const defaultConsent: CookieConsent = {
+          necessary: true,
+          analytics: true,
+          advertising: true,
+          timestamp: Date.now(),
+        };
+        setConsent(defaultConsent);
+        localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify(defaultConsent));
       }
     } else {
+      // No stored consent - default to all enabled (opt-out model)
+      const defaultConsent: CookieConsent = {
+        necessary: true,
+        analytics: true,
+        advertising: true,
+        timestamp: Date.now(),
+      };
+      setConsent(defaultConsent);
+      localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify(defaultConsent));
+      // Still show banner so users know cookies are being used
       setShowBanner(true);
     }
     setInitialized(true);
@@ -89,8 +107,8 @@ export function CookieConsentProvider({ children }: { children: ReactNode }) {
   const updateConsent = (updates: Partial<CookieConsent>) => {
     const newConsent: CookieConsent = {
       necessary: true,
-      analytics: consent?.analytics ?? false,
-      advertising: consent?.advertising ?? false,
+      analytics: consent?.analytics ?? true,
+      advertising: consent?.advertising ?? true,
       ...updates,
       timestamp: Date.now(),
     };
@@ -127,10 +145,10 @@ export function CookieBanner() {
           <div className="flex items-start gap-4">
             <div className="text-3xl flex-shrink-0">🍪</div>
             <div className="flex-1">
-              <h3 className="text-lg font-semibold text-white mb-2">Cookie Preferences</h3>
+              <h3 className="text-lg font-semibold text-white mb-2">We use cookies</h3>
               <p className="text-zinc-400 text-sm mb-4">
                 We use cookies to enhance your experience, analyze site traffic, and show relevant ads. 
-                You can customize your preferences or accept all cookies.
+                By continuing to use this site, you accept our use of cookies. You can opt out anytime.
               </p>
               
               {showDetails && (
@@ -166,13 +184,13 @@ export function CookieBanner() {
                   onClick={acceptAll}
                   className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium rounded-lg hover:opacity-90 transition-opacity"
                 >
-                  Accept All
+                  Got it
                 </button>
                 <button
                   onClick={acceptNecessary}
                   className="px-6 py-2.5 bg-zinc-700 text-white font-medium rounded-lg hover:bg-zinc-600 transition-colors"
                 >
-                  Essential Only
+                  Opt Out
                 </button>
                 <button
                   onClick={() => setShowDetails(!showDetails)}

@@ -7,15 +7,16 @@ import Script from 'next/script';
 const ADSENSE_CLIENT_ID = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID || 'ca-pub-2718034035990801';
 
 // Check if user has consented to advertising cookies
+// Defaults to true (opt-out model)
 function hasAdConsent(): boolean {
-  if (typeof window === 'undefined') return false;
+  if (typeof window === 'undefined') return true;
   try {
     const consent = localStorage.getItem('jam_cookie_consent');
-    if (!consent) return false;
+    if (!consent) return true; // Default enabled
     const parsed = JSON.parse(consent);
-    return parsed.advertising === true;
+    return parsed.advertising !== false; // Default true unless explicitly false
   } catch {
-    return false;
+    return true;
   }
 }
 
@@ -41,7 +42,7 @@ export function AdSlot({
   style,
   className = '' 
 }: AdSlotProps) {
-  const [showAd, setShowAd] = useState(false);
+  const [showAd, setShowAd] = useState(true); // Default enabled
 
   useEffect(() => {
     // Check consent on mount
@@ -105,7 +106,7 @@ export function AdSlot({
  * Only loads if user has consented
  */
 export function AdSenseScript() {
-  const [loadScript, setLoadScript] = useState(false);
+  const [loadScript, setLoadScript] = useState(true); // Default enabled
 
   useEffect(() => {
     setLoadScript(hasAdConsent());
