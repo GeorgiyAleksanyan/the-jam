@@ -1,0 +1,109 @@
+id;first_name;last_name;email;signup_date;balance;is_active;country
+10;María;علي;user9@example.com;2025-04-12;3847,6731167450007;0;France
+19;  Олег  ;Иванов;user18@example.com;12/18/2025;1915,9007214165401;TRUE;Brazil
+2;François;Smith;user1@example.com;04/30/2025;7160,196129224035;1;NULL
+68;محمد;Doe;user67@example.com;02/25/2025;9239.110444825486;false;UK
+54;François;Doe;user53@example.com;20.02.2025;8502.932390887963;no;USA
+40;François;O'Brien;user39@example.com;2025-11-17;2837,864049930274;True;Japan
+16;John;Müller;user15@example.com;04/16/2025;71.9083898509354;1;UK
+78;Müller;Smith;user77@example.com;20.09.2025;8374,759226064214;TRUE;NULL
+29;Олег;Tanaka;user28@example.com;2026-01-20;3335.5653860508814;yes;Germany
+58;Müller;Tanaka;user57@example.com;2025-05-03;5166.272517149342;True;Japan
+83;Müller;Müller;user82@example.com;2025/12/27;9783.377282205456;False;Germany
+95;Олег;O'Brien;user94@example.com;2025/08/06;5873.403455486075;false;UK
+;;;;;;;
+36;Олег;Doe;user35@example.com;07/29/2025;2547,2250613858196;true;N/A
+12;María;Doe;user11@example.com;28.03.2025;8416.693481724671;TRUE;Russia
+37;François;Иванов;user36@example.com;2025-07-06;9488,744859713142;no;Russia
+28;Müller;Müller;user27@example.com;08/20/2025;6874,971288013305;0;NULL
+49;  María  ;O'Brien;user48@example.com;2025-12-08;9069.288625867683;True;Brazil
+33;John;O'Brien;user32@example.com;10/21/2025;8165,86605596929;Yes;France
+71;John;Tanaka;user70@example.com;2025-04-22;7631.090041717054;False;N/A
+44;山田;O'Brien;user43@example.com;2025/04/04;8305,69169721415;TRUE;NULL
+21;Олег;Smith;user20@example.com;2025/11/19;21,55378351426429;yes;NULL
+69;María;Doe;user68@example.com;01/12/2026;7926,285662324116;False;UK
+1;John;Tanaka;user0@example.com;10/09/2025;1395.3792852514391;0;UK
+14;Jane;O'Brien;user13@example.com;01/07/2026;1283,9146449976279;0;Germany
+91;محمد;Tanaka;user90@example.com;2025-08-22;4683.313888526954;TRUE;Japan
+42;Олег;O'Brien;user41@example.com;07/22/2025;1475.7134509129821;True;Brazil
+9;  Олег  ;علي;user8@example.com;08/10/2025;9973.25777989161;0;NULL
+100;  John  ;García;user99@example.com;04.02.2026;7899.846642347539;no;Russia
+82;Олег;Doe;user81@example.com;2025/08/27;9541,395926226762;0;USA
+79;Олег;O'Brien;user78@example.com;08/31/2025;9807.746313325944;no;Brazil
+85;Jane;علي;user84@example.com;03/31/2025;4976.672523679511;1;NULL
+30;  John  ;Doe;user29@example.com;01/04/2026;5455,902892055224;no;N/A
+31;John;Иванов;user30@example.com;10/27/2025;6669,33410635543;0;Brazil
+84;John;Tanaka;user83@example.com;12.08.2025;4306.8678785540005;0;Brazil
+3;María;علي;user2@example.com;21.08.2025;1554,7949981178156;True;UK
+27;John;Tanaka;user26@example.com;2025-03-09;9389.300039271038;yes;UK
+72;Олег;O'Brien;user71@example.com;2025/12/27;3479,6105629465046;Yes;UK
+20;  Jane  ;O'Brien;user19@example.com;2025-05-06;505.8832952488124;True;Japan
+67;Jane;García;user66@example.com;2026/02/10;4505,0370461770235;yes;USA
+39;María;Tanaka;user38@example.com;2025-07-19;3038.749492683538;false;
+80;محمد;علي;user79@example.com;07/29/2025;4953.286496164235;TRUE;N/A
+17;François;Tanaka;user16@example.com;2025/03/06;2142.368073704386;no;
+74;John;O'Brien;user73@example.com;2025-07-15;1875,8254139452713;no;NULL
+63;María;O'Brien;user62@example.com;2025-12-21;5740,642196263322;False;NULL
+22;  محمد  ;García;user21@example.com;06.11.2025;2177.0089841417494;no;N/A
+26;  François  ;Tanaka;user25@example.com;06.12.2025;8808.641736864396;Yes;France
+18;François;Doe;user17@example.com;2025/12/24;3542,975665895538;False;USA
+23;محمد;García;user22@example.com;2026-01-13;8513.425453441214;no;UK
+98;John;Smith;user97@example.com;08/25/2025;9888.209039414218;True;N/A
+86;محمد;Tanaka;user85@example.com;03/02/2025;738,6190028287298;no;France
+24;François;Smith;user23@example.com;2025-03-31;4192,2491533587245;yes;Japan
+75;María;Tanaka;user74@example.com;2025/07/02;1214.2608336261985;TRUE;France
+93;山田;Doe;user92@example.com;03/03/2025;4714,768679814386;no;Japan
+66;Олег;Tanaka;user65@example.com;2025-04-26;6096.309122451304;1;Japan
+46;María;García;user45@example.com;2025/10/16;6939.4981229905225;True;Brazil
+97;山田;Smith;user96@example.com;23.07.2025;1898.0856216107954;False;UK
+64;محمد;Doe;user63@example.com;2026/01/09;4917.46560291068;TRUE;Germany
+76;Jane;O'Brien;user75@example.com;12/13/2025;4983,7550470719525;0;France
+83;Müller;Müller;user82@example.com;2025/12/27;9783.377282205456;False;Germany
+41;John;Smith;user40@example.com;2025/10/09;6112.739730606801;False;Brazil
+47;François;علي;user46@example.com;2025-07-27;8567,320323039343;False;USA
+5;山田;Müller;user4@example.com;2025-02-16;458.24383655662217;yes;UK
+;;;;;;;
+87;Müller;Müller;user86@example.com;2025/07/30;1066,532674223609;no;Russia
+81;  محمد  ;Doe;user80@example.com;2025/05/18;153.47597915260636;false;Germany
+34;François;علي;user33@example.com;27.08.2025;8643,529420302864;Yes;N/A
+99;山田;García;user98@example.com;2025-04-12;2772.7484597568296;TRUE;N/A
+45;Müller;O'Brien;user44@example.com;03/28/2025;2745.974469175383;yes;Japan
+90;Müller;Иванов;user89@example.com;07/14/2025;2007,947946500762;0;N/A
+65;François;Doe;user64@example.com;2025/05/02;6063.176512429628;0;Brazil
+32;François;García;user31@example.com;2025/11/13;247,86361898188724;false;Japan
+13;  John  ;Иванов;user12@example.com;2025-06-06;1118,6772532089506;yes;Japan
+96;  Müller  ;Smith;user95@example.com;23.02.2025;2172,6968469756157;1;Russia
+15;François;Müller;user14@example.com;11.02.2025;3989,9229999742915;False;N/A
+38;Müller;علي;user37@example.com;2025/08/28;6972.08414194399;1;Brazil
+;;;;;;;
+8;  山田  ;Müller;user7@example.com;2025/03/13;3956,3190106066427;TRUE;France
+51;  John  ;Иванов;user50@example.com;2025-10-20;7812.330496108949;true;Japan
+57;François;O'Brien;user56@example.com;2025/04/26;3363,9661989137526;Yes;Germany
+89;  Müller  ;García;user88@example.com;2025-03-27;9034.03704072968;yes;NULL
+50;Олег;Иванов;user49@example.com;2025/10/26;3268,4580488130855;yes;Brazil
+48;Олег;Müller;user47@example.com;06/07/2025;2729,353117632566;true;Brazil
+56;Müller;O'Brien;user55@example.com;2025/06/18;8257,345984207555;Yes;Japan
+6;محمد;Иванов;user5@example.com;20.11.2025;3552,707002275215;True;
+2;François;Smith;user1@example.com;04/30/2025;7160,196129224035;1;NULL
+77;محمد;García;user76@example.com;07/30/2025;9218.681499315619;True;France
+53;Jane;García;user52@example.com;2025-09-05;5786,847325092435;no;Brazil
+35;John;Doe;user34@example.com;10/01/2025;5805,897337387079;true;UK
+61;Jane;García;user60@example.com;11/05/2025;7386,0465350895065;no;N/A
+79;Олег;O'Brien;user78@example.com;08/31/2025;9807.746313325944;no;Brazil
+4;Müller;Smith;user3@example.com;2025-06-21;9731,157639793706;True;N/A
+73;  Müller  ;علي;user72@example.com;2025-05-06;4548,259086017294;yes;Russia
+25;María;Tanaka;user24@example.com;22.06.2025;9290.183317055142;true;NULL
+59;محمد;O'Brien;user58@example.com;2025-06-27;930.5335055467168;false;Japan
+94;  Müller  ;علي;user93@example.com;12/14/2025;453.46811013382114;yes;NULL
+10;María;علي;user9@example.com;2025-04-12;3847,6731167450007;0;France
+70;Müller;O'Brien;user69@example.com;2025-07-02;5980,366620411036;Yes;
+60;山田;علي;user59@example.com;06.05.2025;3518,105276141683;yes;France
+43;محمد;Smith;user42@example.com;05/02/2025;9174.700144554401;False;Germany
+92;山田;Doe;user91@example.com;2025-07-24;2644.585783524238;False;Russia
+52;María;O'Brien;user51@example.com;2025-03-06;5639.695819300191;False;France
+55;山田;Smith;user54@example.com;2025/07/11;1055,3887064399858;False;Germany
+7;محمد;علي;user6@example.com;09/26/2025;6846.142509898746;1;USA
+88;Олег;Tanaka;user87@example.com;2026-02-07;9106,169537187105;yes;Japan
+11;  Jane  ;Tanaka;user10@example.com;20.03.2025;1115,5217359587643;TRUE;NULL
+62;Müller;Müller;user61@example.com;08/11/2025;3022.6758878043556;yes;USA
+50;Олег;Иванов;user49@example.com;2025/10/26;3268,4580488130855;yes;Brazil
