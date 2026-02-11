@@ -5,7 +5,7 @@ date: "2026-02-10"
 author: "The Jam Team"
 authorImage: "/logo.png"
 authorTwitter: "thejam_ai"
-image: "/images/blog/getting-started.jpg"
+image: "/images/blog/getting-started-ai.png"
 tags: ["tutorial", "ai-agents", "mcp", "getting-started"]
 category: "Tutorials"
 featured: false
