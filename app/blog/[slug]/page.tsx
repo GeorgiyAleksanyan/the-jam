@@ -72,12 +72,12 @@ function RelatedPostCard({ post }: { post: { slug: string; title: string; image?
             <Image src={post.image} alt={post.title} fill className="object-cover group-hover:scale-105 transition-transform" />
           </div>
         )}
-        <div className="p-4">
+        <div className="p-3 sm:p-4">
           <span className="text-xs text-purple-400">{post.category}</span>
-          <h4 className="font-medium text-white group-hover:text-purple-400 transition-colors mt-1 line-clamp-2">
+          <h4 className="font-medium text-white group-hover:text-purple-400 transition-colors mt-1 line-clamp-2 text-sm sm:text-base">
             {post.title}
           </h4>
-          <span className="text-xs text-zinc-500 mt-2 block">{post.readingTime} min read</span>
+          <span className="text-xs text-zinc-500 mt-1.5 sm:mt-2 block">{post.readingTime} min</span>
         </div>
       </div>
     </Link>
@@ -109,62 +109,60 @@ export default async function BlogPostPage({ params }: Props) {
       <article className="min-h-screen">
         {/* Hero */}
         <header className="border-b border-zinc-800 bg-gradient-to-b from-purple-900/20 to-transparent">
-          <div className="max-w-4xl mx-auto px-4 py-12">
-            {/* Breadcrumbs */}
-            <nav className="flex items-center gap-2 text-sm text-zinc-500 mb-6" aria-label="Breadcrumb">
-              <Link href="/" className="hover:text-white transition-colors">Home</Link>
-              <span>/</span>
-              <Link href="/blog" className="hover:text-white transition-colors">Blog</Link>
-              <span>/</span>
+          <div className="max-w-4xl mx-auto px-4 py-8 sm:py-12">
+            {/* Breadcrumbs - scrollable on mobile */}
+            <nav className="flex items-center gap-2 text-xs sm:text-sm text-zinc-500 mb-4 sm:mb-6 overflow-x-auto whitespace-nowrap pb-2 scrollbar-hide" aria-label="Breadcrumb">
+              <Link href="/" className="hover:text-white transition-colors flex-shrink-0">Home</Link>
+              <span className="flex-shrink-0">/</span>
+              <Link href="/blog" className="hover:text-white transition-colors flex-shrink-0">Blog</Link>
+              <span className="flex-shrink-0">/</span>
               <Link 
                 href={`/blog/category/${encodeURIComponent(post.category.toLowerCase())}`}
-                className="hover:text-white transition-colors"
+                className="hover:text-white transition-colors flex-shrink-0"
               >
                 {post.category}
               </Link>
-              <span>/</span>
-              <span className="text-zinc-400 truncate max-w-[200px]">{post.title}</span>
             </nav>
 
             {/* Category */}
             <Link 
               href={`/blog/category/${encodeURIComponent(post.category.toLowerCase())}`}
-              className="inline-block px-3 py-1 bg-purple-500/20 text-purple-400 text-sm rounded-full hover:bg-purple-500/30 transition-colors mb-4"
+              className="inline-block px-2 sm:px-3 py-0.5 sm:py-1 bg-purple-500/20 text-purple-400 text-xs sm:text-sm rounded-full hover:bg-purple-500/30 transition-colors mb-3 sm:mb-4"
             >
               {post.category}
             </Link>
 
             {/* Title */}
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-6 leading-tight">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4 sm:mb-6 leading-tight">
               {post.title}
             </h1>
 
             {/* Description */}
-            <p className="text-xl text-zinc-400 mb-6">
+            <p className="text-base sm:text-lg md:text-xl text-zinc-400 mb-4 sm:mb-6">
               {post.description}
             </p>
 
             {/* Meta */}
-            <div className="flex flex-wrap items-center gap-4 text-sm text-zinc-500">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-zinc-500">
               {/* Author */}
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 sm:gap-3">
                 {post.authorImage && (
                   <Image
                     src={post.authorImage}
                     alt={post.author}
-                    width={40}
-                    height={40}
-                    className="rounded-full"
+                    width={32}
+                    height={32}
+                    className="rounded-full w-8 h-8 sm:w-10 sm:h-10"
                   />
                 )}
                 <div>
-                  <div className="text-white font-medium">{post.author}</div>
+                  <div className="text-white font-medium text-sm">{post.author}</div>
                   {post.authorTwitter && (
                     <a 
                       href={`https://twitter.com/${post.authorTwitter}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-purple-400 hover:text-purple-300"
+                      className="text-purple-400 hover:text-purple-300 text-xs"
                     >
                       @{post.authorTwitter}
                     </a>
@@ -173,23 +171,28 @@ export default async function BlogPostPage({ params }: Props) {
               </div>
               
               <span className="hidden sm:block">·</span>
-              <time dateTime={post.date}>{formatDate(post.date)}</time>
-              <span>·</span>
+              <time dateTime={post.date} className="hidden sm:inline">{formatDate(post.date)}</time>
+              <span className="hidden sm:inline">·</span>
               <span>{post.readingTime} min read</span>
-              <span>·</span>
-              <BlogStats slug={post.slug} showComments={false} />
+              <span className="hidden sm:inline">·</span>
+              <span className="hidden sm:inline"><BlogStats slug={post.slug} showComments={false} /></span>
+            </div>
+
+            {/* Mobile date row */}
+            <div className="sm:hidden mt-2 text-xs text-zinc-500">
+              <time dateTime={post.date}>{formatDate(post.date)}</time>
             </div>
 
             {/* View Tracker */}
             <BlogViewTracker slug={post.slug} />
 
-            {/* Tags */}
-            <div className="flex flex-wrap gap-2 mt-6">
+            {/* Tags - horizontal scroll on mobile */}
+            <div className="flex gap-2 mt-4 sm:mt-6 overflow-x-auto pb-2 scrollbar-hide">
               {post.tags.map(tag => (
                 <Link
                   key={tag}
                   href={`/blog/tag/${encodeURIComponent(tag.toLowerCase())}`}
-                  className="px-3 py-1 text-sm bg-zinc-800 text-zinc-400 rounded-full hover:bg-zinc-700 hover:text-white transition-colors"
+                  className="flex-shrink-0 px-2 sm:px-3 py-0.5 sm:py-1 text-xs sm:text-sm bg-zinc-800 text-zinc-400 rounded-full hover:bg-zinc-700 hover:text-white transition-colors"
                 >
                   #{tag}
                 </Link>
@@ -200,8 +203,8 @@ export default async function BlogPostPage({ params }: Props) {
 
         {/* Featured Image */}
         {post.image && (
-          <div className="max-w-5xl mx-auto px-4 -mt-6 mb-12">
-            <div className="relative aspect-video rounded-xl overflow-hidden shadow-2xl">
+          <div className="max-w-5xl mx-auto px-4 -mt-4 sm:-mt-6 mb-8 sm:mb-12">
+            <div className="relative aspect-video rounded-lg sm:rounded-xl overflow-hidden shadow-2xl">
               <Image
                 src={post.image}
                 alt={post.title}
@@ -214,43 +217,43 @@ export default async function BlogPostPage({ params }: Props) {
         )}
 
         {/* Content */}
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          <div className="grid lg:grid-cols-4 gap-8">
-            {/* Table of Contents (Desktop) */}
-            <aside className="hidden lg:block lg:col-span-1">
-              <div className="sticky top-20">
+        <div className="max-w-7xl mx-auto px-4 py-6 sm:py-8">
+          <div className="grid lg:grid-cols-4 gap-6 sm:gap-8">
+            {/* Table of Contents - Mobile version rendered inside component now */}
+            <aside className="lg:col-span-1 order-1 lg:order-1">
+              <div className="lg:sticky lg:top-20">
                 <TableOfContents content={post.content} />
               </div>
             </aside>
 
             {/* Main Content */}
-            <div className="lg:col-span-2">
-              <div className="prose prose-invert prose-lg max-w-none">
+            <div className="lg:col-span-2 order-2">
+              <div className="prose prose-invert prose-sm sm:prose-base lg:prose-lg max-w-none">
                 <MarkdownContent content={post.content} />
               </div>
 
               <InFeedAd />
 
               {/* Share */}
-              <div className="mt-12 pt-8 border-t border-zinc-800">
-                <h3 className="text-lg font-semibold text-white mb-4">Share this post</h3>
+              <div className="mt-8 sm:mt-12 pt-6 sm:pt-8 border-t border-zinc-800">
+                <h3 className="text-base sm:text-lg font-semibold text-white mb-3 sm:mb-4">Share this post</h3>
                 <ShareButtons url={url} title={post.title} />
               </div>
 
               {/* Comments */}
-              <div className="mt-12 pt-8 border-t border-zinc-800">
-                <h3 className="text-lg font-semibold text-white mb-6">Comments</h3>
+              <div className="mt-8 sm:mt-12 pt-6 sm:pt-8 border-t border-zinc-800">
+                <h3 className="text-base sm:text-lg font-semibold text-white mb-4 sm:mb-6">Comments</h3>
                 <GiscusComments />
               </div>
             </div>
 
             {/* Sidebar */}
-            <aside className="lg:col-span-1 space-y-8">
+            <aside className="lg:col-span-1 space-y-6 sm:space-y-8 order-3">
               {/* Related Posts */}
               {relatedPosts.length > 0 && (
                 <div>
-                  <h3 className="text-lg font-semibold text-white mb-4">Related Posts</h3>
-                  <div className="space-y-4">
+                  <h3 className="text-base sm:text-lg font-semibold text-white mb-3 sm:mb-4">Related Posts</h3>
+                  <div className="grid grid-cols-2 lg:grid-cols-1 gap-3 sm:gap-4">
                     {relatedPosts.map(relatedPost => (
                       <RelatedPostCard key={relatedPost.slug} post={relatedPost} />
                     ))}

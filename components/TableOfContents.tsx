@@ -15,6 +15,7 @@ interface Heading {
 export default function TableOfContents({ content }: Props) {
   const [headings, setHeadings] = useState<Heading[]>([]);
   const [activeId, setActiveId] = useState<string>('');
+  const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
     // Extract headings from markdown content
@@ -57,31 +58,62 @@ export default function TableOfContents({ content }: Props) {
 
   if (headings.length === 0) return null;
 
+  const tocContent = (
+    <ul className="space-y-1.5 sm:space-y-2">
+      {headings.map(({ id, text, level }) => (
+        <li key={id}>
+          <a
+            href={`#${id}`}
+            className={`block text-xs sm:text-sm transition-colors ${
+              level === 3 ? 'pl-3' : level === 4 ? 'pl-6' : ''
+            } ${
+              activeId === id
+                ? 'text-purple-400 font-medium'
+                : 'text-zinc-400 hover:text-white'
+            }`}
+            onClick={(e) => {
+              e.preventDefault();
+              document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+              setIsOpen(false);
+            }}
+          >
+            {text}
+          </a>
+        </li>
+      ))}
+    </ul>
+  );
+
   return (
-    <nav className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
-      <h3 className="font-semibold text-white mb-4">Table of Contents</h3>
-      <ul className="space-y-2">
-        {headings.map(({ id, text, level }) => (
-          <li key={id}>
-            <a
-              href={`#${id}`}
-              className={`block text-sm transition-colors ${
-                level === 3 ? 'pl-3' : level === 4 ? 'pl-6' : ''
-              } ${
-                activeId === id
-                  ? 'text-purple-400 font-medium'
-                  : 'text-zinc-400 hover:text-white'
-              }`}
-              onClick={(e) => {
-                e.preventDefault();
-                document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
-              }}
-            >
-              {text}
-            </a>
-          </li>
-        ))}
-      </ul>
-    </nav>
+    <>
+      {/* Mobile: Collapsible TOC */}
+      <div className="lg:hidden mb-6">
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="w-full flex items-center justify-between bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-left"
+        >
+          <span className="font-semibold text-white text-sm">Table of Contents</span>
+          <svg
+            className={`w-5 h-5 text-zinc-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+        {isOpen && (
+          <div className="bg-zinc-900 border border-t-0 border-zinc-800 rounded-b-xl p-4 -mt-2">
+            {tocContent}
+          </div>
+        )}
+      </div>
+
+      {/* Desktop: Sticky sidebar TOC */}
+      <nav className="hidden lg:block bg-zinc-900 border border-zinc-800 rounded-xl p-5">
+        <h3 className="font-semibold text-white mb-4">Table of Contents</h3>
+        {tocContent}
+      </nav>
+    </>
   );
 }

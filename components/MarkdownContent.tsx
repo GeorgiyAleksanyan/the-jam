@@ -29,22 +29,25 @@ export default function MarkdownContent({ content }: Props) {
           
           if (isInline) {
             return (
-              <code className="px-1.5 py-0.5 bg-zinc-800 rounded text-purple-300 text-sm" {...props}>
+              <code className="px-1 sm:px-1.5 py-0.5 bg-zinc-800 rounded text-purple-300 text-xs sm:text-sm break-words" {...props}>
                 {children}
               </code>
             );
           }
 
           return (
-            <SyntaxHighlighter
-              style={vscDarkPlus as any}
-              language={match?.[1] || 'text'}
-              PreTag="div"
-              className="rounded-lg !bg-zinc-900 !mt-4 !mb-4"
-              showLineNumbers
-            >
-              {String(children).replace(/\n$/, '')}
-            </SyntaxHighlighter>
+            <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+              <SyntaxHighlighter
+                style={vscDarkPlus as any}
+                language={match?.[1] || 'text'}
+                PreTag="div"
+                className="rounded-lg !bg-zinc-900 !mt-4 !mb-4 !text-xs sm:!text-sm"
+                showLineNumbers
+                wrapLongLines={false}
+              >
+                {String(children).replace(/\n$/, '')}
+              </SyntaxHighlighter>
+            </div>
           );
         },
         
@@ -110,7 +113,7 @@ export default function MarkdownContent({ content }: Props) {
         // Blockquotes
         blockquote({ children }) {
           return (
-            <blockquote className="border-l-4 border-purple-500 pl-4 my-6 italic text-zinc-400">
+            <blockquote className="border-l-4 border-purple-500 pl-3 sm:pl-4 my-4 sm:my-6 italic text-zinc-400 text-sm sm:text-base">
               {children}
             </blockquote>
           );
@@ -119,8 +122,8 @@ export default function MarkdownContent({ content }: Props) {
         // Tables
         table({ children }) {
           return (
-            <div className="overflow-x-auto my-6">
-              <table className="w-full border-collapse border border-zinc-700">
+            <div className="overflow-x-auto my-4 sm:my-6 -mx-4 px-4 sm:mx-0 sm:px-0">
+              <table className="w-full border-collapse border border-zinc-700 text-sm">
                 {children}
               </table>
             </div>
@@ -128,14 +131,14 @@ export default function MarkdownContent({ content }: Props) {
         },
         th({ children }) {
           return (
-            <th className="border border-zinc-700 bg-zinc-800 px-4 py-2 text-left font-semibold">
+            <th className="border border-zinc-700 bg-zinc-800 px-2 sm:px-4 py-1.5 sm:py-2 text-left font-semibold text-xs sm:text-sm">
               {children}
             </th>
           );
         },
         td({ children }) {
           return (
-            <td className="border border-zinc-700 px-4 py-2">
+            <td className="border border-zinc-700 px-2 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm">
               {children}
             </td>
           );
@@ -144,7 +147,7 @@ export default function MarkdownContent({ content }: Props) {
         // Headings with anchor links
         h2({ children, id }) {
           return (
-            <h2 id={id} className="text-2xl font-bold text-white mt-12 mb-4 scroll-mt-20 group">
+            <h2 id={id} className="text-xl sm:text-2xl font-bold text-white mt-8 sm:mt-12 mb-3 sm:mb-4 scroll-mt-20 group">
               {children}
               {id && (
                 <a href={`#${id}`} className="ml-2 opacity-0 group-hover:opacity-100 text-purple-400">
@@ -156,7 +159,7 @@ export default function MarkdownContent({ content }: Props) {
         },
         h3({ children, id }) {
           return (
-            <h3 id={id} className="text-xl font-bold text-white mt-8 mb-3 scroll-mt-20 group">
+            <h3 id={id} className="text-lg sm:text-xl font-bold text-white mt-6 sm:mt-8 mb-2 sm:mb-3 scroll-mt-20 group">
               {children}
               {id && (
                 <a href={`#${id}`} className="ml-2 opacity-0 group-hover:opacity-100 text-purple-400">
@@ -168,7 +171,7 @@ export default function MarkdownContent({ content }: Props) {
         },
         h4({ children, id }) {
           return (
-            <h4 id={id} className="text-lg font-bold text-white mt-6 mb-2 scroll-mt-20 group">
+            <h4 id={id} className="text-base sm:text-lg font-bold text-white mt-4 sm:mt-6 mb-2 scroll-mt-20 group">
               {children}
               {id && (
                 <a href={`#${id}`} className="ml-2 opacity-0 group-hover:opacity-100 text-purple-400">
@@ -181,15 +184,15 @@ export default function MarkdownContent({ content }: Props) {
 
         // Lists
         ul({ children }) {
-          return <ul className="list-disc list-inside space-y-2 my-4 text-zinc-300">{children}</ul>;
+          return <ul className="list-disc list-outside ml-4 sm:ml-6 space-y-1.5 sm:space-y-2 my-3 sm:my-4 text-zinc-300 text-sm sm:text-base">{children}</ul>;
         },
         ol({ children }) {
-          return <ol className="list-decimal list-inside space-y-2 my-4 text-zinc-300">{children}</ol>;
+          return <ol className="list-decimal list-outside ml-4 sm:ml-6 space-y-1.5 sm:space-y-2 my-3 sm:my-4 text-zinc-300 text-sm sm:text-base">{children}</ol>;
         },
 
         // Paragraphs
         p({ children }) {
-          return <p className="my-4 text-zinc-300 leading-relaxed">{children}</p>;
+          return <p className="my-3 sm:my-4 text-zinc-300 leading-relaxed text-sm sm:text-base">{children}</p>;
         },
 
         // Horizontal rule
