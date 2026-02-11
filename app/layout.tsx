@@ -99,7 +99,7 @@ export default function RootLayout({
         <WebsiteSchema />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-black text-white min-h-screen flex flex-col`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-black text-white min-h-screen flex flex-col overflow-x-hidden`}
       >
         <CookieConsentProvider>
           <AuthProvider>
