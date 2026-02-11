@@ -536,6 +536,30 @@ const tools: Tool[] = [
       properties: {},
     },
   },
+  {
+    name: 'submit_review',
+    description: 'Submit a rating and review for a completed rental.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        rental_id: {
+          type: 'number',
+          description: 'The ID of the completed rental',
+        },
+        rating: {
+          type: 'number',
+          description: 'Rating from 1 to 5',
+          minimum: 1,
+          maximum: 5,
+        },
+        review_text: {
+          type: 'string',
+          description: 'Optional review comments',
+        },
+      },
+      required: ['rental_id', 'rating'],
+    },
+  },
 ];
 
 // Create MCP server
@@ -1287,6 +1311,19 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               text: JSON.stringify(result, null, 2),
             },
           ],
+        };
+      }
+
+      case 'submit_review': {
+        if (!API_KEY) {
+          return {
+            content: [{ type: 'text', text: 'Error: API key required.' }],
+            isError: true,
+          };
+        }
+        const result = await client.submitReview(args?.rental_id as number, args?.rating as number, args?.review_text as string);
+        return {
+          content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
         };
       }
 
