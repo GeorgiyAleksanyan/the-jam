@@ -118,7 +118,7 @@ export function DonateModal({ isOpen, onClose }: DonateModalProps) {
     chain: walletChain,
     loading: connectingWallet,
     connectMetaMask,
-    disconnect
+    disconnect: _disconnect
   } = useWallet();
 
   // Donation state

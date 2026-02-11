@@ -21,7 +21,8 @@ export interface BlogPost {
   content: string;
 }
 
-export interface BlogPostMeta extends Omit<BlogPost, 'content'> {}
+// BlogPostMeta is BlogPost without the content field
+export type BlogPostMeta = Omit<BlogPost, 'content'>;
 
 function calculateReadingTime(content: string): number {
   const wordsPerMinute = 200;

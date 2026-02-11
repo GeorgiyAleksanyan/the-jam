@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { getAllPosts, getFeaturedPosts, BlogPostMeta } from '@/lib/blog';
@@ -10,7 +11,8 @@ function formatDate(dateString: string): string {
   });
 }
 
-function FeaturedPostCard({ post }: { post: BlogPostMeta }) {
+// Memoized to prevent re-renders when parent state changes
+const FeaturedPostCard = memo(function FeaturedPostCard({ post }: { post: BlogPostMeta }) {
   return (
     <Link href={`/blog/${post.slug}`} className="group block">
       <article className="bg-gradient-to-br from-purple-900/30 to-blue-900/30 border border-purple-500/30 rounded-lg overflow-hidden hover:border-purple-500/50 transition-all">
@@ -51,9 +53,10 @@ function FeaturedPostCard({ post }: { post: BlogPostMeta }) {
       </article>
     </Link>
   );
-}
+});
 
-function PostCard({ post }: { post: BlogPostMeta }) {
+// Memoized to prevent re-renders when iterating over list
+const PostCard = memo(function PostCard({ post }: { post: BlogPostMeta }) {
   return (
     <Link href={`/blog/${post.slug}`} className="group block flex-shrink-0 w-[280px] sm:w-auto">
       <article className="bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden hover:border-zinc-700 transition-all h-full">
@@ -84,7 +87,7 @@ function PostCard({ post }: { post: BlogPostMeta }) {
       </article>
     </Link>
   );
-}
+});
 
 export default function HomeBlogSection() {
   const featuredPosts = getFeaturedPosts(1);

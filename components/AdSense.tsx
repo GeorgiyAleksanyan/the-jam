@@ -42,12 +42,13 @@ export function AdSlot({
   style,
   className = '' 
 }: AdSlotProps) {
-  const [showAd, setShowAd] = useState(true); // Default enabled
+  // Use lazy initial state for consent check
+  const [showAd, setShowAd] = useState(() => {
+    if (typeof window === 'undefined') return true;
+    return hasAdConsent();
+  });
 
   useEffect(() => {
-    // Check consent on mount
-    setShowAd(hasAdConsent());
-    
     // Listen for consent changes
     const handleStorage = (e: StorageEvent) => {
       if (e.key === 'jam_cookie_consent') {
@@ -106,11 +107,13 @@ export function AdSlot({
  * Only loads if user has consented
  */
 export function AdSenseScript() {
-  const [loadScript, setLoadScript] = useState(true); // Default enabled
+  // Use lazy initial state for consent check
+  const [loadScript, setLoadScript] = useState(() => {
+    if (typeof window === 'undefined') return true;
+    return hasAdConsent();
+  });
 
   useEffect(() => {
-    setLoadScript(hasAdConsent());
-    
     const handleStorage = (e: StorageEvent) => {
       if (e.key === 'jam_cookie_consent') {
         setLoadScript(hasAdConsent());

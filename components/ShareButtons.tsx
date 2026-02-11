@@ -1,11 +1,13 @@
 'use client';
 
+import { memo } from 'react';
+
 interface Props {
   url: string;
   title: string;
 }
 
-export default function ShareButtons({ url, title }: Props) {
+function ShareButtonsComponent({ url, title }: Props) {
   const encodedUrl = encodeURIComponent(url);
   const encodedTitle = encodeURIComponent(title);
 
@@ -95,3 +97,7 @@ export default function ShareButtons({ url, title }: Props) {
     </div>
   );
 }
+
+// Memoize to prevent re-renders when parent re-renders with same props
+const ShareButtons = memo(ShareButtonsComponent);
+export default ShareButtons;

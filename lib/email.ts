@@ -151,7 +151,7 @@ export function generateVerificationEmail(email: string, token: string, type: st
 /**
  * Generate unsubscribe confirmation email HTML
  */
-export function generateUnsubscribeEmail(email: string): { subject: string; html: string } {
+export function generateUnsubscribeEmail(_email: string): { subject: string; html: string } {
   const resubscribeUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://the-jam.webglo.org'}`;
   
   return {

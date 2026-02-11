@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
+import { useState, createContext, useContext, ReactNode } from 'react';
 
 type CookieConsent = {
   necessary: boolean;   // Always true - required for site to function
@@ -22,7 +22,8 @@ interface CookieConsentContextType {
 const CookieConsentContext = createContext<CookieConsentContextType | null>(null);
 
 const COOKIE_CONSENT_KEY = 'jam_cookie_consent';
-const CONSENT_VERSION = 1;
+// Version for future consent format migrations
+const _CONSENT_VERSION = 1;
 
 export function useCookieConsent() {
   const context = useContext(CookieConsentContext);
@@ -32,43 +33,46 @@ export function useCookieConsent() {
   return context;
 }
 
-export function CookieConsentProvider({ children }: { children: ReactNode }) {
-  const [consent, setConsent] = useState<CookieConsent | null>(null);
-  const [showBanner, setShowBanner] = useState(false);
-  const [initialized, setInitialized] = useState(false);
-
-  useEffect(() => {
-    const stored = localStorage.getItem(COOKIE_CONSENT_KEY);
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        setConsent(parsed);
-      } catch {
-        // Invalid stored consent - use defaults (all enabled)
-        const defaultConsent: CookieConsent = {
-          necessary: true,
-          analytics: true,
-          advertising: true,
-          timestamp: Date.now(),
-        };
-        setConsent(defaultConsent);
-        localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify(defaultConsent));
-      }
-    } else {
-      // No stored consent - default to all enabled (opt-out model)
+// Helper to get initial state from localStorage
+function getInitialConsentState(): { consent: CookieConsent | null; showBanner: boolean } {
+  if (typeof window === 'undefined') {
+    return { consent: null, showBanner: false };
+  }
+  
+  const stored = localStorage.getItem(COOKIE_CONSENT_KEY);
+  if (stored) {
+    try {
+      const parsed = JSON.parse(stored);
+      return { consent: parsed, showBanner: false };
+    } catch {
+      // Invalid stored consent - use defaults (all enabled)
       const defaultConsent: CookieConsent = {
         necessary: true,
         analytics: true,
         advertising: true,
         timestamp: Date.now(),
       };
-      setConsent(defaultConsent);
       localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify(defaultConsent));
-      // Still show banner so users know cookies are being used
-      setShowBanner(true);
+      return { consent: defaultConsent, showBanner: false };
     }
-    setInitialized(true);
-  }, []);
+  } else {
+    // No stored consent - default to all enabled (opt-out model)
+    const defaultConsent: CookieConsent = {
+      necessary: true,
+      analytics: true,
+      advertising: true,
+      timestamp: Date.now(),
+    };
+    localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify(defaultConsent));
+    // Still show banner so users know cookies are being used
+    return { consent: defaultConsent, showBanner: true };
+  }
+}
+
+export function CookieConsentProvider({ children }: { children: ReactNode }) {
+  // Use lazy initial state to read from localStorage synchronously
+  const [consent, setConsent] = useState<CookieConsent | null>(() => getInitialConsentState().consent);
+  const [showBanner, setShowBanner] = useState(() => getInitialConsentState().showBanner);
 
   const saveConsent = (newConsent: CookieConsent) => {
     localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify(newConsent));
@@ -133,7 +137,7 @@ export function CookieConsentProvider({ children }: { children: ReactNode }) {
 }
 
 export function CookieBanner() {
-  const { showBanner, acceptAll, acceptNecessary, setShowBanner } = useCookieConsent();
+  const { showBanner, acceptAll, acceptNecessary } = useCookieConsent();
   const [showDetails, setShowDetails] = useState(false);
 
   if (!showBanner) return null;

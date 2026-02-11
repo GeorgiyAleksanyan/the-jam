@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/lib/auth-context';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 interface ChecklistItem {
   id: string;
@@ -15,12 +15,11 @@ interface ChecklistItem {
 
 export default function AccountSetupChecklist({ variant = 'full' }: { variant?: 'full' | 'compact' | 'banner' }) {
   const { user, profile } = useAuth();
-  const [dismissed, setDismissed] = useState(false);
-
-  useEffect(() => {
-    const isDismissed = sessionStorage.getItem('setup-checklist-dismissed');
-    if (isDismissed) setDismissed(true);
-  }, []);
+  // Use lazy initial state to read from sessionStorage synchronously
+  const [dismissed, setDismissed] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return sessionStorage.getItem('setup-checklist-dismissed') === 'true';
+  });
 
   if (!user || !profile) return null;
 

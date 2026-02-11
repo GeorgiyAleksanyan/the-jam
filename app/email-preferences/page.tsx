@@ -123,7 +123,7 @@ export default function EmailPreferencesPage() {
           setMessage({ type: 'success', text: 'Unsubscribed from ' + type.replace('_', ' ') });
         }
       }
-    } catch (error) {
+    } catch {
       setMessage({ type: 'error', text: 'Failed to update preferences' });
     } finally {
       setSaving(false);
@@ -144,7 +144,7 @@ export default function EmailPreferencesPage() {
         setSubscriptions(prev => prev.map(s => ({ ...s, subscribed: false })));
         setMessage({ type: 'success', text: 'Unsubscribed from all emails' });
       }
-    } catch (error) {
+    } catch {
       setMessage({ type: 'error', text: 'Failed to unsubscribe' });
     } finally {
       setSaving(false);

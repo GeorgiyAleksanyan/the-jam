@@ -17,7 +17,7 @@ interface FeedbackFormData {
 }
 
 export default function FeedbackWidget() {
-  const { user, profile } = useAuth();
+  const { user, profile: _profile } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [type, setType] = useState<FeedbackType>('bug');
   const [title, setTitle] = useState('');

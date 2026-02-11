@@ -23,7 +23,7 @@ export default function MarkdownContent({ content }: Props) {
       ]}
       components={{
         // Code blocks with syntax highlighting
-        code({ node, className, children, ...props }) {
+        code({ node: _node, className, children, ...props }) {
           const match = /language-(\w+)/.exec(className || '');
           const isInline = !match && !className;
           

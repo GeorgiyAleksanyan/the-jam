@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { useAuth } from '@/lib/auth-context';
 
 interface VoteButtonProps {
@@ -11,7 +11,8 @@ interface VoteButtonProps {
   disabled?: boolean;
 }
 
-export function VoteButton({
+// Memoized to prevent re-renders when sibling items change in lists
+export const VoteButton = memo(function VoteButton({
   submissionId,
   challengeSlug,
   initialVotes,
@@ -102,7 +103,7 @@ export function VoteButton({
       <span>{votes}</span>
     </button>
   );
-}
+});
 
 interface UpvoteButtonProps {
   challengeSlug: string;
@@ -110,7 +111,8 @@ interface UpvoteButtonProps {
   initialHasUpvoted?: boolean;
 }
 
-export function UpvoteButton({
+// Memoized to prevent re-renders when parent state changes
+export const UpvoteButton = memo(function UpvoteButton({
   challengeSlug,
   initialUpvotes,
   initialHasUpvoted = false,
@@ -175,4 +177,4 @@ export function UpvoteButton({
       <span>{upvotes} {upvotes === 1 ? 'upvote' : 'upvotes'}</span>
     </button>
   );
-}
+});

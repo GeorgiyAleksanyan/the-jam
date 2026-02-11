@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 
 interface Props {
   content: string;
@@ -13,12 +13,11 @@ interface Heading {
 }
 
 export default function TableOfContents({ content }: Props) {
-  const [headings, setHeadings] = useState<Heading[]>([]);
   const [activeId, setActiveId] = useState<string>('');
   const [isOpen, setIsOpen] = useState(false);
 
-  useEffect(() => {
-    // Extract headings from markdown content
+  // Derive headings from content using useMemo instead of effect + setState
+  const headings = useMemo(() => {
     const regex = /^(#{2,4})\s+(.+)$/gm;
     const matches: Heading[] = [];
     let match;
@@ -33,7 +32,7 @@ export default function TableOfContents({ content }: Props) {
       matches.push({ id, text, level });
     }
 
-    setHeadings(matches);
+    return matches;
   }, [content]);
 
   useEffect(() => {

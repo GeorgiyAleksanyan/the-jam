@@ -23,14 +23,23 @@ function getAnalyticsConsent(): { analytics: boolean; advertising: boolean } {
 }
 
 export function GoogleAnalytics() {
-  const [consent, setConsent] = useState({ analytics: true, advertising: true });
-  const [initialized, setInitialized] = useState(false);
+  // Use lazy initial state for consent check
+  const [consent, setConsent] = useState(() => {
+    if (typeof window === 'undefined') return { analytics: true, advertising: true };
+    return getAnalyticsConsent();
+  });
+  // Track if component is mounted (for SSR/CSR consistency)
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
-    // Check consent on mount
-    setConsent(getAnalyticsConsent());
-    setInitialized(true);
+    // Mark as mounted after hydration - this is intentional for SSR/CSR consistency
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setIsMounted(true);
+  }, []);
 
+  useEffect(() => {
+    if (!isMounted) return;
+    
     // Listen for consent changes
     const handleStorage = (e: StorageEvent) => {
       if (e.key === 'jam_cookie_consent') {
@@ -50,15 +59,15 @@ export function GoogleAnalytics() {
     };
     window.addEventListener('storage', handleStorage);
     return () => window.removeEventListener('storage', handleStorage);
-  }, []);
+  }, [isMounted]);
 
   // Don't render in development
   if (process.env.NODE_ENV !== 'production') {
     return null;
   }
 
-  // Wait for initialization
-  if (!initialized) {
+  // Wait for hydration to complete to avoid mismatch
+  if (!isMounted) {
     return null;
   }
 

@@ -211,8 +211,8 @@ export function StatusPageClient() {
       uptimeHistory: Array(90).fill('operational' as StatusType),
     }))
   );
-  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
-  const [historyLoaded, setHistoryLoaded] = useState(false);
+  const [_lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  const [_historyLoaded, setHistoryLoaded] = useState(false);
 
   // Fetch historical uptime data
   useEffect(() => {

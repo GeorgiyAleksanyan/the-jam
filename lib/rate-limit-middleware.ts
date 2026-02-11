@@ -38,8 +38,8 @@ export async function withRateLimit(
 export function addRateLimitHeaders(
   response: NextResponse,
   request: Request,
-  endpointType: EndpointType = 'api',
-  userId?: string
+  _endpointType: EndpointType = 'api',
+  _userId?: string
 ): void {
   // Note: This is called after the rate limit check, so we just add informational headers
   // The actual limit check happens in withRateLimit

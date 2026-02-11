@@ -57,7 +57,7 @@ export function useWallet() {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [initialized, setInitialized] = useState(false);
+  const [_initialized, setInitialized] = useState(false);
 
   // Check for existing connection on mount - prefer profile, fallback to localStorage
   useEffect(() => {

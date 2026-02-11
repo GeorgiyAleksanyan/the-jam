@@ -14,7 +14,7 @@ function ResetPasswordForm() {
   const [sessionReady, setSessionReady] = useState(false);
   
   const router = useRouter();
-  const searchParams = useSearchParams();
+  const _searchParams = useSearchParams();
 
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
