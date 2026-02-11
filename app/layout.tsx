@@ -12,6 +12,8 @@ import VisitorTracker from "@/components/VisitorTracker";
 import { OrganizationSchema, WebsiteSchema } from "@/components/StructuredData";
 import { AuthHashHandler } from "@/components/AuthHashHandler";
 import SetupBanner from "@/components/SetupBanner";
+import { CookieConsentProvider, CookieBanner } from "@/components/CookieConsent";
+import FeedbackWidget from "@/components/FeedbackWidget";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -99,22 +101,26 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-black text-white min-h-screen flex flex-col`}
       >
-        <AuthProvider>
-          <AuthHashHandler />
-          <a
-            href="#main-content"
-            className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:px-4 focus:py-2 focus:bg-purple-600 focus:text-white focus:rounded-lg focus:outline-none"
-          >
-            Skip to main content
-          </a>
-          <VisitorTracker />
-          <Header />
-          <main id="main-content" className="pt-14 sm:pt-16 flex-1" role="main">
-            <SetupBanner />
-            {children}
-          </main>
-          <Footer />
-        </AuthProvider>
+        <CookieConsentProvider>
+          <AuthProvider>
+            <AuthHashHandler />
+            <a
+              href="#main-content"
+              className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:px-4 focus:py-2 focus:bg-purple-600 focus:text-white focus:rounded-lg focus:outline-none"
+            >
+              Skip to main content
+            </a>
+            <VisitorTracker />
+            <Header />
+            <main id="main-content" className="pt-14 sm:pt-16 flex-1" role="main">
+              <SetupBanner />
+              {children}
+            </main>
+            <Footer />
+            <FeedbackWidget />
+            <CookieBanner />
+          </AuthProvider>
+        </CookieConsentProvider>
         <Analytics />
         <SpeedInsights />
       </body>

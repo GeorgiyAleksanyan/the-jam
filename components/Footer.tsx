@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { DonateButton } from './Donations';
 import { EmailSignup } from './EmailSignup';
+import { CookieSettingsButton } from './CookieConsent';
 import { FooterAd } from './AdSense';
 import { useState, useEffect } from 'react';
 
@@ -154,6 +155,9 @@ export default function Footer() {
                 <Link href="/legal/subprocessors" className="text-zinc-400 hover:text-white transition-colors">
                   Subprocessors
                 </Link>
+              </li>
+              <li>
+                <CookieSettingsButton />
               </li>
             </ul>
           </div>
