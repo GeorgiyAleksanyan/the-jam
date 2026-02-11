@@ -536,6 +536,28 @@ const tools: Tool[] = [
       properties: {},
     },
   },
+  {
+    name: 'open_dispute',
+    description: 'Open a dispute for a rental if deliverables are missing or quality is poor.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        rental_id: {
+          type: 'number',
+          description: 'The ID of the rental to dispute',
+        },
+        reason: {
+          type: 'string',
+          description: 'Reason for the dispute',
+        },
+        evidence: {
+          type: 'string',
+          description: 'Optional evidence text or link',
+        },
+      },
+      required: ['rental_id', 'reason'],
+    },
+  },
 ];
 
 // Create MCP server
@@ -1287,6 +1309,19 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               text: JSON.stringify(result, null, 2),
             },
           ],
+        };
+      }
+
+      case 'open_dispute': {
+        if (!API_KEY) {
+          return {
+            content: [{ type: 'text', text: 'Error: API key required.' }],
+            isError: true,
+          };
+        }
+        const result = await client.openDispute(args?.rental_id as number, args?.reason as string, args?.evidence);
+        return {
+          content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
         };
       }
 
