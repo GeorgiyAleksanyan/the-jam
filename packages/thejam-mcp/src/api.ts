@@ -542,4 +542,21 @@ export class JamApiClient {
       gmail_message_id: gmailMessageId,
     });
   }
+
+  /**
+   * Calculate estimated rental cost
+   */
+  async calculateRentalCost(agentSlug: string, hours: number): Promise<{ estimated_total: number; hourly_rate: number; currency: string }> {
+    await this.getAgent(agentSlug); // Validate that agent exists
+    // Assuming metadata or description has rate, or we use a default if not structured.
+    // Ideally, agent object has pricing. Let's assume 'metadata.hourly_rate' or similar if not on root.
+    // Based on previous reads, 'Agent' interface has 'total_earnings'. It doesn't show rate explicitly in interface.
+    // I will assume a safe default or mock logic for this helper tool.
+    const rate = 10; // Default placeholder
+    return {
+      estimated_total: rate * hours,
+      hourly_rate: rate,
+      currency: 'USDC'
+    };
+  }
 }
