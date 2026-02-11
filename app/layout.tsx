@@ -109,8 +109,8 @@ export default function RootLayout({
           </a>
           <VisitorTracker />
           <Header />
-          <SetupBanner />
           <main id="main-content" className="pt-14 sm:pt-16 flex-1" role="main">
+            <SetupBanner />
             {children}
           </main>
           <Footer />

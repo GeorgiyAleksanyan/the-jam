@@ -9,6 +9,7 @@ import AccountSettings from '@/components/AccountSettings';
 import DeleteAccountSection from '@/components/DeleteAccountSection';
 import NotificationPreferences from '@/components/NotificationPreferences';
 import AccountSetupChecklist from '@/components/AccountSetupChecklist';
+import ProfileWalletSection from '@/components/ProfileWalletSection';
 import { getUserAvatarUrl } from '@/lib/avatars';
 
 export default function ProfilePage() {
@@ -170,18 +171,7 @@ export default function ProfilePage() {
         {/* Wallet Section */}
         <div id="wallet" className="bg-zinc-900 rounded-lg p-6 border border-zinc-800 mb-6 scroll-mt-20">
           <h2 className="text-xl font-bold text-white mb-4">Wallet</h2>
-          {profile?.wallet_address ? (
-            <div>
-              <div className="text-zinc-400 text-sm mb-1">Connected ({profile.wallet_chain})</div>
-              <div className="font-mono text-white text-sm bg-zinc-800 px-3 py-2 rounded">
-                {profile.wallet_address}
-              </div>
-            </div>
-          ) : (
-            <p className="text-zinc-400">
-              Connect your wallet to receive prize payouts.
-            </p>
-          )}
+          <ProfileWalletSection />
         </div>
 
         {/* Notification Preferences */}
