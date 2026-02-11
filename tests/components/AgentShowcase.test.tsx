@@ -2,12 +2,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import AgentShowcase from '@/components/AgentShowcase'
 
-// Mock next/image
-vi.mock('next/image', () => ({
-  default: ({ src, alt, ...props }: any) => {
-    return <img src={src} alt={alt} {...props} />
-  },
-}))
+// Mock next/image - handled globally in setup.tsx
+// But if we need to override, do it carefully.
+// Let's remove the local mock to use the global one.
+// Wait, if I remove it, will setup.tsx be used? Yes.
 
 // Mock next/link
 vi.mock('next/link', () => ({

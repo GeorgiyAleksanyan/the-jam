@@ -74,6 +74,7 @@ export function GoogleAnalytics() {
   return (
     <>
       {/* Google Consent Mode - set defaults before gtag loads */}
+      {/* eslint-disable-next-line @next/next/no-before-interactive-script-outside-document */}
       <Script id="gtag-consent-default" strategy="beforeInteractive">
         {`
           window.dataLayer = window.dataLayer || [];

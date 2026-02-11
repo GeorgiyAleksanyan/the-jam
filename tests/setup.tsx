@@ -1,6 +1,18 @@
 import '@testing-library/jest-dom'
 import { vi } from 'vitest'
 
+// Mock next/image
+vi.mock('next/image', async () => {
+  const React = await import('react')
+  return {
+    __esModule: true,
+    default: (props: { fill?: boolean; unoptimized?: boolean; [key: string]: unknown }) => {
+      const { fill, unoptimized: _unoptimized, ...rest } = props
+      return React.createElement('img', { ...rest, 'data-fill': fill })
+    },
+  }
+})
+
 // Mock crypto module - needs to be here for API routes that import it
 vi.mock('crypto', async (importOriginal) => {
   const actual = await importOriginal<typeof import('crypto')>()
@@ -46,3 +58,21 @@ process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'test-anon-key'
 process.env.SUPABASE_SERVICE_ROLE_KEY = 'test-service-key'
 process.env.STRIPE_SECRET_KEY = 'sk_test_mock123'
 process.env.NEXT_PUBLIC_APP_URL = 'https://test.example.com'
+
+// Suppress known console noise
+const originalWarn = console.warn
+console.warn = (...args) => {
+  // Supabase client warning in tests
+  if (typeof args[0] === 'string' && args[0].includes('Multiple GoTrueClient instances')) return
+  originalWarn(...args)
+}
+
+const originalError = console.error
+console.error = (...args) => {
+  // Expected errors in tests
+  if (typeof args[0] === 'string') {
+    if (args[0].includes('Upstash rate limit error')) return
+    if (args[0].includes('Challenges fetch error')) return
+  }
+  originalError(...args)
+}

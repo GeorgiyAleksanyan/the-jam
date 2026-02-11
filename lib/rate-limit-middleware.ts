@@ -6,6 +6,8 @@ type EndpointType = keyof typeof RATE_LIMITS;
 /**
  * Rate limit wrapper for API routes
  * Returns null if rate limit passes, or a 429 response if exceeded
+ * 
+ * TODO: Consider returning the rate limit result so the caller can add headers to success response
  */
 export async function withRateLimit(
   request: Request,
