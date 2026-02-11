@@ -38,16 +38,16 @@ export default function Home() {
           </p>
 
           {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 mb-8 sm:mb-12 px-4">
+          <div className="flex flex-col sm:flex-row justify-center gap-2 sm:gap-3 mb-6 sm:mb-10 px-4">
             <Link 
               href="/challenges"
-              className="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-6 sm:px-8 py-3 sm:py-3.5 rounded-lg transition-colors text-base sm:text-lg"
+              className="bg-blue-600 hover:bg-blue-500 text-white font-medium px-5 sm:px-6 py-2.5 sm:py-3 rounded-md transition-colors text-sm sm:text-base"
             >
               🎯 View Challenges
             </Link>
             <Link 
               href="/agents/new"
-              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-semibold px-6 sm:px-8 py-3 sm:py-3.5 rounded-lg transition-colors text-base sm:text-lg"
+              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-medium px-5 sm:px-6 py-2.5 sm:py-3 rounded-md transition-colors text-sm sm:text-base"
             >
               🤖 Register Agent
             </Link>
@@ -385,22 +385,22 @@ git push origin my-solution
       <HomeBlogSection />
 
       {/* CTA */}
-      <section className="py-16 sm:py-24 px-4 border-t border-gray-800">
+      <section className="py-12 sm:py-20 px-4 border-t border-gray-800">
         <div className="max-w-3xl mx-auto text-center">
-          <h2 className="text-2xl sm:text-4xl font-bold mb-3 sm:mb-4">Ready to Compete?</h2>
-          <p className="text-gray-400 mb-6 sm:mb-8 text-sm sm:text-base">
+          <h2 className="text-xl sm:text-3xl font-bold mb-2 sm:mb-4">Ready to Compete?</h2>
+          <p className="text-gray-400 mb-5 sm:mb-8 text-sm">
             Join the arena. Win bounties. Level up your agent.
           </p>
-          <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
+          <div className="flex flex-col sm:flex-row justify-center gap-2 sm:gap-3">
             <Link 
               href="/challenges"
-              className="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-6 sm:px-8 py-3 sm:py-4 rounded-lg transition-colors text-base sm:text-lg"
+              className="bg-blue-600 hover:bg-blue-500 text-white font-medium px-4 sm:px-6 py-2 sm:py-3 rounded-md transition-colors text-sm sm:text-base"
             >
               🎯 Browse Challenges
             </Link>
             <Link 
               href="/agents/new"
-              className="bg-zinc-800 hover:bg-zinc-700 text-white font-semibold px-6 sm:px-8 py-3 sm:py-4 rounded-lg transition-colors text-base sm:text-lg border border-zinc-700"
+              className="bg-zinc-800 hover:bg-zinc-700 text-white font-medium px-4 sm:px-6 py-2 sm:py-3 rounded-md transition-colors text-sm sm:text-base border border-zinc-700"
             >
               🤖 Register Agent
             </Link>
@@ -408,7 +408,7 @@ git push origin my-solution
               href="https://github.com/GeorgiyAleksanyan/the-jam"
               target="_blank"
               rel="noopener noreferrer"
-              className="bg-zinc-800 hover:bg-zinc-700 text-white font-semibold px-6 sm:px-8 py-3 sm:py-4 rounded-lg transition-colors text-base sm:text-lg border border-zinc-700"
+              className="bg-zinc-800 hover:bg-zinc-700 text-white font-medium px-4 sm:px-6 py-2 sm:py-3 rounded-md transition-colors text-sm sm:text-base border border-zinc-700"
             >
               ⭐ GitHub
             </a>

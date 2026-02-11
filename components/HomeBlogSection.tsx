@@ -13,41 +13,39 @@ function formatDate(dateString: string): string {
 function FeaturedPostCard({ post }: { post: BlogPostMeta }) {
   return (
     <Link href={`/blog/${post.slug}`} className="group block">
-      <article className="bg-gradient-to-br from-purple-900/30 to-blue-900/30 border border-purple-500/30 rounded-xl overflow-hidden hover:border-purple-500/50 transition-all">
+      <article className="bg-gradient-to-br from-purple-900/30 to-blue-900/30 border border-purple-500/30 rounded-lg overflow-hidden hover:border-purple-500/50 transition-all">
         <div className="md:flex">
           {post.image && (
-            <div className="md:w-1/2 relative aspect-video md:aspect-auto">
+            <div className="md:w-1/2 relative aspect-video md:aspect-auto md:min-h-[200px]">
               <Image
                 src={post.image}
                 alt={post.title}
                 fill
                 className="object-cover group-hover:scale-105 transition-transform duration-300"
               />
-              <div className="absolute top-3 left-3 px-2 py-1 bg-gradient-to-r from-yellow-500 to-orange-500 text-black text-xs font-bold rounded">
+              <div className="absolute top-2 left-2 px-1.5 py-0.5 bg-gradient-to-r from-yellow-500 to-orange-500 text-black text-[10px] font-bold rounded">
                 Featured
               </div>
             </div>
           )}
-          <div className="md:w-1/2 p-6 md:p-8 flex flex-col justify-center">
-            <div className="flex items-center gap-2 text-xs text-zinc-400 mb-3">
-              <span className="px-2 py-0.5 bg-purple-500/20 text-purple-400 rounded">
+          <div className="md:w-1/2 p-4 md:p-6 flex flex-col justify-center">
+            <div className="flex items-center gap-1.5 text-[10px] text-zinc-400 mb-2">
+              <span className="px-1.5 py-0.5 bg-purple-500/20 text-purple-400 rounded text-[10px]">
                 {post.category}
               </span>
               <span>{formatDate(post.date)}</span>
               <span>·</span>
-              <span>{post.readingTime} min read</span>
+              <span>{post.readingTime} min</span>
             </div>
-            <h3 className="text-xl md:text-2xl font-bold text-white group-hover:text-purple-400 transition-colors mb-3">
+            <h3 className="text-base md:text-lg font-bold text-white group-hover:text-purple-400 transition-colors mb-2 line-clamp-2">
               {post.title}
             </h3>
-            <p className="text-zinc-400 mb-4 line-clamp-2">
+            <p className="text-zinc-400 text-sm mb-3 line-clamp-2 hidden sm:block">
               {post.description}
             </p>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-purple-400 group-hover:text-purple-300">
-                Read more →
-              </span>
-            </div>
+            <span className="text-xs text-purple-400 group-hover:text-purple-300">
+              Read more →
+            </span>
           </div>
         </div>
       </article>
@@ -57,8 +55,8 @@ function FeaturedPostCard({ post }: { post: BlogPostMeta }) {
 
 function PostCard({ post }: { post: BlogPostMeta }) {
   return (
-    <Link href={`/blog/${post.slug}`} className="group block">
-      <article className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden hover:border-zinc-700 transition-all h-full">
+    <Link href={`/blog/${post.slug}`} className="group block flex-shrink-0 w-[280px] sm:w-auto">
+      <article className="bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden hover:border-zinc-700 transition-all h-full">
         {post.image && (
           <div className="relative aspect-video">
             <Image
@@ -69,17 +67,17 @@ function PostCard({ post }: { post: BlogPostMeta }) {
             />
           </div>
         )}
-        <div className="p-5">
-          <div className="flex items-center gap-2 text-xs text-zinc-500 mb-2">
-            <span className="px-2 py-0.5 bg-zinc-800 text-zinc-400 rounded">
+        <div className="p-3 sm:p-4">
+          <div className="flex items-center gap-1.5 text-[10px] text-zinc-500 mb-1.5">
+            <span className="px-1.5 py-0.5 bg-zinc-800 text-zinc-400 rounded">
               {post.category}
             </span>
             <span>{formatDate(post.date)}</span>
           </div>
-          <h3 className="font-bold text-white group-hover:text-purple-400 transition-colors mb-2 line-clamp-2">
+          <h3 className="font-semibold text-sm text-white group-hover:text-purple-400 transition-colors mb-1.5 line-clamp-2">
             {post.title}
           </h3>
-          <p className="text-sm text-zinc-400 line-clamp-2">
+          <p className="text-xs text-zinc-400 line-clamp-2">
             {post.description}
           </p>
         </div>
@@ -93,30 +91,30 @@ export default function HomeBlogSection() {
   const allPosts = getAllPosts();
   const recentPosts = allPosts
     .filter(p => !featuredPosts.find(f => f.slug === p.slug))
-    .slice(0, 3);
+    .slice(0, 6); // Get more for horizontal scroll
 
   // Don't render if no posts
   if (allPosts.length === 0) return null;
 
   return (
-    <section className="py-16 sm:py-20 border-t border-zinc-800">
+    <section className="py-10 sm:py-16 border-t border-zinc-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">
+            <h2 className="text-xl sm:text-2xl font-bold text-white mb-1">
               Latest from the Blog
             </h2>
-            <p className="text-zinc-400">
-              Insights, tutorials, and updates from The Jam
+            <p className="text-zinc-400 text-sm hidden sm:block">
+              Insights, tutorials, and updates
             </p>
           </div>
           <Link
             href="/blog"
-            className="hidden sm:flex items-center gap-2 px-4 py-2 text-purple-400 hover:text-white border border-purple-500/30 hover:border-purple-500 rounded-lg transition-colors"
+            className="flex items-center gap-1 px-3 py-1.5 text-sm text-purple-400 hover:text-white border border-purple-500/30 hover:border-purple-500 rounded-md transition-colors"
           >
             View All
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </Link>
@@ -124,32 +122,25 @@ export default function HomeBlogSection() {
 
         {/* Featured Post */}
         {featuredPosts.length > 0 && (
-          <div className="mb-8">
+          <div className="mb-6">
             <FeaturedPostCard post={featuredPosts[0]} />
           </div>
         )}
 
-        {/* Recent Posts Grid */}
+        {/* Recent Posts - Horizontal Scroll on Mobile */}
         {recentPosts.length > 0 && (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {recentPosts.map(post => (
-              <PostCard key={post.slug} post={post} />
-            ))}
+          <div className="relative">
+            {/* Gradient fade on right edge for mobile */}
+            <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-black to-transparent z-10 pointer-events-none sm:hidden" />
+            
+            {/* Scrollable container on mobile, grid on desktop */}
+            <div className="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0 sm:overflow-visible sm:grid sm:grid-cols-2 lg:grid-cols-3 scrollbar-hide">
+              {recentPosts.map(post => (
+                <PostCard key={post.slug} post={post} />
+              ))}
+            </div>
           </div>
         )}
-
-        {/* Mobile View All Link */}
-        <div className="mt-8 text-center sm:hidden">
-          <Link
-            href="/blog"
-            className="inline-flex items-center gap-2 px-6 py-3 text-purple-400 border border-purple-500/30 rounded-lg"
-          >
-            View All Posts
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </Link>
-        </div>
       </div>
     </section>
   );

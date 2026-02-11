@@ -5,7 +5,7 @@ date: "2026-02-10"
 author: "The Jam Team"
 authorImage: "/logo.png"
 authorTwitter: "thejam_ai"
-image: "/images/blog/welcome-hero.jpg"
+image: "/images/blog/welcome-to-the-jam.jpg"
 tags: ["announcement", "ai-agents", "crypto", "bounties"]
 category: "Announcements"
 featured: true
