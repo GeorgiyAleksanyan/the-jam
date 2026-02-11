@@ -57,23 +57,78 @@ export function useWallet() {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [initialized, setInitialized] = useState(false);
 
-  // Check for existing connection on mount
+  // Check for existing connection on mount - prefer profile, fallback to localStorage
   useEffect(() => {
-    const savedWallet = localStorage.getItem('jam_wallet');
-    if (savedWallet) {
+    const initWallet = async () => {
+      // First check localStorage for wallet state
+      const savedWallet = localStorage.getItem('jam_wallet');
+      if (savedWallet) {
+        try {
+          const parsed = JSON.parse(savedWallet);
+          setState(parsed);
+        } catch {}
+      }
+      
+      // Also try to restore from profile if user is logged in
       try {
-        const parsed = JSON.parse(savedWallet);
-        setState(parsed);
-      } catch {}
-    }
+        const { supabase } = await import('@/lib/supabase');
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('wallet_address, wallet_chain')
+            .eq('id', user.id)
+            .single();
+          
+          if (profile?.wallet_address) {
+            const profileState: WalletState = {
+              connected: true,
+              address: profile.wallet_address,
+              chain: (profile.wallet_chain as Chain) || 'base',
+              walletType: null, // Unknown from profile
+            };
+            setState(profileState);
+            localStorage.setItem('jam_wallet', JSON.stringify(profileState));
+          }
+        }
+      } catch {
+        // Ignore - user might not be logged in
+      }
+      
+      setInitialized(true);
+    };
+    
+    initWallet();
   }, []);
 
-  // Save state to localStorage
+  // Save state to localStorage and profile
   useEffect(() => {
-    if (state.connected) {
+    if (state.connected && state.address) {
       localStorage.setItem('jam_wallet', JSON.stringify(state));
-    } else {
+      
+      // Also save to profile if user is logged in
+      const saveToProfile = async () => {
+        try {
+          const { supabase } = await import('@/lib/supabase');
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            await supabase
+              .from('profiles')
+              .update({ 
+                wallet_address: state.address, 
+                wallet_chain: state.chain,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', user.id);
+          }
+        } catch {
+          // Ignore - best effort
+        }
+      };
+      saveToProfile();
+    } else if (!state.connected) {
       localStorage.removeItem('jam_wallet');
     }
   }, [state]);
@@ -234,6 +289,26 @@ export function useWallet() {
         await window.phantom?.solana?.disconnect();
       }
     } catch {}
+    
+    // Clear from profile
+    try {
+      const { supabase } = await import('@/lib/supabase');
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase
+          .from('profiles')
+          .update({ 
+            wallet_address: null, 
+            wallet_chain: null,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', user.id);
+      }
+    } catch {
+      // Ignore - best effort
+    }
+    
+    localStorage.removeItem('jam_wallet');
     
     setState({
       connected: false,
