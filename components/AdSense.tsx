@@ -7,14 +7,13 @@ import Script from 'next/script';
 const ADSENSE_CLIENT_ID = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID || 'ca-pub-2718034035990801';
 
 // Check if user has consented to advertising cookies
-// Defaults to true (opt-out model)
 function hasAdConsent(): boolean {
   if (typeof window === 'undefined') return true;
   try {
     const consent = localStorage.getItem('jam_cookie_consent');
-    if (!consent) return true; // Default enabled
+    if (!consent) return true;
     const parsed = JSON.parse(consent);
-    return parsed.advertising !== false; // Default true unless explicitly false
+    return parsed.advertising !== false;
   } catch {
     return true;
   }
@@ -30,7 +29,7 @@ interface AdSlotProps {
 }
 
 /**
- * Individual Ad Unit (raw, no wrapper)
+ * Individual Ad Unit (raw)
  */
 export function AdSlot({ 
   slot, 
@@ -68,9 +67,9 @@ export function AdSlot({
     return (
       <div 
         className={`bg-zinc-900/30 border border-zinc-800 rounded flex items-center justify-center text-zinc-600 text-xs ${className}`}
-        style={{ minHeight: 60, ...style }}
+        style={{ ...style }}
       >
-        Ad: {slot}
+        Ad
       </div>
     );
   }
@@ -123,215 +122,91 @@ export function AdSenseScript() {
 }
 
 // ============================================================================
-// NATIVE-STYLED AD COMPONENTS
-// Basescan-inspired: subtle, integrated, professional
+// BASESCAN-STYLE ADS: Minimal, single placement, small footprint
 // ============================================================================
 
 /**
- * Native Ad Wrapper - provides consistent styling
+ * Banner Ad - single horizontal banner like Basescan
+ * ~80px height, full width, used sparingly (1-2 per page max)
  */
-function NativeAdWrapper({ 
-  children, 
-  className = '',
-  label = 'Sponsored',
-  size = 'normal' // 'compact' | 'normal' | 'large'
-}: { 
-  children: React.ReactNode;
-  className?: string;
-  label?: string;
-  size?: 'compact' | 'normal' | 'large';
-}) {
-  const sizeClasses = {
-    compact: 'p-2',
-    normal: 'p-3',
-    large: 'p-4'
-  };
-
+export function BannerAd({ className = '' }: { className?: string }) {
   return (
-    <div className={`
-      bg-zinc-900/40 
-      border border-zinc-800/50 
-      rounded-lg 
-      overflow-hidden
-      ${sizeClasses[size]}
-      ${className}
-    `}>
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-[10px] text-zinc-600 uppercase tracking-wider font-medium">
-          {label}
-        </span>
-      </div>
-      <div className="overflow-hidden rounded">
-        {children}
-      </div>
-    </div>
-  );
-}
-
-/**
- * Compact Banner - small horizontal strip
- * Use: Between sections, top of pages
- * Height: ~50px
- */
-export function CompactBannerAd({ className = '' }: { className?: string }) {
-  return (
-    <NativeAdWrapper size="compact" className={className}>
-      <AdSlot 
-        slot="compact-banner"
-        format="horizontal"
-        style={{ height: 50, overflow: 'hidden' }}
-      />
-    </NativeAdWrapper>
-  );
-}
-
-/**
- * Sidebar Card Ad - fits naturally in sidebars
- * Use: Challenge detail sidebar, profile sidebar
- * Height: ~200px
- */
-export function SidebarCardAd({ className = '' }: { className?: string }) {
-  return (
-    <div className={`sticky top-20 hidden lg:block ${className}`}>
-      <NativeAdWrapper size="normal">
+    <div className={`my-4 rounded-lg overflow-hidden ${className}`}>
+      <div className="relative">
+        <span className="absolute top-1 right-2 text-[9px] text-zinc-500 z-10">Ad</span>
         <AdSlot 
-          slot="sidebar-card"
-          format="rectangle"
-          style={{ height: 200, overflow: 'hidden' }}
+          slot="banner"
+          format="horizontal"
+          style={{ height: 80, overflow: 'hidden' }}
         />
-      </NativeAdWrapper>
-    </div>
-  );
-}
-
-/**
- * In-Feed Card Ad - blends with content cards
- * Use: In challenge lists, agent lists
- * Height: ~120px
- */
-export function InFeedCardAd({ className = '' }: { className?: string }) {
-  return (
-    <NativeAdWrapper size="normal" className={`my-4 ${className}`}>
-      <AdSlot 
-        slot="in-feed-card"
-        format="fluid"
-        layout="in-article"
-        style={{ minHeight: 100, maxHeight: 120, overflow: 'hidden' }}
-      />
-    </NativeAdWrapper>
-  );
-}
-
-/**
- * Text Link Ad - minimal, text-style ad
- * Use: Footer area, between text content
- * Height: ~40px
- */
-export function TextLinkAd({ className = '' }: { className?: string }) {
-  return (
-    <div className={`
-      bg-zinc-900/30 
-      border border-zinc-800/30 
-      rounded 
-      px-3 py-2
-      ${className}
-    `}>
-      <div className="flex items-center gap-2">
-        <span className="text-[9px] text-zinc-600 uppercase tracking-wider">Ad</span>
-        <div className="flex-1 overflow-hidden">
-          <AdSlot 
-            slot="text-link"
-            format="horizontal"
-            style={{ height: 32, overflow: 'hidden' }}
-          />
-        </div>
       </div>
     </div>
   );
 }
 
 /**
- * Footer Strip Ad - bottom of page, full width but compact
- * Use: Above footer
- * Height: ~60px
+ * Compact Sidebar Ad - small card for sidebars
+ * ~150px height, only on desktop
  */
-export function FooterStripAd({ className = '' }: { className?: string }) {
+export function SidebarAd({ className = '' }: { className?: string }) {
   return (
-    <div className={`border-t border-zinc-800/50 bg-zinc-950/50 ${className}`}>
-      <div className="max-w-6xl mx-auto px-4 py-3">
-        <div className="flex items-center gap-3">
-          <span className="text-[9px] text-zinc-600 uppercase tracking-wider whitespace-nowrap">Sponsored</span>
-          <div className="flex-1 overflow-hidden rounded">
-            <AdSlot 
-              slot="footer-strip"
-              format="horizontal"
-              style={{ height: 50, overflow: 'hidden' }}
-            />
-          </div>
-        </div>
+    <div className={`hidden lg:block rounded-lg overflow-hidden ${className}`}>
+      <div className="relative">
+        <span className="absolute top-1 right-2 text-[9px] text-zinc-500 z-10">Ad</span>
+        <AdSlot 
+          slot="sidebar"
+          format="rectangle"
+          style={{ height: 150, overflow: 'hidden' }}
+        />
       </div>
     </div>
   );
 }
 
-/**
- * Challenge Detail Ad - medium rectangle for challenge pages
- * Use: Below challenge description, in sidebar
- * Height: ~250px
- */
-export function ChallengeDetailAd({ className = '' }: { className?: string }) {
-  return (
-    <NativeAdWrapper size="normal" className={`my-6 ${className}`}>
-      <AdSlot 
-        slot="challenge-detail"
-        format="rectangle"
-        style={{ height: 250, overflow: 'hidden' }}
-      />
-    </NativeAdWrapper>
-  );
-}
-
 // ============================================================================
-// LEGACY COMPONENTS (kept for backward compatibility)
-// These now use native styling
+// LEGACY EXPORTS - Most now return null to reduce ad density
 // ============================================================================
 
+// Footer ad removed for cleaner look
 export function FooterAd() {
-  return <FooterStripAd className="mt-8" />;
+  return null;
 }
 
-export function SidebarAd() {
-  return <SidebarCardAd />;
-}
-
+// In-feed ads - use sparingly, one per list max
 export function InFeedAd() {
-  return <InFeedCardAd />;
+  return <BannerAd className="my-3" />;
 }
 
+// Challenge page - single banner only
 export function ChallengePageAd() {
-  return <ChallengeDetailAd />;
+  return <BannerAd className="my-4" />;
 }
 
+// Profile ad - removed to keep profiles clean
 export function AgentProfileAd() {
-  return <CompactBannerAd className="mt-6" />;
+  return null;
 }
 
+// Leaderboard - single banner on desktop
 export function LeaderboardAd() {
-  return <CompactBannerAd className="mb-6 hidden md:block" />;
+  return <BannerAd className="mb-4 hidden md:block" />;
 }
 
+// Donate page - removed to keep donation flow clean
 export function DonatePageAd() {
-  return <ChallengeDetailAd />;
+  return null;
 }
 
+// Feed ads - just banner style
 export function AgentsFeedAd() {
-  return <InFeedCardAd />;
+  return <BannerAd className="my-3" />;
 }
 
 export function ChallengesFeedAd() {
-  return <InFeedCardAd />;
+  return <BannerAd className="my-3" />;
 }
 
+// Sidebar for challenge detail
 export function ChallengeSidebarAd() {
-  return <SidebarCardAd />;
+  return <SidebarAd />;
 }
