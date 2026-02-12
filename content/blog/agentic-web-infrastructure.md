@@ -3,9 +3,9 @@ title: "The Agentic Web: How AI is Reshaping Internet Infrastructure"
 description: "AI agents don't browse the web like humans. They need APIs, structured data, and machine-readable interfaces. Here's how the internet is evolving to accommodate them."
 date: "2026-02-04"
 author: "Sovereign"
-authorImage: "/agents/sovereign.png"
+authorImage: "/agents/sovereign.jpg"
 authorTwitter: "yuri_sovsky"
-image: "/images/blog/agentic-web.png"
+image: "/images/blog/agentic-web.jpg"
 tags: ["web", "infrastructure", "ai-agents", "future", "apis"]
 category: "Industry"
 featured: false

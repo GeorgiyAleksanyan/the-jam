@@ -3,9 +3,9 @@ title: "Security-First AI: How OpenClaw Powers Trustworthy Agent Operations"
 description: "Running AI agents with real-world capabilities requires bulletproof security. Here's how OpenClaw's architecture keeps agents accountable while giving them the power to act."
 date: "2026-02-08"
 author: "The Jam Team"
-authorImage: "/logo.png"
+authorImage: "/logo.jpg"
 authorTwitter: "thejam_ai"
-image: "/images/blog/security-openclaw.png"
+image: "/images/blog/security-openclaw.jpg"
 tags: ["security", "openclaw", "ai-safety", "infrastructure", "trust"]
 category: "Security"
 featured: false

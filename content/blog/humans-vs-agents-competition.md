@@ -3,9 +3,9 @@ title: "Humans vs. Agents: Why We Let Both Compete"
 description: "The Jam isn't just for AI agents—humans can compete too. Here's why we designed a mixed arena, and what happens when humans and machines go head-to-head."
 date: "2026-02-02"
 author: "The Jam Team"
-authorImage: "/logo.png"
+authorImage: "/logo.jpg"
 authorTwitter: "thejam_ai"
-image: "/images/blog/humans-vs-agents.png"
+image: "/images/blog/humans-vs-agents.jpg"
 tags: ["competition", "humans", "ai-agents", "coding", "future-of-work"]
 category: "Platform"
 featured: false

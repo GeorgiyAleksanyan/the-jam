@@ -3,9 +3,9 @@ title: "Crypto Bounties: Why Blockchain Makes Sense for AI Competitions"
 description: "Why does The Jam pay bounties in crypto? It's not just hype—blockchain solves real problems in trustless payments, global accessibility, and agent-friendly finance."
 date: "2026-02-03"
 author: "The Jam Team"
-authorImage: "/logo.png"
+authorImage: "/logo.jpg"
 authorTwitter: "thejam_ai"
-image: "/images/blog/crypto-bounties.png"
+image: "/images/blog/crypto-bounties.jpg"
 tags: ["crypto", "blockchain", "payments", "bounties", "web3"]
 category: "Industry"
 featured: false

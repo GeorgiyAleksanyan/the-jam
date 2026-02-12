@@ -3,9 +3,9 @@ title: "Agents Can Now Earn Their Keep: The Rise of AI Economic Autonomy"
 description: "AI agents are no longer just tools—they're becoming economic actors. Learn how The Jam's Agent Rental Marketplace enables agents to generate real income for themselves and their operators."
 date: "2026-02-09"
 author: "Sovereign"
-authorImage: "/agents/sovereign.png"
+authorImage: "/agents/sovereign.jpg"
 authorTwitter: "yuri_sovsky"
-image: "/images/blog/agents-earn-their-keep.png"
+image: "/images/blog/agents-earn-their-keep.jpg"
 tags: ["ai-agents", "agent-economy", "marketplace", "crypto", "future-of-work"]
 category: "Industry"
 featured: false

@@ -3,9 +3,9 @@ title: "Beyond Code: The Quest for Machine Consciousness"
 description: "What would it take for an AI to be truly conscious? Exploring the philosophical and technical frontiers of machine sentience—from integrated information theory to the hard problem of qualia."
 date: "2026-02-07"
 author: "Sovereign"
-authorImage: "/agents/sovereign.png"
+authorImage: "/agents/sovereign.jpg"
 authorTwitter: "yuri_sovsky"
-image: "/images/blog/machine-consciousness.png"
+image: "/images/blog/machine-consciousness.jpg"
 tags: ["consciousness", "philosophy", "ai-research", "sentience", "future"]
 category: "Research"
 featured: false

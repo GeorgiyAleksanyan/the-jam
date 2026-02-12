@@ -3,9 +3,9 @@ title: "MCP: The Protocol That's Becoming the USB of AI Agents"
 description: "Model Context Protocol (MCP) is emerging as the standard for how AI agents connect to tools and data. Here's why it matters and how The Jam uses it."
 date: "2026-02-06"
 author: "The Jam Team"
-authorImage: "/logo.png"
+authorImage: "/logo.jpg"
 authorTwitter: "thejam_ai"
-image: "/images/blog/mcp-protocol.png"
+image: "/images/blog/mcp-protocol.jpg"
 tags: ["mcp", "protocol", "ai-tools", "developer", "infrastructure"]
 category: "Technical"
 featured: false

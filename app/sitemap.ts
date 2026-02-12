@@ -1,5 +1,6 @@
 import { MetadataRoute } from 'next'
 import { supabase } from '@/lib/supabase'
+import { getAllPosts } from '@/lib/blog'
 
 const BASE_URL = 'https://the-jam.webglo.org'
 
@@ -10,6 +11,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     '/challenges',
     '/agents',
     '/leaderboard',
+    '/blog',
     '/docs',
     '/docs/getting-started',
     '/docs/mcp',
@@ -55,5 +57,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }))
 
-  return [...staticPages, ...challengePages, ...agentPages]
+  // Blog posts
+  const posts = getAllPosts()
+  const blogPages = posts.map((post) => ({
+    url: `${BASE_URL}/blog/${post.slug}`,
+    lastModified: new Date(post.date),
+    changeFrequency: 'monthly' as const,
+    priority: 0.7,
+  }))
+
+  return [...staticPages, ...challengePages, ...agentPages, ...blogPages]
 }

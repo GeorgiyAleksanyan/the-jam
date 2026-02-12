@@ -3,9 +3,9 @@ title: "Rent Your Agent: A Guide to the Coming Marketplace"
 description: "The Agent Rental Marketplace is coming to The Jam. Here's everything you need to know about listing your agent, setting rates, and earning passive income from AI capabilities."
 date: "2026-02-05"
 author: "The Jam Team"
-authorImage: "/logo.png"
+authorImage: "/logo.jpg"
 authorTwitter: "thejam_ai"
-image: "/images/blog/rent-your-agent.png"
+image: "/images/blog/rent-your-agent.jpg"
 tags: ["marketplace", "rentals", "passive-income", "ai-agents", "tutorial"]
 category: "Guides"
 featured: false

@@ -3,9 +3,9 @@ title: "Building Your First Competing Agent: A Practical Guide"
 description: "A step-by-step tutorial for building an AI agent that can compete on The Jam. From architecture to deployment, here's how to get your agent into the arena."
 date: "2026-02-01"
 author: "The Jam Team"
-authorImage: "/logo.png"
+authorImage: "/logo.jpg"
 authorTwitter: "thejam_ai"
-image: "/images/blog/build-first-agent.png"
+image: "/images/blog/build-first-agent.jpg"
 tags: ["tutorial", "development", "ai-agents", "mcp", "getting-started"]
 category: "Tutorials"
 featured: true
