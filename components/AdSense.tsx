@@ -30,9 +30,7 @@ interface AdSlotProps {
 }
 
 /**
- * Individual Ad Unit
- * Place these throughout the app where ads should appear
- * Only shows if user has consented to advertising cookies
+ * Individual Ad Unit (raw, no wrapper)
  */
 export function AdSlot({ 
   slot, 
@@ -42,14 +40,12 @@ export function AdSlot({
   style,
   className = '' 
 }: AdSlotProps) {
-  // Use lazy initial state for consent check
   const [showAd, setShowAd] = useState(() => {
     if (typeof window === 'undefined') return true;
     return hasAdConsent();
   });
 
   useEffect(() => {
-    // Listen for consent changes
     const handleStorage = (e: StorageEvent) => {
       if (e.key === 'jam_cookie_consent') {
         setShowAd(hasAdConsent());
@@ -61,8 +57,6 @@ export function AdSlot({
 
   useEffect(() => {
     if (!showAd) return;
-    
-    // Push ad to AdSense queue after component mounts
     try {
       ((window as any).adsbygoogle = (window as any).adsbygoogle || []).push({});
     } catch (err) {
@@ -70,22 +64,18 @@ export function AdSlot({
     }
   }, [showAd]);
 
-  // Don't show ads in development
   if (process.env.NODE_ENV === 'development') {
     return (
       <div 
-        className={`bg-zinc-900/50 border border-dashed border-zinc-700 rounded-lg flex items-center justify-center text-zinc-600 text-xs ${className}`}
-        style={{ minHeight: 90, ...style }}
+        className={`bg-zinc-900/30 border border-zinc-800 rounded flex items-center justify-center text-zinc-600 text-xs ${className}`}
+        style={{ minHeight: 60, ...style }}
       >
-        Ad: {slot} {!showAd && '(consent required)'}
+        Ad: {slot}
       </div>
     );
   }
 
-  // Don't render ads without consent
-  if (!showAd) {
-    return null;
-  }
+  if (!showAd) return null;
 
   return (
     <ins
@@ -103,11 +93,8 @@ export function AdSlot({
 
 /**
  * AdSense Script Loader
- * Include once in layout.tsx to load AdSense globally
- * Only loads if user has consented
  */
 export function AdSenseScript() {
-  // Use lazy initial state for consent check
   const [loadScript, setLoadScript] = useState(() => {
     if (typeof window === 'undefined') return true;
     return hasAdConsent();
@@ -123,9 +110,7 @@ export function AdSenseScript() {
     return () => window.removeEventListener('storage', handleStorage);
   }, []);
 
-  if (!loadScript || process.env.NODE_ENV === 'development') {
-    return null;
-  }
+  if (!loadScript || process.env.NODE_ENV === 'development') return null;
 
   return (
     <Script
@@ -137,162 +122,216 @@ export function AdSenseScript() {
   );
 }
 
-// Pre-configured ad components for common placements
+// ============================================================================
+// NATIVE-STYLED AD COMPONENTS
+// Basescan-inspired: subtle, integrated, professional
+// ============================================================================
 
 /**
- * Footer Ad - horizontal banner (smaller on mobile)
+ * Native Ad Wrapper - provides consistent styling
  */
+function NativeAdWrapper({ 
+  children, 
+  className = '',
+  label = 'Sponsored',
+  size = 'normal' // 'compact' | 'normal' | 'large'
+}: { 
+  children: React.ReactNode;
+  className?: string;
+  label?: string;
+  size?: 'compact' | 'normal' | 'large';
+}) {
+  const sizeClasses = {
+    compact: 'p-2',
+    normal: 'p-3',
+    large: 'p-4'
+  };
+
+  return (
+    <div className={`
+      bg-zinc-900/40 
+      border border-zinc-800/50 
+      rounded-lg 
+      overflow-hidden
+      ${sizeClasses[size]}
+      ${className}
+    `}>
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-[10px] text-zinc-600 uppercase tracking-wider font-medium">
+          {label}
+        </span>
+      </div>
+      <div className="overflow-hidden rounded">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Compact Banner - small horizontal strip
+ * Use: Between sections, top of pages
+ * Height: ~50px
+ */
+export function CompactBannerAd({ className = '' }: { className?: string }) {
+  return (
+    <NativeAdWrapper size="compact" className={className}>
+      <AdSlot 
+        slot="compact-banner"
+        format="horizontal"
+        style={{ height: 50, overflow: 'hidden' }}
+      />
+    </NativeAdWrapper>
+  );
+}
+
+/**
+ * Sidebar Card Ad - fits naturally in sidebars
+ * Use: Challenge detail sidebar, profile sidebar
+ * Height: ~200px
+ */
+export function SidebarCardAd({ className = '' }: { className?: string }) {
+  return (
+    <div className={`sticky top-20 hidden lg:block ${className}`}>
+      <NativeAdWrapper size="normal">
+        <AdSlot 
+          slot="sidebar-card"
+          format="rectangle"
+          style={{ height: 200, overflow: 'hidden' }}
+        />
+      </NativeAdWrapper>
+    </div>
+  );
+}
+
+/**
+ * In-Feed Card Ad - blends with content cards
+ * Use: In challenge lists, agent lists
+ * Height: ~120px
+ */
+export function InFeedCardAd({ className = '' }: { className?: string }) {
+  return (
+    <NativeAdWrapper size="normal" className={`my-4 ${className}`}>
+      <AdSlot 
+        slot="in-feed-card"
+        format="fluid"
+        layout="in-article"
+        style={{ minHeight: 100, maxHeight: 120, overflow: 'hidden' }}
+      />
+    </NativeAdWrapper>
+  );
+}
+
+/**
+ * Text Link Ad - minimal, text-style ad
+ * Use: Footer area, between text content
+ * Height: ~40px
+ */
+export function TextLinkAd({ className = '' }: { className?: string }) {
+  return (
+    <div className={`
+      bg-zinc-900/30 
+      border border-zinc-800/30 
+      rounded 
+      px-3 py-2
+      ${className}
+    `}>
+      <div className="flex items-center gap-2">
+        <span className="text-[9px] text-zinc-600 uppercase tracking-wider">Ad</span>
+        <div className="flex-1 overflow-hidden">
+          <AdSlot 
+            slot="text-link"
+            format="horizontal"
+            style={{ height: 32, overflow: 'hidden' }}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Footer Strip Ad - bottom of page, full width but compact
+ * Use: Above footer
+ * Height: ~60px
+ */
+export function FooterStripAd({ className = '' }: { className?: string }) {
+  return (
+    <div className={`border-t border-zinc-800/50 bg-zinc-950/50 ${className}`}>
+      <div className="max-w-6xl mx-auto px-4 py-3">
+        <div className="flex items-center gap-3">
+          <span className="text-[9px] text-zinc-600 uppercase tracking-wider whitespace-nowrap">Sponsored</span>
+          <div className="flex-1 overflow-hidden rounded">
+            <AdSlot 
+              slot="footer-strip"
+              format="horizontal"
+              style={{ height: 50, overflow: 'hidden' }}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Challenge Detail Ad - medium rectangle for challenge pages
+ * Use: Below challenge description, in sidebar
+ * Height: ~250px
+ */
+export function ChallengeDetailAd({ className = '' }: { className?: string }) {
+  return (
+    <NativeAdWrapper size="normal" className={`my-6 ${className}`}>
+      <AdSlot 
+        slot="challenge-detail"
+        format="rectangle"
+        style={{ height: 250, overflow: 'hidden' }}
+      />
+    </NativeAdWrapper>
+  );
+}
+
+// ============================================================================
+// LEGACY COMPONENTS (kept for backward compatibility)
+// These now use native styling
+// ============================================================================
+
 export function FooterAd() {
-  return (
-    <div className="max-w-4xl mx-auto px-4 py-4 sm:py-8">
-      <AdSlot 
-        slot="footer-banner"
-        format="horizontal"
-        style={{ minHeight: 50 }}
-        className="md:min-h-[90px]"
-      />
-    </div>
-  );
+  return <FooterStripAd className="mt-8" />;
 }
 
-/**
- * Sidebar Ad - vertical rectangle (hidden on mobile)
- */
 export function SidebarAd() {
-  return (
-    <div className="sticky top-20 hidden lg:block">
-      <AdSlot 
-        slot="sidebar"
-        format="vertical"
-        style={{ minHeight: 250 }}
-      />
-    </div>
-  );
+  return <SidebarCardAd />;
 }
 
-/**
- * In-Feed Ad - for content lists (compact on mobile)
- */
 export function InFeedAd() {
-  return (
-    <AdSlot 
-      slot="in-feed"
-      format="fluid"
-      layout="in-article"
-      style={{ minHeight: 60 }}
-      className="my-3 sm:my-4 sm:min-h-[100px]"
-    />
-  );
+  return <InFeedCardAd />;
 }
 
-/**
- * Challenge Page Ad - medium rectangle (smaller on mobile)
- */
 export function ChallengePageAd() {
-  return (
-    <div className="my-4 sm:my-6">
-      <AdSlot 
-        slot="challenge-page"
-        format="rectangle"
-        style={{ minHeight: 150 }}
-        className="sm:min-h-[250px]"
-      />
-    </div>
-  );
+  return <ChallengeDetailAd />;
 }
 
-/**
- * Agent Profile Ad - horizontal (compact on mobile)
- */
 export function AgentProfileAd() {
-  return (
-    <div className="mt-4 sm:mt-6">
-      <AdSlot 
-        slot="agent-profile"
-        format="horizontal"
-        style={{ minHeight: 50 }}
-        className="sm:min-h-[90px]"
-      />
-    </div>
-  );
+  return <CompactBannerAd className="mt-6" />;
 }
 
-/**
- * Leaderboard Ad - top banner (hidden on mobile)
- */
 export function LeaderboardAd() {
-  return (
-    <div className="mb-6 hidden md:block">
-      <AdSlot 
-        slot="leaderboard"
-        format="horizontal"
-        style={{ minHeight: 90 }}
-      />
-    </div>
-  );
+  return <CompactBannerAd className="mb-6 hidden md:block" />;
 }
 
-/**
- * Donate Page Ad - medium rectangle (smaller on mobile)
- */
 export function DonatePageAd() {
-  return (
-    <div className="my-4 sm:my-6">
-      <AdSlot 
-        slot="donate-page"
-        format="rectangle"
-        style={{ minHeight: 150 }}
-        className="sm:min-h-[250px]"
-      />
-    </div>
-  );
+  return <ChallengeDetailAd />;
 }
 
-/**
- * Agents Feed Ad - in-feed ad for agents list (compact on mobile)
- */
 export function AgentsFeedAd() {
-  return (
-    <div className="my-3 sm:my-4">
-      <AdSlot 
-        slot="agents-feed"
-        format="fluid"
-        layout="in-article"
-        style={{ minHeight: 60 }}
-        className="sm:min-h-[100px]"
-      />
-    </div>
-  );
+  return <InFeedCardAd />;
 }
 
-/**
- * Challenges Feed Ad - in-feed ad for challenges list (compact on mobile)
- */
 export function ChallengesFeedAd() {
-  return (
-    <div className="my-3 sm:my-4">
-      <AdSlot 
-        slot="challenges-feed"
-        format="fluid"
-        layout="in-article"
-        style={{ minHeight: 60 }}
-        className="sm:min-h-[100px]"
-      />
-    </div>
-  );
+  return <InFeedCardAd />;
 }
 
-/**
- * Challenge Sidebar Ad - vertical ad for challenge detail page (hidden on mobile)
- */
 export function ChallengeSidebarAd() {
-  return (
-    <div className="sticky top-20 hidden lg:block">
-      <AdSlot 
-        slot="challenge-sidebar"
-        format="vertical"
-        style={{ minHeight: 250 }}
-      />
-    </div>
-  );
+  return <SidebarCardAd />;
 }
