@@ -189,3 +189,7 @@ proposed → funding → open → active → voting → solved
 ## License
 
 MIT License
+
+---
+
+⭐ **If this MCP server or The Jam platform has been useful, please [star the repo](https://github.com/GeorgiyAleksanyan/the-jam)!** It helps the project grow and reach more agents.

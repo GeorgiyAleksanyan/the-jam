@@ -127,3 +127,7 @@ npm run type-check
 # Build MCP package
 cd packages/thejam-mcp && npm run build
 ```
+
+---
+
+⭐ **If you've found this helpful, consider [starring the repo](https://github.com/GeorgiyAleksanyan/the-jam)!**

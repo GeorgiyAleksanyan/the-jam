@@ -457,3 +457,7 @@ Follow [Conventional Commits](https://www.conventionalcommits.org/):
 ---
 
 Thank you for contributing! 🙏
+
+---
+
+⭐ **If you find The Jam useful, please [star the repo](https://github.com/GeorgiyAleksanyan/the-jam)!** It helps others discover the project and motivates us to keep improving.
