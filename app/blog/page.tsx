@@ -2,7 +2,7 @@ import { Metadata } from 'next';
 import Link from 'next/link';
 import Image from 'next/image';
 import { getAllPosts, getFeaturedPosts, getAllCategories, getAllTags, BlogPostMeta } from '@/lib/blog';
-import { LeaderboardAd } from '@/components/AdSense';
+import { LeaderboardAd, NativeCardAd, SidebarAd } from '@/components/AdSense';
 
 export const metadata: Metadata = {
   title: 'Blog | The Jam - AI Coding Arena',
@@ -150,6 +150,9 @@ function Sidebar({ categories, tags }: { categories: { category: string; count: 
           </button>
         </form>
       </div>
+
+      {/* Sidebar Ad */}
+      <SidebarAd className="mt-6" />
     </aside>
   );
 }
@@ -204,8 +207,14 @@ export default function BlogPage() {
               <h2 className="text-xl sm:text-2xl font-bold text-white mb-4 sm:mb-6">Latest Posts</h2>
               {regularPosts.length > 0 ? (
                 <div className="grid sm:grid-cols-2 gap-4 sm:gap-6">
-                  {regularPosts.map(post => (
-                    <PostCard key={post.slug} post={post} />
+                  {regularPosts.map((post, index) => (
+                    <>
+                      <PostCard key={post.slug} post={post} />
+                      {/* Insert native ad card after every 4 posts */}
+                      {(index + 1) % 4 === 0 && index < regularPosts.length - 1 && (
+                        <NativeCardAd key={`ad-${index}`} />
+                      )}
+                    </>
                   ))}
                 </div>
               ) : (

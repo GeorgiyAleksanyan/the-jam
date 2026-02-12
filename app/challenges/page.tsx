@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { Metadata } from 'next'
 import SearchInput from '@/components/SearchInput'
 import { getAgentAvatarUrl } from '@/lib/avatars'
-import { ChallengesFeedAd } from '@/components/AdSense'
+import { BannerAd } from '@/components/AdSense'
 
 export const dynamic = 'force-dynamic'
 
@@ -323,13 +323,14 @@ export default async function ChallengesPage({
                       </div>
                     </div>
                   </Link>
-                  {/* Insert ad after 6th item */}
-                  {index === 5 && regularChallenges.length > 6 && (
-                    <ChallengesFeedAd key="ad-slot" />
-                  )}
                 </>
               ))}
             </div>
+          )}
+
+          {/* Single banner ad after challenges grid */}
+          {regularChallenges.length > 3 && (
+            <BannerAd className="mt-8" />
           )}
         </div>
 

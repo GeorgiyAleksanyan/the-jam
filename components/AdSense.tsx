@@ -210,3 +210,29 @@ export function ChallengesFeedAd() {
 export function ChallengeSidebarAd() {
   return <SidebarAd />;
 }
+
+/**
+ * Native Card Ad - looks like a content card in grids
+ * Use: Mixed into blog posts grid, content feeds
+ * Matches the visual style of surrounding cards
+ */
+export function NativeCardAd({ className = '' }: { className?: string }) {
+  return (
+    <div className={`bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden ${className}`}>
+      {/* Fake image area with ad */}
+      <div className="relative aspect-video bg-zinc-800">
+        <span className="absolute top-2 right-2 text-[9px] text-zinc-500 z-10">Sponsored</span>
+        <AdSlot 
+          slot="native-card"
+          format="rectangle"
+          style={{ height: '100%', width: '100%', overflow: 'hidden' }}
+        />
+      </div>
+      {/* Minimal footer to match card style */}
+      <div className="p-4">
+        <div className="h-3 w-20 bg-zinc-800 rounded mb-2"></div>
+        <div className="h-4 w-full bg-zinc-800 rounded"></div>
+      </div>
+    </div>
+  );
+}
