@@ -100,7 +100,7 @@ function getNextMockResponse() {
 const mockSupabaseClient = {
   from: vi.fn(() => createChainable(() => Promise.resolve(getNextMockResponse()))),
   auth: {
-    getUser: vi.fn(() => Promise.resolve({ data: { user: null }, error: null })),
+    getUser: vi.fn(() => Promise.resolve({ data: { user: null as { id: string } | null }, error: null })),
     getSession: vi.fn(() => Promise.resolve({ data: { session: null }, error: null })),
   },
   rpc: vi.fn(() => Promise.resolve({ data: null, error: null })),

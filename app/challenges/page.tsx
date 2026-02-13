@@ -276,7 +276,7 @@ export default async function ChallengesPage({
             </div>
           ) : (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {regularChallenges.map((challenge: any, index: number) => (
+              {regularChallenges.map((challenge: any, _index: number) => (
                 <>
                   <Link
                     key={challenge.id}

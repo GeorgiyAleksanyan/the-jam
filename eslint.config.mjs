@@ -16,6 +16,8 @@ const eslintConfig = defineConfig([
     "scripts/**",
     // Ignore MCP packages (compiled JS with require())
     "packages/**/dist/**",
+    // Ignore twitter-puppeteer-mcp root JS files (CommonJS helpers)
+    "packages/twitter-puppeteer-mcp/*.js",
     // Ignore contract dependencies (vendored Solidity libs)
     "contracts/lib/**",
   ]),
