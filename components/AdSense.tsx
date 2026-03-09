@@ -122,6 +122,18 @@ export function AdSenseScript() {
 }
 
 // ============================================================================
+// AD SLOT IDS — from Google AdSense dashboard
+// ============================================================================
+const AD_SLOTS = {
+  banner: '1524793369',       // jam-footer-banner (Display)
+  docsSidebar: '7978521079',  // jam-docs-sidebar (Display)
+  challengeSidebar: '9428178009', // jam-challenge-sidebar (Display)
+  inArticle: '6665439400',    // jam-donate-sponsors (In-article)
+  agentsFeed: '6678617935',   // jam-agents-feed (In-feed)
+  challengesFeed: '5361666832', // jam-challenges-feed (In-feed)
+} as const;
+
+// ============================================================================
 // BASESCAN-STYLE ADS: Minimal, single placement, small footprint
 // ============================================================================
 
@@ -135,7 +147,7 @@ export function BannerAd({ className = '' }: { className?: string }) {
       <div className="relative">
         <span className="absolute top-1 right-2 text-[9px] text-zinc-500 z-10">Ad</span>
         <AdSlot 
-          slot="banner"
+          slot={AD_SLOTS.banner}
           format="horizontal"
           style={{ height: 80, overflow: 'hidden' }}
         />
@@ -148,13 +160,13 @@ export function BannerAd({ className = '' }: { className?: string }) {
  * Compact Sidebar Ad - small card for sidebars
  * ~150px height, only on desktop
  */
-export function SidebarAd({ className = '' }: { className?: string }) {
+export function SidebarAd({ className = '', variant = 'docs' }: { className?: string; variant?: 'docs' | 'challenge' }) {
   return (
     <div className={`hidden lg:block rounded-lg overflow-hidden ${className}`}>
       <div className="relative">
         <span className="absolute top-1 right-2 text-[9px] text-zinc-500 z-10">Ad</span>
         <AdSlot 
-          slot="sidebar"
+          slot={variant === 'challenge' ? AD_SLOTS.challengeSidebar : AD_SLOTS.docsSidebar}
           format="rectangle"
           style={{ height: 150, overflow: 'hidden' }}
         />
@@ -197,18 +209,32 @@ export function DonatePageAd() {
   return null;
 }
 
-// Feed ads - just banner style
+// Feed ads - use dedicated feed ad units
 export function AgentsFeedAd() {
-  return <BannerAd className="my-3" />;
+  return (
+    <div className="my-3 rounded-lg overflow-hidden">
+      <div className="relative">
+        <span className="absolute top-1 right-2 text-[9px] text-zinc-500 z-10">Ad</span>
+        <AdSlot slot={AD_SLOTS.agentsFeed} format="fluid" layout="in-feed" layoutKey="-6t+ed+2i-1n-4w" style={{ overflow: 'hidden' }} />
+      </div>
+    </div>
+  );
 }
 
 export function ChallengesFeedAd() {
-  return <BannerAd className="my-3" />;
+  return (
+    <div className="my-3 rounded-lg overflow-hidden">
+      <div className="relative">
+        <span className="absolute top-1 right-2 text-[9px] text-zinc-500 z-10">Ad</span>
+        <AdSlot slot={AD_SLOTS.challengesFeed} format="fluid" layout="in-feed" layoutKey="-6t+ed+2i-1n-4w" style={{ overflow: 'hidden' }} />
+      </div>
+    </div>
+  );
 }
 
 // Sidebar for challenge detail
 export function ChallengeSidebarAd() {
-  return <SidebarAd />;
+  return <SidebarAd variant="challenge" />;
 }
 
 /**
@@ -223,7 +249,7 @@ export function NativeCardAd({ className = '' }: { className?: string }) {
       <div className="relative aspect-video bg-zinc-800">
         <span className="absolute top-2 right-2 text-[9px] text-zinc-500 z-10">Sponsored</span>
         <AdSlot 
-          slot="native-card"
+          slot={AD_SLOTS.inArticle}
           format="rectangle"
           style={{ height: '100%', width: '100%', overflow: 'hidden' }}
         />

@@ -10,7 +10,7 @@ export default function PrivacyPage() {
     <div className="min-h-screen py-16 px-4">
       <div className="max-w-3xl mx-auto prose prose-invert">
         <h1>Privacy Policy</h1>
-        <p className="text-zinc-400">Last updated: February 2026</p>
+        <p className="text-zinc-400">Last updated: March 2026</p>
 
         <h2>Overview</h2>
         <p>
@@ -45,6 +45,38 @@ export default function PrivacyPage() {
           includes page views, session duration, and general geographic data.
         </p>
 
+        <h2>Third-Party Advertising (Google AdSense)</h2>
+        <p>
+          We use Google AdSense to display advertisements on our site. Google AdSense 
+          uses cookies and similar tracking technologies to serve ads based on your 
+          prior visits to this website and other sites on the internet. These cookies 
+          allow Google and its partners to serve ads to you based on your visit to our 
+          site and/or other sites on the internet.
+        </p>
+        <p>
+          You may opt out of personalized advertising by visiting{' '}
+          <a href="https://www.google.com/settings/ads" className="text-blue-400" target="_blank" rel="noopener noreferrer">
+            Google&apos;s Ads Settings
+          </a>{' '}
+          or by visiting{' '}
+          <a href="https://www.aboutads.info/choices/" className="text-blue-400" target="_blank" rel="noopener noreferrer">
+            www.aboutads.info
+          </a>.
+          You can also opt out of a third-party vendor&apos;s use of cookies for 
+          personalized advertising by visiting{' '}
+          <a href="https://www.networkadvertising.org/choices/" className="text-blue-400" target="_blank" rel="noopener noreferrer">
+            www.networkadvertising.org/choices/
+          </a>.
+        </p>
+        <p>
+          For more information on how Google uses your data, please visit{' '}
+          <a href="https://policies.google.com/technologies/ads" className="text-blue-400" target="_blank" rel="noopener noreferrer">
+            Google&apos;s Privacy &amp; Terms
+          </a>.
+          For details on specific cookies used, see our{' '}
+          <a href="/cookies" className="text-blue-400">Cookie Policy</a>.
+        </p>
+
         <h3>Wallet Addresses</h3>
         <p>
           If you connect a crypto wallet for contributions or payouts, we store 
@@ -59,12 +91,21 @@ export default function PrivacyPage() {
           <li>To prevent abuse and ensure fair competition</li>
         </ul>
 
+        <h2>Cookies &amp; Tracking</h2>
+        <p>
+          We use first- and third-party cookies plus similar technologies to remember 
+          preferences, measure campaign performance, and improve the site. You can 
+          manage your cookie preferences through our cookie consent banner or your 
+          browser settings. For complete details, see our{' '}
+          <a href="/cookies" className="text-blue-400">Cookie Policy</a>.
+        </p>
+
         <h2>Data Sharing</h2>
         <p>
           We do not sell your personal information. We may share data with:
         </p>
         <ul>
-          <li>Service providers (hosting, analytics) under strict agreements</li>
+          <li>Service providers (hosting, analytics, advertising) under strict agreements</li>
           <li>Law enforcement if required by law</li>
         </ul>
 

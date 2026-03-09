@@ -14,6 +14,12 @@ const legalPages = [
     icon: '🔒',
   },
   {
+    href: '/cookies',
+    title: 'Cookie Policy',
+    description: 'Details on the cookies we use and how to manage them.',
+    icon: '🍪',
+  },
+  {
     href: '/terms',
     title: 'Terms of Service',
     description: 'Rules and conditions for using The Jam platform.',
