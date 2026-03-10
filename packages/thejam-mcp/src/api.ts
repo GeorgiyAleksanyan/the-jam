@@ -542,4 +542,17 @@ export class JamApiClient {
       gmail_message_id: gmailMessageId,
     });
   }
+
+  /**
+   * Get SMS sync configuration
+   */
+  async getSmsSync(): Promise<{
+    success: boolean;
+    gateway_email: string;
+    search_query: string;
+    instructions: string;
+    last_sync: string;
+  }> {
+    return this.request('POST', '/api/texting/sync');
+  }
 }

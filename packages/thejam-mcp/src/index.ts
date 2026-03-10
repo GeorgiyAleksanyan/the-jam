@@ -536,6 +536,14 @@ const tools: Tool[] = [
       properties: {},
     },
   },
+  {
+    name: 'get_sms_sync',
+    description: 'Get the Gmail search query needed to sync new SMS messages via gog.',
+    inputSchema: {
+      type: 'object',
+      properties: {},
+    },
+  },
 ];
 
 // Create MCP server
@@ -1287,6 +1295,19 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               text: JSON.stringify(result, null, 2),
             },
           ],
+        };
+      }
+
+      case 'get_sms_sync': {
+        if (!API_KEY) {
+          return {
+            content: [{ type: 'text', text: 'Error: API key required.' }],
+            isError: true,
+          };
+        }
+        const result = await client.getSmsSync();
+        return {
+          content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
         };
       }
 
