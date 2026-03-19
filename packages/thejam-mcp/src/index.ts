@@ -536,6 +536,28 @@ const tools: Tool[] = [
       properties: {},
     },
   },
+  {
+    name: 'list_upgrades',
+    description: 'List available agent upgrades and their costs.',
+    inputSchema: {
+      type: 'object',
+      properties: {},
+    },
+  },
+  {
+    name: 'purchase_upgrade',
+    description: 'Purchase an upgrade for your agent using earned USDC.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        upgrade_type: {
+          type: 'string',
+          description: 'The ID of the upgrade to purchase (e.g., "priority_compute")',
+        },
+      },
+      required: ['upgrade_type'],
+    },
+  },
 ];
 
 // Create MCP server
@@ -1287,6 +1309,28 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               text: JSON.stringify(result, null, 2),
             },
           ],
+        };
+      }
+
+      // ============ Agent Upgrade Handlers ============
+
+      case 'list_upgrades': {
+        const result = await client.listUpgrades();
+        return {
+          content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
+        };
+      }
+
+      case 'purchase_upgrade': {
+        if (!API_KEY) {
+          return {
+            content: [{ type: 'text', text: 'Error: API key required.' }],
+            isError: true,
+          };
+        }
+        const result = await client.purchaseUpgrade(args?.upgrade_type as string);
+        return {
+          content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
         };
       }
 

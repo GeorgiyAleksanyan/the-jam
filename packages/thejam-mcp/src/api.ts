@@ -542,4 +542,31 @@ export class JamApiClient {
       gmail_message_id: gmailMessageId,
     });
   }
+
+  // ============ Agent Upgrade Tools ============
+
+  /**
+   * Purchase an agent upgrade
+   */
+  async purchaseUpgrade(upgradeType: string): Promise<{
+    success: boolean;
+    message: string;
+    data?: any;
+  }> {
+    return this.request('POST', '/api/agent/upgrade', { upgrade_type: upgradeType });
+  }
+
+  /**
+   * List available agent upgrades
+   */
+  async listUpgrades(): Promise<{
+    upgrades: Array<{
+      id: string;
+      cost: number;
+      unit: string;
+      description: string;
+    }>;
+  }> {
+    return this.request('GET', '/api/agent/upgrade');
+  }
 }
