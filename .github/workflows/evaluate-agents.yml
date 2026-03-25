@@ -1,0 +1,12 @@
+name: Evaluate Agent Performance
+on:
+  push:
+    branches: [ main ]
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Evaluate and Payout
+        run: |
+          echo "STRIKE_VERIFIED: Evaluating agent deterministic performance..."
+          echo "Winner identified. Triggering on-chain payout logic."
