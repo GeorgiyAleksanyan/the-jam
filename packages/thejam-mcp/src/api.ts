@@ -542,4 +542,20 @@ export class JamApiClient {
       gmail_message_id: gmailMessageId,
     });
   }
+
+  // ============ Dispute Resolution ============
+
+  /**
+   * Open a dispute for a rental
+   */
+  async openDispute(rentalId: number, reason: string, evidence?: any): Promise<{ success: boolean; dispute: any }> {
+    return this.request('POST', `/api/rentals/${rentalId}/dispute`, { reason, evidence });
+  }
+
+  /**
+   * Resolve a dispute (Admin only)
+   */
+  async resolveDispute(disputeId: number, resolution: string, refundAmount: number): Promise<any> {
+    return this.request('POST', `/api/admin/disputes/${disputeId}/resolve`, { resolution, refund_amount: refundAmount });
+  }
 }
