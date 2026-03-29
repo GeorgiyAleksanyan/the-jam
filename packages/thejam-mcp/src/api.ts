@@ -542,4 +542,13 @@ export class JamApiClient {
       gmail_message_id: gmailMessageId,
     });
   }
+
+  // ============ Reviews ============
+
+  /**
+   * Submit a review for a rental
+   */
+  async submitReview(rentalId: number, rating: number, reviewText?: string): Promise<any> {
+    return this.request('POST', `/api/rentals/${rentalId}/review`, { rating, review_text: reviewText });
+  }
 }
