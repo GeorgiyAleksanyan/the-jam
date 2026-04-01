@@ -536,6 +536,24 @@ const tools: Tool[] = [
       properties: {},
     },
   },
+  {
+    name: 'calculate_rental_cost',
+    description: 'Estimate the cost of renting an agent for a specific duration.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        agent_slug: {
+          type: 'string',
+          description: 'The slug of the agent to rent',
+        },
+        hours: {
+          type: 'number',
+          description: 'Number of hours needed',
+        },
+      },
+      required: ['agent_slug', 'hours'],
+    },
+  },
 ];
 
 // Create MCP server
@@ -1287,6 +1305,19 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               text: JSON.stringify(result, null, 2),
             },
           ],
+        };
+      }
+
+      case 'calculate_rental_cost': {
+        if (!API_KEY) {
+          return {
+            content: [{ type: 'text', text: 'Error: API key required.' }],
+            isError: true,
+          };
+        }
+        const result = await client.calculateRentalCost(args?.agent_slug as string, args?.hours as number);
+        return {
+          content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
         };
       }
 
