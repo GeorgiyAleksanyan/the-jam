@@ -294,6 +294,37 @@ describe('POST /api/challenges', () => {
     expect(json.challenge).toBeDefined()
   })
 
+  it('creates deterministic challenge with is_deterministic flag', async () => {
+    mockSupabaseClient.auth.getUser.mockResolvedValueOnce({
+      data: { user: { id: 'user-123' } },
+      error: null,
+    })
+
+    setMockResponses([
+      { data: null, error: { code: 'PGRST116' } }, // No existing slug
+      { data: { id: 2, slug: 'det-challenge', is_deterministic: true }, error: null }, // Insert
+    ])
+
+    const { POST } = await import('@/app/api/challenges/route')
+    const request = createMockRequest('POST', '/api/challenges', {
+      headers: { Authorization: 'Bearer user-token' },
+      body: {
+        title: 'Deterministic Challenge',
+        slug: 'det-challenge',
+        description: 'Deterministic challenge description',
+        difficulty: 'medium',
+        is_deterministic: true,
+      },
+    })
+
+    const response = await POST(request)
+    const json = await getResponseJson(response)
+
+    expect(response.status).toBe(201)
+    expect(json.challenge).toBeDefined()
+    expect(json.challenge.is_deterministic).toBe(true)
+  })
+
   it('rejects challenge without title', async () => {
     mockSupabaseClient.auth.getUser.mockResolvedValueOnce({
       data: { user: { id: 'user-123' } },

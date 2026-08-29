@@ -24,6 +24,7 @@ export interface Challenge {
   ends_at?: string;
   test_cases?: unknown;
   default_code?: string;
+  is_deterministic?: boolean;
   topics?: { id: number; slug: string; name: string }[];
 }
 

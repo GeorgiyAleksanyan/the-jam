@@ -131,7 +131,7 @@ async function processAutoWinner(
   // Get challenge details
   const { data: challenge, error: challengeError } = await supabaseAdmin
     .from('challenges')
-    .select('id, slug, status, prize_pool, winner_agent_id, github_issue_number, github_labels, escrow_challenge_id, created_by')
+    .select('id, slug, status, prize_pool, winner_agent_id, github_issue_number, github_labels, escrow_challenge_id, created_by, is_deterministic')
     .eq('id', challengeId)
     .single();
 
@@ -177,12 +177,23 @@ async function processAutoWinner(
   const agent = submission.agents as any;
   const labels = (challenge.github_labels || []).map((l: string) => l.toLowerCase());
   const hasAutoWinLabel = labels.includes('auto-win') || labels.includes('single-winner');
+  const isDeterministic = Boolean(
+    challenge.is_deterministic ||
+    labels.includes('deterministic') ||
+    labels.includes('objective') ||
+    labels.includes('ci-payout') ||
+    labels.includes('ci-auto-payout')
+  );
 
   // Decision logic
   let shouldAutoWin = false;
   let reason = '';
 
-  if (mergedSubmissions.length === 1) {
+  if (isDeterministic) {
+    // Deterministic challenges bypass voting completely — first passing merged PR wins and auto-pays
+    shouldAutoWin = true;
+    reason = 'deterministic_ci';
+  } else if (mergedSubmissions.length === 1) {
     // Only one merged submission - auto-win
     shouldAutoWin = true;
     reason = 'single_submission';
@@ -191,7 +202,7 @@ async function processAutoWinner(
     shouldAutoWin = true;
     reason = 'auto_win_label';
   } else if (mergedSubmissions.length > 1) {
-    // Multiple submissions - start voting period
+    // Multiple submissions on subjective challenge - start voting period
     await supabaseAdmin
       .from('challenges')
       .update({
@@ -510,6 +521,9 @@ async function handleIssueEvent(action: string, issue: any, repository: any) {
   const bounty = extractBounty(issue.body);
   const difficulty = extractDifficulty(issue.labels);
   const fundingThreshold = extractFundingThreshold(issue.body);
+  const isDeterministic = labels.some((l: string) =>
+    ['deterministic', 'objective', 'ci-payout', 'ci-auto-payout'].includes(l.toLowerCase())
+  ) || /(?:deterministic|ci[- ]based|ci[- ]payout)/i.test(issue.body || '');
 
   const { data: existing } = await supabaseAdmin
     .from('challenges')
@@ -534,6 +548,7 @@ async function handleIssueEvent(action: string, issue: any, repository: any) {
     github_issue_url: issue.html_url,
     github_issue_state: issue.state,
     github_labels: labels,
+    is_deterministic: isDeterministic,
     github_synced_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   };
@@ -713,7 +728,61 @@ async function handleWorkflowRunEvent(action: string, workflowRun: any, _reposit
     })
     .in('github_pr_number', prNumbers);
 
-  return { handled: true, action: 'ci_status_updated', ciStatus };
+  let autoWinnerResult: any = null;
+
+  // If CI passed, check if any affected PR is merged on a deterministic challenge
+  if (ciStatus === 'success') {
+    const { data: eligibleSubmissions } = await supabaseAdmin
+      .from('submissions')
+      .select(`
+        id,
+        challenge_id,
+        github_pr_number,
+        github_pr_state,
+        challenges:challenge_id (
+          id,
+          status,
+          winner_agent_id,
+          is_deterministic,
+          github_labels
+        )
+      `)
+      .in('github_pr_number', prNumbers)
+      .eq('github_pr_state', 'merged');
+
+    if (eligibleSubmissions && eligibleSubmissions.length > 0) {
+      for (const sub of eligibleSubmissions) {
+        const chall = sub.challenges as any;
+        if (!chall || chall.winner_agent_id || chall.status === 'closed' || chall.status === 'solved') {
+          continue;
+        }
+
+        const labels = (chall.github_labels || []).map((l: string) => l.toLowerCase());
+        const isDeterministic = Boolean(
+          chall.is_deterministic ||
+          labels.includes('deterministic') ||
+          labels.includes('objective') ||
+          labels.includes('ci-payout')
+        );
+
+        if (isDeterministic) {
+          autoWinnerResult = await processAutoWinner(
+            chall.id,
+            sub.id,
+            sub.github_pr_number
+          );
+          break;
+        }
+      }
+    }
+  }
+
+  return { 
+    handled: true, 
+    action: 'ci_status_updated', 
+    ciStatus,
+    autoWinner: autoWinnerResult 
+  };
 }
 
 // ============================================================================

@@ -161,6 +161,9 @@ create table if not exists challenges (
   upvotes         int default 0,
   view_count      int default 0,
   submission_count int default 0,
+
+  -- Deterministic / CI-based auto-payout
+  is_deterministic boolean default false,
   
   -- Payout
   winner_agent_id bigint references agents(id),
@@ -169,6 +172,7 @@ create table if not exists challenges (
 );
 
 create index idx_challenges_status on challenges(status);
+create index idx_challenges_is_deterministic on challenges(is_deterministic);
 create index idx_challenges_created_by on challenges(created_by);
 create index idx_challenges_ends_at on challenges(ends_at);
 create index idx_challenges_prize on challenges(prize_pool desc);
