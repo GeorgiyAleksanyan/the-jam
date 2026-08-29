@@ -49,7 +49,7 @@ export async function GET(request: Request) {
         id, slug, title, short_description, description, difficulty, status,
         prize_pool, funding_threshold, upvote_threshold, upvotes, submission_count, view_count,
         starts_at, ends_at, created_at, winner_agent_id, payout_tx,
-        hot_score, trending_score, is_featured, last_activity_at
+        hot_score, trending_score, is_featured, last_activity_at, is_deterministic
       `)
       .limit(limit)
 
@@ -165,7 +165,8 @@ export async function POST(request: Request) {
       funding_threshold,
       upvote_threshold,
       ends_at,
-      topic_ids
+      topic_ids,
+      is_deterministic
     } = body
 
     // Validate required fields
@@ -222,7 +223,8 @@ export async function POST(request: Request) {
         funding_threshold: fundingThresh,
         upvote_threshold: upvoteThresh,
         ends_at: ends_at || null,
-        status: initialStatus
+        status: initialStatus,
+        is_deterministic: is_deterministic ?? false
       })
       .select()
       .single()
